@@ -24,12 +24,16 @@ in pkgs.mkShell rec {
 
     # Those are dependencies that we would like to use from nixpkgs, which will
     # add them to PYTHONPATH and thus make them accessible from within the venv.
-    pythonPackages.numpy
     pythonPackages.requests
 
     # In this particular example, in order to compile any binary extensions they may
     # require, the Python modules listed in the hypothetical requirements.txt need
     # the following packages to be installed locally:
+
+    pythonPackages.flask
+    pythonPackages."google-auth"
+    pythonPackages."google-auth-oauthlib"
+    pythonPackages."python-dotenv"
 
     taglib
     openssl
@@ -39,7 +43,6 @@ in pkgs.mkShell rec {
     libzip
     zlib
     stdenv.cc.cc
-    streamlit
   ];
 
 
