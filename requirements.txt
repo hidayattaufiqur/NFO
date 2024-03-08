@@ -1,0 +1,7 @@
+flask
+flask-login
+google-auth
+google-auth-oauthlib
+python-dotenv
+requests
+openai

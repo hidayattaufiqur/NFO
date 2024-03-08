@@ -1,7 +1,9 @@
 from flask import Flask, redirect, url_for, session, request
+from flask_login import LoginManager, current_user
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from dotenv import load_dotenv
+from chat_agent import chat
 import google.oauth2.id_token
 import requests
 import os
@@ -9,6 +11,10 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
+app.register_blueprint(chat, url_prefix='/chat')
+
+# login_manager = LoginManager(app) # TODO: add login manager user_loader function
+
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", default=False)
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # !!! Only for testing, remove for production !!!
@@ -62,6 +68,7 @@ def callback():
 @app.route('/profile')
 def profile():
     user_info = session.get('user_info')
+    # if current_user.is_authenticated: # check if user is authenticated # TODO: use this to check authenticated user instead
     if user_info:
         return f"Hello {user_info['name']}, {user_info['email']}!"
     else:
@@ -69,4 +76,3 @@ def profile():
 
 if __name__ == '__main__':
     app.run(debug=True)
-
