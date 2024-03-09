@@ -1,4 +1,4 @@
-from flask import Flask, redirect, url_for, session, request, Blueprint
+from flask import Flask, redirect, url_for, session, request, Blueprint, jsonify
 from flask_login import login_required, login_user, current_user, logout_user
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
@@ -65,14 +65,11 @@ def generate_competency_questions(query: str):
     - competency_questions: A list of competency questions for ontology development
     """
 
-        # input_variables=["name", "domain", "scope", "numCQs"],
-        # template="Generate a list of competency questions for the ontology in the domain of {{domain}} with a focus on {{scope}}. The ontology should be designed to capture the key concepts and relationships within the domain. Please generate {{numCQs}} competency questions that will help to define the scope and requirements of the ontology. The competency questions should be open-ended and designed to elicit information about the domain and scope. The competency questions should be suitable for use in interviews, surveys, or other data collection methods. The competency questions should be clear, concise, and relevant to the domain and scope. The competency questions should be designed to capture the key concepts and relationships within the domain.",
-
     return json.dumps(query)
 
 @chat.route('/', methods=['GET'])
 def chat_index():
-    # user can choose different model? 
+    # TODO: user can choose different model? 
     assistant = client.chat.completions.create(model="gpt-3.5-turbo-0613",
     messages=[
         {
@@ -93,52 +90,23 @@ def chat_post():
 
     prompt = ChatPromptTemplate.from_messages(
         [
-            ("system", "You are an ontology assistant. Based on the user's input, you will generate a list of competency questions for the ontology in the domain of {{domain}} with a focus on {{scope}} along with the parsed domain, scope, and number of CQs. The ontology should be designed to capture the key concepts and relationships within the domain. Please generate {{numCQs}} competency questions that will help to define the scope and requirements of the ontology. The competency questions should be open-ended and designed to elicit information about the domain and scope. The competency questions should be suitable for use in interviews, surveys, or other data collection methods. The competency questions should be clear, concise, and relevant to the domain and scope. The competency questions should be designed to capture the key concepts and relationships within the domain."),
+            ("system", "You are an ontology assistant. Based on the user's input, you will generate a list of competency questions for the ontology in the domain of {{domain}} with a focus on {{scope}} along with the parsed domain, scope, and numCQs. The ontology should be designed to capture the key concepts and relationships within the domain. Please generate {{numCQs}} competency questions that will help to define the scope and requirements of the ontology. The competency questions should be open-ended and designed to elicit information about the domain and scope. The competency questions should be suitable for use in interviews, surveys, or other data collection methods. The competency questions should be clear, concise, and relevant to the domain and scope. The competency questions should be designed to capture the key concepts and relationships within the domain."),
             ("user", "{input}")
         ]
     )
 
-    chain = prompt | llm  
-
+    chain = prompt | llm 
     competency_questions = chain.invoke({"input": data["message"]})
-    # tools = [generate_competency_questions_input]
-    # agent = create_openai_functions_agent(llm, tools, prompt)
-    # agent_executor = AgentExecutor(agent=agent, verbose=True)
-    #
-    # competency_questions = agent_executor.invoke({message: data["message"]})
 
-    # assistant = client.chat.completions.create(
-    #     model="gpt-3.5-turbo-0613",
-    #     messages=messages,
-    #     tools=tools,
-    #     tool_choice="auto")
+    ### split and map content to extract domain and scope 
+    split_competency_questions = json.loads(competency_questions.json())["content"].split("\n")
+    map_competency_questions = {
+        "domain": split_competency_questions[0].split(": ")[1],
+        "scope": split_competency_questions[1].split(": ")[1],
+        "numCQs": split_competency_questions[2].split(": ")[1],
+        "CQs": split_competency_questions[3:]
+    }
+    print(map_competency_questions)
 
-    return_value = json.dumps({"input": data["message"], "output": competency_questions.dict()})
-
-    return return_value or "No response from LLM."
-    # response_message = assistant.choices[0].message
-    # tool_calls = response_message.tool_calls
-    # print(tool_calls)
-    #
-    # if tool_calls:
-    #     available_functions = {
-    #         "generate_competency_questions": generate_competency_questions
-    #     }
-    #
-    #     messages.append(response_message)
-    #     
-    #     for tool_call in tool_calls:
-    #         function_name = tool_call.function.name
-    #         function_to_call = available_functions[function_name]
-    #         function_args = json.loads(tool_call.function.arguments)
-    #         function_response = function_to_call(**function_args)
-    #         messages.append({"tool_call_id": tool_call.id, "role": "system", "name": function_name, "content": function_response})
-    #
-    #     second_response = client.chat.completions.create(
-    #         model="gpt-3.5-turbo-0613",
-    #         messages=messages,
-    #     )
-    #
-    # print(second_response)
-    # return second_response.choices[0].message.content or "No response from GPT-3" 
+    return jsonify({"input": data["message"], "output": map_competency_questions}) or "No response from LLM."
 
