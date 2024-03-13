@@ -7,3 +7,4 @@ requests
 openai
 langchain-openai
 langchain-core
+langchain
