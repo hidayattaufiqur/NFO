@@ -11,14 +11,14 @@ This project aims to leverage LLM with the help of LangChain to help Domain Expe
 - Additional Python libraries as listed in `requirements.txt`
 
 ## Installation
-### 1. clone the repository:
+### 1. Clone the repository:
 
 ```bash
 git clone https://github.com/hidayattaufiqur/onotolgy-BE.git
 cd onotolgy-BE
 ```
 
-### 2. install requirements: 
+### 2. Install requirements: 
 #### Option 1: Standard Python Environment
 ```bash
 pip install -r requirements.txt
@@ -31,12 +31,12 @@ nix-shell
 ```
 
 ### 3. Set up your environment variables:
-
 Before running the project, ensure you have the necessary credentials:
 
 - **OpenAI API Key**: Obtain an API key by creating an account at [OpenAI](https://openai.com/product).
 - **Google OAuth2 Credentials**: Set up a project in the [Google Developer Console](https://console.cloud.google.com/) to get your `client_secrets.json`, `GOOGLE_CLIENT_ID`, and `GOOGLE_CLIENT_SECRET`.
 
+Copy the downloaded `client_secrets.json` in the root directory. 
 Create a `.env` file in the root directory and add these:
 
 ```plaintext
