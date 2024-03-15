@@ -44,6 +44,12 @@ OPENAI_API_KEY="your_openai_api_key_here"
 FLASK_SECRET_KEY="your_flask_secret_key_here"
 GOOGLE_CLIENT_ID="your_google_client_id_here"
 GOOGLE_CLIENT_SECRET="your_client_secret_here"
+
+DB_USER="your_db_user_here"
+DB_PASSWORD="your_db_pass_here"
+DB_HOST="your_db_host_here"
+DB_PORT="your_db_port_here"
+DB_NAME="your_db_name_here"
 ```
 
 ## Running the Project

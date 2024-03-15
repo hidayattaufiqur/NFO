@@ -1,17 +1,28 @@
-from flask import Flask, redirect, url_for, session, request
-from flask_login import LoginManager, current_user
+from flask import Flask, jsonify, redirect, url_for, session, request
+# from flask_login import LoginManager, current_user
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from dotenv import load_dotenv
 from chat_agent import chat
+
 import google.oauth2.id_token
 import requests
+import helper
+import database as db
 import os
+import logging
+# TODO: add logging 
+# implement logging for debugging and monitoring in python
+# logging.basicConfig(level=logging.DEBUG)
+# logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 
 load_dotenv()
 
 app = Flask(__name__)
 app.register_blueprint(chat, url_prefix='/chat')
+
+db.init_db()
+db_conn = db.get_connection()
 
 # login_manager = LoginManager(app) # TODO: add login manager user_loader function
 
@@ -49,28 +60,36 @@ def login():
 
 @app.route('/login/callback')
 def callback():
-    flow = create_flow()
-    flow.fetch_token(authorization_response=request.url)
+    try: 
+        flow = create_flow()
+        flow.fetch_token(authorization_response=request.url)
 
-    if not session['state'] == request.args['state']:
-        abort(500)  
+        if not session['state'] == request.args['state']:
+            abort(500)  
 
-    credentials = flow.credentials
-    request_session = requests.session()
-    token_request = Request(session=request_session)
-    id_info = google.oauth2.id_token.verify_oauth2_token(
-        credentials.id_token, token_request, GOOGLE_CLIENT_ID
-    )
+        credentials = flow.credentials
+        request_session = requests.session()
+        token_request = Request(session=request_session)
+        id_info = google.oauth2.id_token.verify_oauth2_token(
+            credentials.id_token, token_request, GOOGLE_CLIENT_ID
+        )
 
-    session['user_info'] = id_info
-    return redirect(url_for('profile'))
+        session['user_info'] = id_info
+
+        db.create_user(id_info['name'], id_info['email'], id_info['picture'])
+    except Exception as e:
+        return jsonify(helper.response_template({"message": f"{e}", "status_code": 500, "data": None}))
+
+    return jsonify(helper.response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
+    
 
 @app.route('/profile')
 def profile():
     user_info = session.get('user_info')
     # if current_user.is_authenticated: # check if user is authenticated # TODO: use this to check authenticated user instead
     if user_info:
-        return f"Hello {user_info['name']}, {user_info['email']}!"
+        print(user_info)
+        return f"Hello {user_info['name']}, {user_info['email']}, {user_info['picture']}!"
     else:
         return redirect(url_for('login'))
 

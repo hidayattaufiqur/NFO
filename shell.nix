@@ -34,6 +34,7 @@ in pkgs.mkShell rec {
     pythonPackages."google-auth"
     pythonPackages."google-auth-oauthlib"
     pythonPackages."python-dotenv"
+    pythonPackages.psycopg2
 
     taglib
     openssl

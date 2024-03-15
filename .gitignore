@@ -1,5 +1,7 @@
 .env
 .venv
+.data
 client_secrets.json
 credentials.json
 __pycache__
+logfile
