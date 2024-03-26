@@ -24,55 +24,11 @@ chat = Blueprint('chat', __name__)
 
 llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
-class CustomOutputParser(BaseOutputParser):
-    '''
-    {"input": "My name is Dayat. Generate 5 competency questions focused on the integration a
-nd impact of solar panel technology within the renewable energy domain. Consider aspects such as efficiency, cost, env
-ironmental impact, and adoption barriers.", "CQs": ["What is the efficiency of solar panel technology in generating re
-newable energy?", "How does the cost of solar panel technology compare to other renewable energy sources?", "What is t
-he environmental impact of integrating solar panel technology into the renewable energy domain?", "What are the barrie
-rs to the adoption of solar panel technology in the renewable energy sector?", "How does the integration of solar pane
-l technology impact the overall efficiency of renewable energy systems?"], "domain": "Renewable energy", "numCQs": 5, 
-"scope": "Integration and impact of solar panel technology"}
-
-    '''
-    def parse(self, output: Dict) -> Dict[str, any]:
-        print("yeah it's here")
-        print(output)
-
-        cqs = []
-        domain = None
-        num_cqs = None
-        scope = None
-
-        for line in lines[1:]:
-            if line.startswith("CQs:"):
-                continue
-            elif line.startswith("1."):
-                cqs.append(line)
-            elif line.startswith("domain:"):
-                domain = line.split(": ")
-            elif line.startswith("numCQs:"):
-                num_cqs = line.split(": ")
-            elif line.startswith("scope:"):
-                scope = line.split(": ")
-
-        return {
-            "input": input_text,
-            "output": {
-                "CQs": cqs,
-                "domain": domain,
-                "numCQs": num_cqs,
-                "scope": scope,
-            }
-        }
-
 @chat.route('/2/<session_id>', methods=['DELETE'])
 def delete_conversation(session_id): 
     try: 
         history = PostgresChatMessageHistory(
             connection_string=f"postgresql://{os.environ.get('DB_NAME')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres",
-            # session_id=db_response["id"],
             session_id=session_id,
         )
         history.clear()
@@ -80,8 +36,7 @@ def delete_conversation(session_id):
     except Exception as e:
         return jsonify(helper.response_template({"message": f"Error: {e}", "status_code": 500}))
 
-    return jsonify(helper.response_template({"message": "Deleting Has Been Successful", "status_code": 200, 
-                                             "data": None}))
+    return jsonify(helper.response_template({"message": "Deleting Has Been Successful", "status_code": 200, "data": None}))
 
 @chat.route('/2', methods=['POST'])
 def chat_post2():
@@ -109,47 +64,28 @@ def chat_post2():
 
         user_id = session.get('user_id')
 
-        db_response = db.create_conversation(1, "dummy domain", "dummy scope") 
+        db_response = db.create_conversation(user_id, "dummy domain", "dummy scope") 
+
 
         history = PostgresChatMessageHistory(
             connection_string=f"postgresql://{os.environ.get('DB_NAME')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres",
-            # session_id=db_response["id"],
-            session_id="boo",
+            session_id=str(db_response["id"]),
         )
 
-        # history.add_message(HumanMessage(content=data["prompt"]))
+        while True: 
+            x = LLMChain(
+                llm=llm,
+                prompt=PromptTemplate(
+                    input_variables=["input", "history"], 
+                    template=system_message
+                ),
+                verbose=True,
+                memory = ConversationBufferWindowMemory(memory_key="history", return_messages=True, k=3, chat_memory=history)
+            )
 
-        # Create the prompt template
-        # prompt = ChatPromptTemplate.from_messages([
-        #     ("system", system_message),
-        #     ("human", "{input}"),
-        #     ("system", "{history}"),
-        # ])
+            response = x.invoke({"input": data["prompt"]})
 
-        x = LLMChain(
-            llm=llm,
-            prompt=PromptTemplate(
-                input_variables=["input", "history"], 
-                template=system_message
-            ),
-            # output_parser=CustomOutputParser(),
-            verbose=True,
-            memory = ConversationBufferWindowMemory(memory_key="history", return_messages=True, k=2, chat_memory=history)
-        )
-
-        # Create the conversational agent
-        # agent = ConversationChain(llm=llm, prompt=prompt, output_parser=CustomOutputParser(), memory=memory)
-
-        response = x.invoke({"input": data["prompt"]})
-
-        # print(f"response type =====> {type(response)}")
-        # print(f"response =====> {response}")
-        # print(f"printing response output type =====> {type(response['text'])}")
-        # print(f"printing key response output =====> {response['text']}")
-        # print(f"casting response output to json =====> ")
-        response_json = json.loads(response["text"])
-        print(f"printing response output type =====> {type(response_json)}")
-        print(f"printing key response =====> {response_json}")
+            response_json = json.loads(response["text"])
 
     except Exception as e:
         return jsonify(helper.chat_agent_response_template({"message": f"Error: {e}", "status_code": 500, "prompt": data["prompt"], "map_competency_questions": None}))

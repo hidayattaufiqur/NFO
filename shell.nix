@@ -36,7 +36,7 @@ in pkgs.mkShell rec {
     pythonPackages."python-dotenv"
     pythonPackages.psycopg2
 
-    postgresql
+    postgresql # must be installed so psycop library under PostgresChatMessageHistory would work. 
     libpqxx
     taglib
     openssl

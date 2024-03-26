@@ -9,3 +9,4 @@ langchain-openai
 langchain-core
 langchain
 psycopg2
+psycopg[binary, pool, c]
