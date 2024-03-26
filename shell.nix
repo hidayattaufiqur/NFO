@@ -36,6 +36,8 @@ in pkgs.mkShell rec {
     pythonPackages."python-dotenv"
     pythonPackages.psycopg2
 
+    postgresql
+    libpqxx
     taglib
     openssl
     git

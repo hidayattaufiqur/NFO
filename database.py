@@ -1,6 +1,10 @@
 import psycopg2, psycopg2.pool, psycopg2.extras
 import os
 
+from dotenv import load_dotenv
+
+load_dotenv()
+
 pool = psycopg2.pool.ThreadedConnectionPool(
     1, 20,
     user=os.environ.get('DB_USER'),
@@ -10,6 +14,8 @@ pool = psycopg2.pool.ThreadedConnectionPool(
     database=os.environ.get('DB_NAME'),
     cursor_factory=psycopg2.extras.RealDictCursor
 )
+
+print(pool)
 
 def init_db():
     conn = get_connection()
@@ -53,6 +59,7 @@ def init_db():
                     deleted_at TIMESTAMP
                 );
             ''')
+
             conn.commit()
     finally:
         close_connection(conn)

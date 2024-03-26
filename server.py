@@ -10,7 +10,6 @@ import requests
 import helper
 import database as db
 import os
-import logging
 # TODO: add logging 
 # implement logging for debugging and monitoring in python
 # logging.basicConfig(level=logging.DEBUG)
@@ -74,9 +73,11 @@ def callback():
             credentials.id_token, token_request, GOOGLE_CLIENT_ID
         )
 
+        # handle if user already exists
+        res = db.create_user(id_info['name'], id_info['email'], id_info['picture'])
         session['user_info'] = id_info
+        session['user_id'] = res['user_id']
 
-        db.create_user(id_info['name'], id_info['email'], id_info['picture'])
     except Exception as e:
         return jsonify(helper.response_template({"message": f"{e}", "status_code": 500, "data": None}))
 
@@ -88,10 +89,10 @@ def profile():
     user_info = session.get('user_info')
     # if current_user.is_authenticated: # check if user is authenticated # TODO: use this to check authenticated user instead
     if user_info:
-        print(user_info)
-        return f"Hello {user_info['name']}, {user_info['email']}, {user_info['picture']}!"
-    else:
-        return redirect(url_for('login'))
+        user_id = db.get_user_by_email(user_info['email'])
+        return jsonify(helper.response_template(({"message": "User profile", "status_code": 200, "data": {"user_id": user_id}})))
+
+    return jsonify(helper.response_template({"message": "error in retrieving user id", "status_code": 500, "data": None}))
 
 if __name__ == '__main__':
     app.run(debug=True)
