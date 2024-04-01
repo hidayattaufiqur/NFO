@@ -18,7 +18,7 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
-app.register_blueprint(chat, url_prefix='/chat')
+app.register_blueprint(chat, url_prefix='/conversation')
 
 db.init_db()
 db_conn = db.get_connection()

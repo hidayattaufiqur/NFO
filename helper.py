@@ -3,7 +3,7 @@ def chat_agent_response_template(data):
         "message": data["message"],
         "status": data["status_code"],
         "input": data["prompt"],
-        "output": data["map_competency_questions"]
+        "output": data["output"]
     }
 
     return chat_agent_response

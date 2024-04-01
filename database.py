@@ -129,13 +129,17 @@ def get_conversation_by_id(convo_id):
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute('SELECT * FROM conversations WHERE id = %s', (convo_id,))
+            cur.execute('''
+                SELECT * FROM conversations  
+                LEFT JOIN message_store ON conversations.id = CAST(message_store.session_id AS INT)
+                WHERE conversations.id = %s;
+            ''', (convo_id,))
             convo = cur.fetchone()
             return convo
     finally:
         close_connection(conn)
 
-def get_conversations_by_user_id(user_id):
+def get_all_conversations_from_a_user(user_id):
     conn = get_connection()
     try:
         with conn.cursor() as cur:

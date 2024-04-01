@@ -1,0 +1,4 @@
+[] secure routes using oauth session key
+[] save CQs to DB
+[] implement DB migration
+[] get conversations by joining table conversations and message_store
