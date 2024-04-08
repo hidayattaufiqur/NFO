@@ -15,8 +15,6 @@ pool = psycopg2.pool.ThreadedConnectionPool(
     cursor_factory=psycopg2.extras.RealDictCursor
 )
 
-print(pool)
-
 def init_db():
     conn = get_connection()
     try:
@@ -65,7 +63,7 @@ def init_db():
         close_connection(conn)
 
         
-"""connections"""
+"""db connections"""
 def get_connection():
     return pool.getconn()
 
@@ -125,14 +123,22 @@ def create_conversation(user_id, domain, scope):
     finally:
         close_connection(conn)
 
-def get_conversation_by_id(convo_id):
+def get_conversation_detail_by_id(convo_id):
     conn = get_connection()
     try:
         with conn.cursor() as cur:
             cur.execute('''
-                SELECT * FROM conversations  
-                LEFT JOIN message_store ON conversations.id = CAST(message_store.session_id AS INT)
-                WHERE conversations.id = %s;
+                SELECT 
+                    c.domain, 
+                    c.scope, 
+                    c.user_id, 
+                    c.is_active,
+                    c.id,
+                    JSON_AGG(message_store.message) AS messages
+                FROM conversations c
+                JOIN message_store ON c.id = CAST(message_store.session_id AS INT)
+                WHERE c.id = %s
+                GROUP BY c.domain, c.scope, c.user_id, c.is_active, c.id;
             ''', (convo_id,))
             convo = cur.fetchone()
             return convo
@@ -157,7 +163,7 @@ def update_conversation(convo_id, domain, scope, is_active):
         with conn.cursor() as cur:
             cur.execute('''
                 UPDATE conversations
-                SET domain = %s, scope = %s, is_active = %s
+                SET domain = %s, scope = %s, is_active = %s, updated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
                 RETURNING *;
             ''', (domain, scope, is_active, convo_id))
@@ -168,6 +174,7 @@ def update_conversation(convo_id, domain, scope, is_active):
         return None
     finally:
         close_connection(conn)
+
 
 """competency questions"""
 def create_competency_question(user_id, convo_id, question):
@@ -187,11 +194,11 @@ def create_competency_question(user_id, convo_id, question):
     finally:
         close_connection(conn)
 
-def get_competency_questions_by_convo_id(convo_id):
+def get_all_competency_questions_by_convo_id(convo_id):
     conn = get_connection()
     try:
         with conn.cursor() as cur:
-            cur.execute('SELECT * FROM competency_questions WHERE convo_id = %s', (convo_id,))
+            cur.execute('SELECT id, is_valid, question, user_id FROM competency_questions WHERE convo_id = %s', (convo_id,))
             cqs = cur.fetchall()
             return cqs
     except: 
@@ -199,13 +206,13 @@ def get_competency_questions_by_convo_id(convo_id):
     finally:
         close_connection(conn)
 
-def update_competency_question(cq_id, is_valid):
+def validating_competency_question(cq_id, is_valid):
     conn = get_connection()
     try:
         with conn.cursor() as cur:
             cur.execute('''
                 UPDATE competency_questions
-                SET is_valid = %s
+                SET is_valid = %s, updated_at = CURRENT_TIMESTAMP, validated_at = CURRENT_TIMESTAMP
                 WHERE id = %s
                 RETURNING *;
             ''', (is_valid, cq_id))

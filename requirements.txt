@@ -1,4 +1,5 @@
 flask
+flask[async]
 flask-login
 google-auth
 google-auth-oauthlib
