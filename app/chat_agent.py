@@ -70,7 +70,7 @@ async def conversation(conversation_id=None):
             conversation_id = conversation_id
 
         if db_response is None: 
-            return jsonify(helper.bp_agent_response_template({"message": "Conversation Not Found", "status_code": 404, "prompt": data["prompt"], "output": None})), 404 
+            return jsonify(helper.chat_agent_response_template({"message": "Conversation Not Found", "status_code": 404, "prompt": data["prompt"], "output": None})), 404 
 
         history = PostgresChatMessageHistory(
             connection_string=f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres", # TODO: Add the connection string to the .env file 
@@ -85,7 +85,7 @@ async def conversation(conversation_id=None):
                 template=system_message
             ),
             verbose=True,
-            memory = ConversationBufferWindowMemory(memory_key="history", return_messages=True, k=10, bp_memory=history)
+            memory = ConversationBufferWindowMemory(memory_key="history", return_messages=True, k=10, chat_memory=history)
         )
 
         response = await x.ainvoke({"input": data["prompt"]})
@@ -100,9 +100,9 @@ async def conversation(conversation_id=None):
         history.__del__ # make sure to close the connection to the database
 
     except Exception as e:
-        return jsonify(helper.bp_agent_response_template({"message": f"Error: {e}", "status_code": 500, "prompt": data["prompt"], "output": None})), 500
+        return jsonify(helper.chat_agent_response_template({"message": f"Error: {e}", "status_code": 500, "prompt": data["prompt"], "output": None})), 500
 
-    return jsonify(helper.bp_agent_response_template({"message": "Success", "status_code": 200, "prompt": data["prompt"], "output": response_json})) 
+    return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": data["prompt"], "output": response_json})) 
 
 @bp.route('/<conversation_id>', methods=['GET'])
 def get_detail_conversation(conversation_id): 
@@ -127,7 +127,7 @@ def get_all_conversations_by_user_id(user_id):
 @bp.route('/<conversation_id>', methods=['DELETE'])
 def delete_conversation(conversation_id): 
     try: 
-        history = PostgresbpMessageHistory(
+        history = PostgresChatMessageHistory(
             connection_string=f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres", # TODO: Add the connection string to the .env file 
             session_id=conversation_id,
         )
