@@ -1,31 +1,24 @@
-from flask import Flask, jsonify, redirect, url_for, session, request
+import google.oauth2.id_token
+import requests
+import os
+
+from flask import jsonify, redirect, url_for, session, request, Blueprint
 # from flask_login import LoginManager, current_user
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
-from dotenv import load_dotenv
-from chat_agent import chat
+from . import helper
+from . import database as db
 
-import google.oauth2.id_token
-import requests
-import helper
-import database as db
-import os
 # TODO: add logging 
+# TODO: add login manager user_loader function
+# TODO: use this to check authenticated user instead
 # implement logging for debugging and monitoring in python
 # logging.basicConfig(level=logging.DEBUG)
 # logging.getLogger('werkzeug').setLevel(logging.DEBUG)
 
-load_dotenv()
+bp = Blueprint('auth', __name__)
 
-app = Flask(__name__)
-app.register_blueprint(chat, url_prefix='/conversation')
-
-db.init_db()
-db_conn = db.get_connection()
-
-# login_manager = LoginManager(app) # TODO: add login manager user_loader function
-
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", default=False)
+# login_manager = LoginManager(app) 
 
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # !!! Only for testing, remove for production !!!
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", default=False)
@@ -42,22 +35,18 @@ def create_flow():
             'https://www.googleapis.com/auth/userinfo.email',
             'openid'
         ],
-        redirect_uri=url_for('callback', _external=True)
+        redirect_uri=url_for('auth.callback', _external=True)
     )
     return flow
 
-@app.route('/')
-def index():
-    return 'Hello, world!'
-
-@app.route('/login')
+@bp.route('/login')
 def login():
     flow = create_flow()
     authorization_url, state = flow.authorization_url()
     session['state'] = state
     return redirect(authorization_url)
 
-@app.route('/login/callback')
+@bp.route('/login/callback')
 def callback():
     try: 
         flow = create_flow()
@@ -84,15 +73,12 @@ def callback():
     return jsonify(helper.response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
     
 
-@app.route('/profile')
+@bp.route('/profile')
 def profile():
     user_info = session.get('user_info')
-    # if current_user.is_authenticated: # check if user is authenticated # TODO: use this to check authenticated user instead
+    # if current_user.is_authenticated: # check if user is authenticated 
     if user_info:
         user_id = db.get_user_by_email(user_info['email'])
         return jsonify(helper.response_template(({"message": "User profile", "status_code": 200, "data": {"user_id": user_id}})))
 
     return jsonify(helper.response_template({"message": "error in retrieving user id", "status_code": 500, "data": None}))
-
-if __name__ == '__main__':
-    app.run(debug=True)

@@ -1,17 +1,14 @@
 from flask import request, Blueprint, jsonify, session
 from dotenv import load_dotenv
-from langchain_core import output_parsers
 from langchain_openai import ChatOpenAI
-from langchain_core.prompts import ChatPromptTemplate, BaseChatPromptTemplate, PromptTemplate
-from langchain.schema import AIMessage, HumanMessage, BaseOutputParser
-from langchain.chains import ConversationChain, LLMChain
+from langchain_core.prompts import PromptTemplate
+from langchain.chains import  LLMChain
 from langchain_community.chat_message_histories import PostgresChatMessageHistory
 from langchain.memory import ConversationBufferWindowMemory
-from langchain.agents import Tool, AgentExecutor, LLMSingleActionAgent, AgentOutputParser, agent
-from typing import Dict
 
-import database as db
-import helper
+from . import database as db
+from . import helper
+
 import json
 import os
 import logging
@@ -20,31 +17,11 @@ logging.basicConfig(level=logging.DEBUG)
 
 load_dotenv()
 
-chat = Blueprint('conversation', __name__)
+bp = Blueprint('conversation', __name__, url_prefix='/conversation')
 
 llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
 # Define initial system message
-# system_message = """
-# You are an ontology assistant. Your task is to generate competency questions for an ontology based on the user's input of domain and scope. Your other task is to revise/replace previous competency questions based on the user's follow-up prompts.
-#
-# User will provide an {input} that contains domain, scope, and the number of competency questions they want. You should extract those out of the paragraph and then generate n number of competency questions based on the provided information. 
-#
-# If it's the first prompt from the user (there is nothing yet in conversation history), your output must be formatted in a key-pair (dictionary or hashmap) values as follows:
-# "competency_questions": enumerated competency questions (e.g. 1. What is the efficiency of solar panel technology in generating renewable energy?, 2. How does the cost of solar panel technology compare to other renewable energy sources?, etc.),
-# "domain": domain,
-# "num_cqs": num_cqs,
-# "scope": scope,
-#
-# If user gives follow up prompt(s) (there is at least one conversation history), you should answer using {history} as your base knowledge to revise/replace previous competency questions, but still strictly follow above's format. 
-# Remember, competency_questions must be enumerated!
-#
-# Do not make things up and follow my instruction obediently. I will be fired by my boss if you do.
-#
-# Previous conversation history:
-# {history}
-# """
-
 system_message = """
 You are an ontology assistant. Your task is to generate competency questions for an ontology based on the user's input of domain, scope, and the number of competency questions they want. Your other task is to revise or replace one or more competency questions whenever user prompts it.
 
@@ -77,8 +54,8 @@ Previous conversation history:
 {history}
 """
 
-@chat.route('/', methods=['POST'])
-@chat.route('/<conversation_id>', methods=['POST'])
+@bp.route('/', methods=['POST'])
+@bp.route('/<conversation_id>', methods=['POST'])
 async def conversation(conversation_id=None):
     try: 
         data = request.json
@@ -93,7 +70,7 @@ async def conversation(conversation_id=None):
             conversation_id = conversation_id
 
         if db_response is None: 
-            return jsonify(helper.chat_agent_response_template({"message": "Conversation Not Found", "status_code": 404, "prompt": data["prompt"], "output": None})), 404 
+            return jsonify(helper.bp_agent_response_template({"message": "Conversation Not Found", "status_code": 404, "prompt": data["prompt"], "output": None})), 404 
 
         history = PostgresChatMessageHistory(
             connection_string=f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres", # TODO: Add the connection string to the .env file 
@@ -108,7 +85,7 @@ async def conversation(conversation_id=None):
                 template=system_message
             ),
             verbose=True,
-            memory = ConversationBufferWindowMemory(memory_key="history", return_messages=True, k=10, chat_memory=history)
+            memory = ConversationBufferWindowMemory(memory_key="history", return_messages=True, k=10, bp_memory=history)
         )
 
         response = await x.ainvoke({"input": data["prompt"]})
@@ -120,14 +97,14 @@ async def conversation(conversation_id=None):
         if db_response["domain"] != response_json["domain"] or db_response["scope"] != response_json["scope"]:
             db.update_conversation(db_response["id"], response_json["domain"], response_json["scope"], True)
 
-        history.__del__
+        history.__del__ # make sure to close the connection to the database
 
     except Exception as e:
-        return jsonify(helper.chat_agent_response_template({"message": f"Error: {e}", "status_code": 500, "prompt": data["prompt"], "output": None})), 500
+        return jsonify(helper.bp_agent_response_template({"message": f"Error: {e}", "status_code": 500, "prompt": data["prompt"], "output": None})), 500
 
-    return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": data["prompt"], "output": response_json})) 
+    return jsonify(helper.bp_agent_response_template({"message": "Success", "status_code": 200, "prompt": data["prompt"], "output": response_json})) 
 
-@chat.route('/<conversation_id>', methods=['GET'])
+@bp.route('/<conversation_id>', methods=['GET'])
 def get_detail_conversation(conversation_id): 
     try: 
         db_response = db.get_conversation_detail_by_id(conversation_id)
@@ -137,7 +114,7 @@ def get_detail_conversation(conversation_id):
 
     return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response}))
 
-@chat.route('/all/<user_id>', methods=['GET'])
+@bp.route('/all/<user_id>', methods=['GET'])
 def get_all_conversations_by_user_id(user_id): 
     try: 
         db_response = db.get_all_conversations_from_a_user(user_id)
@@ -147,10 +124,10 @@ def get_all_conversations_by_user_id(user_id):
 
     return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response}))
 
-@chat.route('/<conversation_id>', methods=['DELETE'])
+@bp.route('/<conversation_id>', methods=['DELETE'])
 def delete_conversation(conversation_id): 
     try: 
-        history = PostgresChatMessageHistory(
+        history = PostgresbpMessageHistory(
             connection_string=f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres", # TODO: Add the connection string to the .env file 
             session_id=conversation_id,
         )
@@ -160,7 +137,7 @@ def delete_conversation(conversation_id):
 
     return jsonify(helper.response_template({"message": "Deleting Has Been Successful", "status_code": 200, "data": None}))
 
-@chat.route('/competency_questions/<conversation_id>', methods=['POST']) 
+@bp.route('/competency_questions/<conversation_id>', methods=['POST']) 
 def save_competency_questions(conversation_id):
     try: 
         data = request.json
@@ -177,7 +154,7 @@ def save_competency_questions(conversation_id):
 
     return jsonify(helper.response_template({"message": "Saving Competency Question Has Been Successful", "status_code": 200, "data": None}))
 
-@chat.route('/competency_questions/<conversation_id>', methods=['GET'])
+@bp.route('/competency_questions/<conversation_id>', methods=['GET'])
 def get_competency_questions(conversation_id):
     try: 
         db_response = db.get_all_competency_questions_by_convo_id(conversation_id)
@@ -187,7 +164,7 @@ def get_competency_questions(conversation_id):
 
     return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response}))
 
-@chat.route('/competency_questions/validate/<cq_id>', methods=['GET'])
+@bp.route('/competency_questions/validate/<cq_id>', methods=['GET'])
 def validating_competency_questions(cq_id):
     try: 
        db.validating_competency_question(cq_id, True)

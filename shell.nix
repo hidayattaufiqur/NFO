@@ -1,8 +1,8 @@
 with import <nixpkgs> { };
-
 let
-  pythonPackages = python3Packages;
-in pkgs.mkShell rec {
+  pythonPackages = python311Packages;
+in pkgs.mkShell 
+rec {
   name = "impurePythonEnv";
   venvDir = "./.venv";
 
@@ -29,12 +29,6 @@ in pkgs.mkShell rec {
     # In this particular example, in order to compile any binary extensions they may
     # require, the Python modules listed in the hypothetical requirements.txt need
     # the following packages to be installed locally:
-
-    pythonPackages.flask
-    pythonPackages."google-auth"
-    pythonPackages."google-auth-oauthlib"
-    pythonPackages."python-dotenv"
-    pythonPackages.psycopg2
 
     postgresql # must be installed so psycop library under PostgresChatMessageHistory would work. 
     libpqxx
@@ -66,6 +60,5 @@ in pkgs.mkShell rec {
     unset SOURCE_DATE_EPOCH
     # fixes libstdc++ issues and libgl.so issues
   '';
-
 }
 
