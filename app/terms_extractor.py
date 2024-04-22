@@ -9,6 +9,8 @@ from . import helper
 
 import logging 
 import os
+import json
+import requests
 
 logger = logging.getLogger(__name__)
 
@@ -55,6 +57,10 @@ def extract_from_pdf():
         logger.info("predicting tags with flair NER model")
         predicted_tags = predict_with_flair(extracted_text)
 
+        logger.info("invoking awan llm")
+        awan_llm_response = prompt_awan_llm(predicted_tags)
+        logger.info(f"awan llm response: {awan_llm_response}")
+
     except Exception as e: 
         logger.error(f"{e}")
         return helper.response_template({
@@ -70,7 +76,8 @@ def extract_from_pdf():
         "data": {
             "filename": filename,
             "extracted_text": extracted_text, 
-            "predicted_tags": predicted_tags
+            "predicted_tags": predicted_tags,
+            "important_terms": awan_llm_response
         }
     }), 200
 
@@ -112,11 +119,11 @@ def predict_with_flair(sentences):
         for sent in splitted_sentence:
             logger.info("extracting NER tags")
             for entity in sent.get_spans("ner"): 
-                logger.info(f"entity text {entity.text}")
-                logger.info(f"entity tag {entity.tag}")
-                logger.info(f"entity score {entity.score}")
-                logger.info(f"entity labels {entity.labels}")
-                logger.info(f"entity unlabeled_identifier {entity.unlabeled_identifier}")
+                logger.info(f"entity-text {entity.text}")
+                logger.info(f"entity-tag {entity.tag}")
+                logger.info(f"entity-score {entity.score}")
+                logger.info(f"entity-labels {entity.labels}")
+                logger.info(f"entity-unlabeled_identifier {entity.unlabeled_identifier}")
 
                 tagged_sentence = {}
                 tagged_sentence.update({"text": entity.text})
@@ -125,3 +132,36 @@ def predict_with_flair(sentences):
                 tagged_sentences.append(tagged_sentence)
 
     return tagged_sentences
+
+def prompt_awan_llm(tagged_sentences, domain = "web protocol", scope = "http"):
+    url = "https://api.awanllm.com/v1/chat/completions"
+
+    payload = json.dumps({
+      "model": "Meta-Llama-3-8B-Instruct",
+      "messages": [
+        {
+            "role": "user",
+            "content": f'''
+You are a language model trained to assist in extracting important terms from text. You can help users extract important terms from text that are relevant to a specific domain and scope. Users can provide you with the text and the domain and scope of the ontology they want to extract terms for. You will strictly respond with only the list of relevant important terms and nothing else. You will not explain, you will not elaborate whatsoever. You will only give a list of relevant important terms as your response that users can extract easily.
+
+Your response will always be in this format:
+
+"important_terms": ["term1", "term2", "term3", "term4"]
+
+If you fail to follow the instruction, someone's grandma will die.
+
+please pick important terms out of these: {tagged_sentences} that are relevant to this ontology domain: {domain} and ontology scope: {scope}. Do not make things up and follow my instruction obediently. I will be fired by my boss if you do.
+          ''' 
+        }
+      ]
+    })
+    headers = {
+      'Content-Type': 'application/json',
+        'Authorization': f"Bearer {os.environ.get("AWAN_API_KEY")}"
+    }
+
+    logger.info("invoking prompt to awan llm")
+    response = requests.request("POST", url, headers=headers, data=payload)
+    logger.info("prompt result has been received")
+
+    return response.json()

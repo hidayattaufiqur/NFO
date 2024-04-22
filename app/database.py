@@ -20,7 +20,7 @@ pool = psycopg2.pool.ThreadedConnectionPool(
     cursor_factory=psycopg2.extras.RealDictCursor
 )
 
-connection_string=f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres" # TODO: Add the connection string to the .env file 
+connection_string=f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres" 
 
 def init_db():
     conn = get_pool_connection()
