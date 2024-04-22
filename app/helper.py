@@ -24,3 +24,12 @@ def response_template(data):
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
+def clean_text(text):
+    filters = ["!", "#", "$", "%", "&", "(", ")", "/", "*", ".", ":", ";", "<", "=", ">", "?", "@", "[",
+               "\\", "]", "_", "`", "{", "}", "~", "'"]
+
+    for i in text:
+        if i in filters:
+            text = text.replace(i, " " + i)
+            
+    return text
