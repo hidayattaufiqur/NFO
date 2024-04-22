@@ -12,7 +12,7 @@ def create_app():
     from . import database as db
 
     db.init_db()
-    db_conn = db.get_connection()
+    db_conn = db.get_pool_connection()
 
     @app.route('/')
     def index():
@@ -25,5 +25,3 @@ def create_app():
     app.register_blueprint(chat_agent.bp)
 
     return app
-
-
