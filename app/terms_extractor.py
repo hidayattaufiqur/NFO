@@ -157,7 +157,7 @@ please pick important terms out of these: {tagged_sentences} that are relevant t
     })
     headers = {
       'Content-Type': 'application/json',
-        'Authorization': f"Bearer {os.environ.get("AWAN_API_KEY")}"
+        'Authorization': f"Bearer {os.environ.get('AWAN_API_KEY')}"
     }
 
     logger.info("invoking prompt to awan llm")
