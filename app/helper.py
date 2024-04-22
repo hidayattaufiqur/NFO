@@ -1,3 +1,6 @@
+UPLOAD_FOLDER = "./../static/uploads/"
+ALLOWED_EXTENSIONS = {"pdf"}
+
 def chat_agent_response_template(data):
     chat_agent_response = {
         "message": data["message"],
@@ -16,3 +19,7 @@ def response_template(data):
     }
 
     return response
+
+def allowed_file(filename):
+    return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+

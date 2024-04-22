@@ -4,14 +4,12 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import  LLMChain
 from langchain_postgres import PostgresChatMessageHistory
-from langchain_community.chat_message_histories import PostgresChatMessageHistory as test
 from langchain.memory import ConversationBufferWindowMemory
 
 from . import database as db
 from . import helper
 
 import json
-import os
 import logging
 import uuid
 

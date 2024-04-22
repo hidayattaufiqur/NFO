@@ -1,6 +1,8 @@
 import google.oauth2.id_token
 import requests
 import os
+import logging
+import uuid
 
 from flask import jsonify, redirect, url_for, session, request, Blueprint
 # from flask_login import LoginManager, current_user
@@ -9,12 +11,11 @@ from google.auth.transport.requests import Request
 from . import helper
 from . import database as db
 
-# TODO: add logging 
 # TODO: add login manager user_loader function
 # TODO: use this to check authenticated user instead
-# implement logging for debugging and monitoring in python
-# logging.basicConfig(level=logging.DEBUG)
-# logging.getLogger('werkzeug').setLevel(logging.DEBUG)
+
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 bp = Blueprint('auth', __name__)
 
@@ -28,13 +29,10 @@ GOOGLE_DISCOVERY_URL = (
 )
 
 def create_flow():
+    logger.info("initializing flow")
     flow = Flow.from_client_secrets_file(
         'client_secrets.json',
-        scopes=[
-            'https://www.googleapis.com/auth/userinfo.profile',
-            'https://www.googleapis.com/auth/userinfo.email',
-            'openid'
-        ],
+        scopes=['user', 'profile','openid'],
         redirect_uri=url_for('auth.callback', _external=True)
     )
     return flow
@@ -44,16 +42,17 @@ def login():
     flow = create_flow()
     authorization_url, state = flow.authorization_url()
     session['state'] = state
+    logging.info("redirecting to authorization url")
     return redirect(authorization_url)
 
 @bp.route('/login/callback')
 def callback():
     try: 
+        user_id = uuid.uuid4()
         flow = create_flow()
         flow.fetch_token(authorization_response=request.url)
 
-        if not session['state'] == request.args['state']:
-            abort(500)  
+        if not session['state'] == request.args['state']: abort(500)  
 
         credentials = flow.credentials
         request_session = requests.session()
@@ -62,23 +61,31 @@ def callback():
             credentials.id_token, token_request, GOOGLE_CLIENT_ID
         )
 
-        # handle if user already exists
-        res = db.create_user(id_info['name'], id_info['email'], id_info['picture'])
+        res = db.create_user(user_id, id_info['name'], id_info['email'], id_info['picture'])
         session['user_info'] = id_info
         session['user_id'] = res['user_id']
-
+        logger.info(f"user: {id_info['name']} logged in successfully")
+        return jsonify(helper.response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
+    
     except Exception as e:
+        logger.error(f"{e}")
         return jsonify(helper.response_template({"message": f"{e}", "status_code": 500, "data": None}))
 
-    return jsonify(helper.response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
     
-
 @bp.route('/profile')
 def profile():
-    user_info = session.get('user_info')
-    # if current_user.is_authenticated: # check if user is authenticated 
-    if user_info:
-        user_id = db.get_user_by_email(user_info['email'])
-        return jsonify(helper.response_template(({"message": "User profile", "status_code": 200, "data": {"user_id": user_id}})))
+    try: 
+        user_info = session.get('user_info')
+        # if current_user.is_authenticated: # check if user is authenticated 
+        if user_info:
+            user_id = db.get_user_by_email(user_info['email'])
+        else: 
+            logger.error("no session id is found")
+            return jsonify(helper.response_template(({"message": "no session id is found", "status_code": 400, "data": None})))
 
-    return jsonify(helper.response_template({"message": "error in retrieving user id", "status_code": 500, "data": None}))
+        logger.info("user fetched successfully")
+        return jsonify(helper.response_template(({"message": "user profile", "status_code": 200, "data": {"user_id": user_id}})))
+
+    except Exception as e: 
+        logger.error(f"{e}")
+        return jsonify(helper.response_template({"message": "error in retrieving user id", "status_code": 500, "data": None}))
