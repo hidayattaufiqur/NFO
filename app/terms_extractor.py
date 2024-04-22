@@ -85,9 +85,8 @@ def extract_text_from_pdf(pdf_file_path):
 
         extracted_text = [] 
         for value in doc_json: 
-            if "instances" in value:
-                print(value["instances"])
-                extracted_text.append(value["instances"])
+            if "sentences" in value:
+                extracted_text.append(value["sentences"])
 
         return extracted_text 
 
@@ -102,13 +101,20 @@ def predict_with_flair(sentences):
     tagger = Classifier.load("ner") # load flair NER model 
 
     logger.info("predicting NER tags")
+    i = 1
     for sentence in sentences: 
         helper.clean_text(sentence)
         sentence = Sentence(sentence)
         tagger.predict(sentence) # predict NER tags
+        logger.info("============================================")
+        logger.info(f"predicted tags for sentence {i}")
+        logger.info(f"sentence: {sentence}")
+        logger.info("============================================")
+        i+=1
 
         for entity in sentence.get_spans("ner"): 
-            print(entity)
+            logger.info(f"entity {entity.text}")
+            logger.info(f"entity type {type(entity)}")
             tagged_sentences.append(entity)
 
     return tagged_sentences
