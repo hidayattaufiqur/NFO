@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 from llmsherpa.readers import LayoutPDFReader
 from flair.nn import Classifier 
 from flair.data import Sentence
+from segtok.segmenter import split_single
 
 from . import helper
 
@@ -86,7 +87,7 @@ def extract_text_from_pdf(pdf_file_path):
         extracted_text = [] 
         for value in doc_json: 
             if "sentences" in value:
-                extracted_text.append(value["sentences"])
+                extracted_text.append(value["sentences"][0])
 
         return extracted_text 
 
@@ -101,20 +102,26 @@ def predict_with_flair(sentences):
     tagger = Classifier.load("ner") # load flair NER model 
 
     logger.info("predicting NER tags")
-    i = 1
     for sentence in sentences: 
-        helper.clean_text(sentence)
-        sentence = Sentence(sentence)
-        tagger.predict(sentence) # predict NER tags
-        logger.info("============================================")
-        logger.info(f"predicted tags for sentence {i}")
-        logger.info(f"sentence: {sentence}")
-        logger.info("============================================")
-        i+=1
+        sentence = helper.clean_text(sentence)
+        logger.info("split sentence into segments")
+        splitted_sentence = [Sentence(sent) for sent in split_single(sentence)]
+        logger.info("text splitted successfully")
+        tagger.predict(splitted_sentence) # predict NER tags
 
-        for entity in sentence.get_spans("ner"): 
-            logger.info(f"entity {entity.text}")
-            logger.info(f"entity type {type(entity)}")
-            tagged_sentences.append(entity)
+        for sent in splitted_sentence:
+            logger.info("extracting NER tags")
+            for entity in sent.get_spans("ner"): 
+                logger.info(f"entity text {entity.text}")
+                logger.info(f"entity tag {entity.tag}")
+                logger.info(f"entity score {entity.score}")
+                logger.info(f"entity labels {entity.labels}")
+                logger.info(f"entity unlabeled_identifier {entity.unlabeled_identifier}")
+
+                tagged_sentence = {}
+                tagged_sentence.update({"text": entity.text})
+                tagged_sentence.update({"tag": entity.tag})
+                tagged_sentence.update({"score": entity.score})
+                tagged_sentences.append(tagged_sentence)
 
     return tagged_sentences
