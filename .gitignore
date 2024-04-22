@@ -4,6 +4,7 @@
 .direnv
 __pycache__
 _build
+app/static
 client_secrets.json
 credentials.json
 logfile
