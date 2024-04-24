@@ -32,6 +32,12 @@ def get_important_terms_from_pdf():
             })), 400
 
         file = request.files['file']
+        data = request.form
+        domain = data["domain"]
+        scope = data["scope"]
+
+        logger.info(f"domain: {domain}")
+        logger.info(f"scope: {scope}")
 
         if file.filename == '':
             logger.error("no file selected")
@@ -59,7 +65,7 @@ def get_important_terms_from_pdf():
         predicted_tags = predict_with_flair(extracted_text)
 
         logger.info("invoking awan llm")
-        awan_llm_response = prompt_awan_llm(predicted_tags)
+        awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
         logger.info(f"awan llm response: {awan_llm_response}")
 
     except Exception as e: 
@@ -71,6 +77,9 @@ def get_important_terms_from_pdf():
         }), 500
 
     logger.info("file uploaded successfully")
+    logger.info("deleting file from server")
+    os.remove(filepath)
+
     return helper.response_template({
         "message": "File uploaded successfully",
         "status_code": 200,
@@ -88,6 +97,8 @@ def get_important_terms_from_url():
         logger.info("extracting url from request body")
         data = request.json
         url = data["url"]
+        domain = data["domain"]
+        scope = data["scope"]
 
         logger.info("fetching url")
         html_doc = requests.get(url) 
@@ -100,7 +111,7 @@ def get_important_terms_from_url():
         predicted_tags = predict_with_flair(extracted_text)
 
         logger.info("invoking awan llm")
-        awan_llm_response = prompt_awan_llm(predicted_tags)
+        awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
         logger.info(f"awan llm response: {awan_llm_response}")
 
         if html_doc.status_code != 200:
