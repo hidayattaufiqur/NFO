@@ -24,6 +24,7 @@ psycopg-pool = "^3.2.1"
 llmsherpa = "^0.1.4"
 flair = "^0.13.1"
 scipy = "1.11"
+beautifulsoup4 = "^4.12.3"
 
 
 [build-system]

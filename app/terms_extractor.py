@@ -4,6 +4,7 @@ from llmsherpa.readers import LayoutPDFReader
 from flair.nn import Classifier 
 from flair.data import Sentence
 from segtok.segmenter import split_single
+from bs4 import BeautifulSoup
 
 from . import helper
 
@@ -17,7 +18,7 @@ logger = logging.getLogger(__name__)
 bp = Blueprint('terms_extractor', __name__, url_prefix='/terms_extractor')
 
 @bp.route('/pdf', methods=['POST'])
-def extract_from_pdf():
+def get_important_terms_from_pdf():
     filename = ""
     filepath = ""
 
@@ -81,6 +82,53 @@ def extract_from_pdf():
         }
     }), 200
 
+@bp.route("/url", methods=["POST"])
+def get_important_terms_from_url(): 
+    try:
+        logger.info("extracting url from request body")
+        data = request.json
+        url = data["url"]
+
+        logger.info("fetching url")
+        html_doc = requests.get(url) 
+
+        logger.info("extracting text from url")
+        soup = BeautifulSoup(html_doc.text, 'html.parser')
+        extracted_text = soup.get_text()
+
+        logger.info("predicting tags with flair NER model")
+        predicted_tags = predict_with_flair(extracted_text)
+
+        logger.info("invoking awan llm")
+        awan_llm_response = prompt_awan_llm(predicted_tags)
+        logger.info(f"awan llm response: {awan_llm_response}")
+
+        if html_doc.status_code != 200:
+            logger.error("error fetching url")
+            return jsonify(helper.response_template({
+                "message": "Error fetching url",
+                "status_code": 500,
+                "data": None
+            })), 500
+    except Exception as e: 
+        logger.error(f"{e}")
+        return helper.response_template({
+            "message": "Error extracting text from url",
+            "status_code": 500,
+            "data": None
+        }), 500
+    
+    return helper.response_template({
+        "message": "Url fetched successfully",
+        "status_code": 200,
+        "data": {
+            "url": url,
+            "predicted_tags": predicted_tags,
+            "important_terms": awan_llm_response
+        }
+    }), 200
+
+    
 def extract_text_from_pdf(pdf_file_path):
     try: 
         logger.info("offloading pdf reading to llmsherpa api")
@@ -109,10 +157,10 @@ def predict_with_flair(sentences):
     tagger = Classifier.load("ner") # load flair NER model 
 
     logger.info("predicting NER tags")
-    for sentence in sentences: 
-        sentence = helper.clean_text(sentence)
+    if type(sentences) == str:
+        sentence = helper.clean_text(sentences)
         logger.info("split sentence into segments")
-        splitted_sentence = [Sentence(sent) for sent in split_single(sentence)]
+        splitted_sentence = [Sentence(sent) for sent in split_single(sentence) if sent != ""]
         logger.info("text splitted successfully")
         tagger.predict(splitted_sentence) # predict NER tags
 
@@ -130,10 +178,32 @@ def predict_with_flair(sentences):
                 tagged_sentence.update({"tag": entity.tag})
                 tagged_sentence.update({"score": entity.score})
                 tagged_sentences.append(tagged_sentence)
+    else: 
+        for sentence in sentences: # if it's a list than iterate over the list
+            sentence = helper.clean_text(sentence)
+            logger.info("split sentence into segments")
+            splitted_sentence = [Sentence(sent) for sent in split_single(sentence)]
+            logger.info("text splitted successfully")
+            tagger.predict(splitted_sentence) # predict NER tags
+
+            for sent in splitted_sentence:
+                logger.info("extracting NER tags")
+                for entity in sent.get_spans("ner"): 
+                    logger.info(f"entity-text {entity.text}")
+                    logger.info(f"entity-tag {entity.tag}")
+                    logger.info(f"entity-score {entity.score}")
+                    logger.info(f"entity-labels {entity.labels}")
+                    logger.info(f"entity-unlabeled_identifier {entity.unlabeled_identifier}")
+
+                    tagged_sentence = {}
+                    tagged_sentence.update({"text": entity.text})
+                    tagged_sentence.update({"tag": entity.tag})
+                    tagged_sentence.update({"score": entity.score})
+                    tagged_sentences.append(tagged_sentence)
 
     return tagged_sentences
 
-def prompt_awan_llm(tagged_sentences, domain = "web protocol", scope = "http"):
+def prompt_awan_llm(tagged_sentences, domain = "web scraping", scope = "web scraping using Python"):
     url = "https://api.awanllm.com/v1/chat/completions"
 
     payload = json.dumps({
