@@ -1,0 +1,11 @@
+meta {
+  name: Delete Conversation History by Session ID
+  type: http
+  seq: 5
+}
+
+delete {
+  url: {{dev_url}}/conversation/:conversation_id
+  body: json
+  auth: none
+}

@@ -1,0 +1,24 @@
+meta {
+  name: Save Competency Qeustions
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{dev_url}}/conversation/competency_questions/:convo_id
+  body: json
+  auth: none
+}
+
+body:json {
+  {  
+    "competency_question": [
+       "1. What is the efficiency of solar panel technology in generating renewable energy?",
+       "2. How does the cost of solar panel technology compare to other renewable energy sources?",
+       "3. What is the environmental impact of using solar panel technology?",
+       "4. What are the barriers to the adoption of solar panel technology?",
+       "5. How can the integration of solar panel technology be improved within the renewable energy domain?"
+    ]
+  // "competency_question": "1. What is the efficiency of solar panel technology in generating renewable energy?"
+  }
+}

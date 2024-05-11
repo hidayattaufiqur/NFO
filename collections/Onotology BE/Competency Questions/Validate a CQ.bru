@@ -1,0 +1,11 @@
+meta {
+  name: Validate a CQ
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{dev_url}}/conversation/competency_questions/validate/:cq_id
+  body: none
+  auth: none
+}

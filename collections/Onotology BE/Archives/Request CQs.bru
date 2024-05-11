@@ -1,0 +1,19 @@
+meta {
+  name: Request CQs
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{dev_url}}/chat/
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+      "prompt": "My name is Dayat. Generate 5 competency questions focused on the integration and impact of solar panel technology within the renewable energy domain. Consider aspects such as efficiency, cost, environmental impact, and adoption barriers."
+  }
+  
+  
+}

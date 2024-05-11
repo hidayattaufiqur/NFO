@@ -1,0 +1,11 @@
+meta {
+  name: Get user-s conversations
+  type: http
+  seq: 4
+}
+
+get {
+  url: {{dev_url}}/conversation/all/:user_id
+  body: none
+  auth: none
+}

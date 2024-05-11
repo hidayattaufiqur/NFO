@@ -1,0 +1,26 @@
+meta {
+  name: Create a new prompt per conversation id
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{dev_url}}/conversation/:conversation_id
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+              "prompt": "please replace 'How does solar panel technology integrate with other renewable energy systems?' with 'How does the integration of solar panel technology impact the overall efficiency of renewable energy systems?'"
+      // "prompt": "Generate 9 competency questions focused on the integration and impact of solar panel technology within the renewable energy domain. Consider aspects such as efficiency, cost, environmental impact, and adoption barriers."
+          // "prompt": "please replace 'What are the barriers to the adoption of solar panel technology?' with 'Howdy boyyyy'"
+      // "prompt": "Generate 6 competency questions that examine the role of virtual and augmented reality technologies in various industries, such as healthcare, education, and entertainment, and their potential to revolutionize training, simulation, and user experiences."
+      // "prompt": "please revise competency question 5 with How does porn affect your brain development?"
+      // "prompt": "Create 5 insightful competency questions that investigate the intersection of neuroscience and education, focusing on how an understanding of brain development and cognitive processes can inform effective teaching and learning strategies."
+      // "prompt": "tolong ganti 'How does brain development impact learning in children?' menjadi 'What is the efficiency of learning in children's brain development?'"
+      // "prompt": "apa saja CQ yang ada sekarang dalam bahasa Indonesia?"
+  }
+  
+  
+}

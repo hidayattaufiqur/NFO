@@ -1,0 +1,17 @@
+meta {
+  name: Upload url
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{dev_url}}/terms_extractor/url
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+      "url": "https://revou.co/panduan-teknis/web-scraping-python"
+  }
+}
