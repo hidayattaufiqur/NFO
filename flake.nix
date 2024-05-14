@@ -26,6 +26,7 @@
             python311
             poetry
             cowsay
+            python311Packages.virtualenv
           ]; 
 
           LD_LIBRARY_PATH = lib.makeLibraryPath [
@@ -39,6 +40,8 @@
 
           shellHook = with pkgs; ''
             cowsay "`${python311}/bin/python3 --version` environment activated"
+
+            python -m venv ./.venv
 
             . ./.venv/bin/activate
             echo
