@@ -135,6 +135,8 @@ def get_important_terms_from_url():
         logger.info("fetching url")
         html_doc = requests.get(url) 
 
+        logger.info(html_doc)
+
         if html_doc.status_code != 200:
             logger.error("error fetching url")
             return jsonify(helper.response_template({
