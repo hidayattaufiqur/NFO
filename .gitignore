@@ -6,6 +6,7 @@ __pycache__
 _build
 app/static
 client_secrets.json
+client_secrets_bak.json
 credentials.json
 logfile
 TODO.md

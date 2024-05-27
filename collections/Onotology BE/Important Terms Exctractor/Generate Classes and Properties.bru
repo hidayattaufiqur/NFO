@@ -1,0 +1,25 @@
+meta {
+  name: Generate Classes and Properties
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{dev_url}}/terms_extractor/generate
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "domain": "Ransomware",
+    "scope": "Ransomware detection on Bitcoin",
+    "important_terms_id": "1f7d5b8c-3d07-4389-9c1c-4bda2850ada4" 
+  }
+}
+
+body:multipart-form {
+  domain: Ransomware
+  scope: Ransomware detection on Bitcoin
+  important_terms_id: 1f7d5b8c-3d07-4389-9c1c-4bda2850ada4
+}

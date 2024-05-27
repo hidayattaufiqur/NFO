@@ -1,21 +1,28 @@
-from flask import Blueprint, jsonify, request 
+from flask import Blueprint, jsonify, request, session
 from werkzeug.utils import secure_filename
 from llmsherpa.readers import LayoutPDFReader
 from flair.nn import Classifier 
 from flair.data import Sentence
 from segtok.segmenter import split_single
 from bs4 import BeautifulSoup
+from langchain_openai import ChatOpenAI
+from langchain_core.prompts import PromptTemplate
+from langchain.chains import  LLMChain
 
+from . import database as db
 from . import helper
 
 import logging 
 import os
 import json
 import requests
+import uuid
 
 logger = logging.getLogger(__name__)
 
 bp = Blueprint('terms_extractor', __name__, url_prefix='/terms_extractor')
+
+llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
 @bp.route('/pdf', methods=['POST'])
 def get_important_terms_from_pdf():
@@ -30,15 +37,25 @@ def get_important_terms_from_pdf():
                 "status_code": 400,
                 "data": None
             })), 400
-
-        file = request.files['file']
+        
         data = request.form
-        domain = data["domain"]
-        scope = data["scope"]
+
+        user_id = session.get('user_id')
+        conversation_id = data["conversation_id"]
+
+        db_response = db.get_conversation_detail_by_id(conversation_id)
+
+        if db_response is None: 
+            domain = data["domain"]
+            scope = data["scope"]
+        else: 
+            domain = db_response["domain"]
+            scope = db_response["scope"]
 
         logger.info(f"domain: {domain}")
         logger.info(f"scope: {scope}")
 
+        file = request.files['file']
         if file.filename == '':
             logger.error("no file selected")
             return jsonify(helper.response_template({
@@ -68,10 +85,15 @@ def get_important_terms_from_pdf():
         awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
         logger.info(f"awan llm response: {awan_llm_response}")
 
+        important_terms_id = uuid.uuid4()
+
+        logger.info("saving important terms to database")
+        db.create_important_terms(important_terms_id, user_id, conversation_id, awan_llm_response["choices"][0]["message"]["content"])
+
     except Exception as e: 
         logger.error(f"{e}")
         return helper.response_template({
-            "message": "Error extracting text from pdf",
+            "message": f"Error extracting text from pdf with error: {e}",
             "status_code": 500,
             "data": None
         }), 500
@@ -85,7 +107,7 @@ def get_important_terms_from_pdf():
         "status_code": 200,
         "data": {
             "filename": filename,
-            "extracted_text": extracted_text, 
+            # "extracted_text": extracted_text, 
             "predicted_tags": predicted_tags,
             "important_terms": awan_llm_response
         }
@@ -96,12 +118,30 @@ def get_important_terms_from_url():
     try:
         logger.info("extracting url from request body")
         data = request.json
+
+        user_id = session.get('user_id')
+        conversation_id = data["conversation_id"]
         url = data["url"]
-        domain = data["domain"]
-        scope = data["scope"]
+
+        db_response = db.get_conversation_detail_by_id(conversation_id)
+
+        if db_response is None: 
+            domain = data["domain"]
+            scope = data["scope"]
+        else: 
+            domain = db_response["domain"]
+            scope = db_response["scope"]
 
         logger.info("fetching url")
         html_doc = requests.get(url) 
+
+        if html_doc.status_code != 200:
+            logger.error("error fetching url")
+            return jsonify(helper.response_template({
+                "message": "Error fetching url",
+                "status_code": 500,
+                "data": None
+            })), 500
 
         logger.info("extracting text from url")
         soup = BeautifulSoup(html_doc.text, 'html.parser')
@@ -114,13 +154,11 @@ def get_important_terms_from_url():
         awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
         logger.info(f"awan llm response: {awan_llm_response}")
 
-        if html_doc.status_code != 200:
-            logger.error("error fetching url")
-            return jsonify(helper.response_template({
-                "message": "Error fetching url",
-                "status_code": 500,
-                "data": None
-            })), 500
+        important_terms_id = uuid.uuid4()
+
+        logger.info("saving important terms to database")
+        db.create_important_terms(important_terms_id, user_id, conversation_id, awan_llm_response["choices"][0]["message"]["content"])
+
     except Exception as e: 
         logger.error(f"{e}")
         return helper.response_template({
@@ -139,7 +177,50 @@ def get_important_terms_from_url():
         }
     }), 200
 
-    
+@bp.route('/generate', methods=['POST'])
+async def generate_classes_and_properties():
+    prompt = ""
+    try:
+        data = request.json
+        terms_id = data["important_terms_id"]
+        domain = data["domain"]
+        scope = data["scope"]
+        
+        db_response = db.get_important_terms_by_id(terms_id)
+        if db_response is None: 
+            return helper.response_template({
+                "message": "There is no important terms with such ID",
+                "status_code": 404, 
+                "data": None
+            }), 404
+
+        prompt = {
+            "domain": domain,
+            "scope": scope,
+            "important_terms": db_response["terms"] 
+        }
+
+        logger.info(f"Prompt: {prompt}")
+
+        x = LLMChain(
+            llm=llm,
+            prompt=PromptTemplate(
+                input_variables=["domain", "scope", "important_terms"],
+                template=helper.CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
+                template_format="jinja2"
+            ),
+            verbose=True
+        )
+
+        logger.info(f"Invoking prompt to OpenAI")
+        response = await x.ainvoke(prompt)
+        response_json = json.loads(response["text"])
+        
+    except Exception as e:
+        return jsonify(helper.chat_agent_response_template({"message": f"Error: {e}", "status_code": 500, "prompt": prompt, "output": None})), 500
+
+    return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
+
 def extract_text_from_pdf(pdf_file_path):
     try: 
         logger.info("offloading pdf reading to llmsherpa api")

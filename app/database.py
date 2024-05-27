@@ -70,6 +70,20 @@ def init_db():
                 );
             ''')
 
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS important_terms (
+                    id SERIAL PRIMARY KEY,
+                    important_terms_id UUID NOT NULL UNIQUE,
+                    user_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
+                    conversation_id UUID REFERENCES conversations(conversation_id) ON DELETE SET NULL,
+                    terms VARCHAR(1000) NOT NULL,
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    validated_at TIMESTAMP,
+                    deleted_at TIMESTAMP
+                );
+            ''')
+
             logger.info(f"database initialized")
             conn.commit()
     finally:
@@ -269,6 +283,54 @@ def validating_competency_question(cq_id, is_valid):
             cq = cur.fetchone()
             conn.commit()
             return cq
+    except Exception as e: 
+        logger.error(f"{e}")
+        return None
+    finally:
+        close_connection(conn)
+
+"""important terms"""
+def create_important_terms(important_terms_id, user_id, convo_id, terms):
+    conn = get_pool_connection()
+    try:
+        logger.info("creating important terms")
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO important_terms (important_terms_id, user_id, conversation_id, terms)
+                VALUES (%s, %s, %s, %s)
+                RETURNING *;
+            ''', (important_terms_id, user_id, convo_id, terms))
+            terms = cur.fetchone()
+            conn.commit()
+            return terms 
+    except Exception as e: 
+        logger.error(f"{e}")
+        return None
+    finally:
+        close_connection(conn)
+
+def get_important_terms_by_id(important_terms_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("fetching important terms by id")
+        with conn.cursor() as cur:
+            cur.execute('SELECT * FROM important_terms WHERE important_terms_id = %s AND deleted_at IS NULL', (important_terms_id,))
+            terms = cur.fetchone()
+            return terms
+    except Exception as e: 
+        logger.error(f"{e}")
+        return None
+    finally:
+        close_connection(conn)
+
+def get_important_terms_by_conversation_id(convo_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("fetching important terms by id")
+        with conn.cursor() as cur:
+            cur.execute('SELECT * FROM important_terms WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
+            terms = cur.fetchone()
+            return terms
     except Exception as e: 
         logger.error(f"{e}")
         return None

@@ -32,7 +32,7 @@ def create_flow():
     logger.info("initializing flow")
     flow = Flow.from_client_secrets_file(
         'client_secrets.json',
-        scopes=['user', 'profile','openid'],
+        scopes=['https://www.googleapis.com/auth/userinfo.profile','openid'],
         redirect_uri=url_for('auth.callback', _external=True)
     )
     return flow
