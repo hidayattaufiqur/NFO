@@ -3,9 +3,11 @@
 
   inputs = { 
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
+    poetry2nix.url = "github:nix-community/poetry2nix";
+    poetry2nix.inputs.nixpkgs.follows = "nixpkgs";
   };
 
-  outputs = { self, nixpkgs }:
+  outputs = { self, nixpkgs, poetry2nix }:
     let
       lib = nixpkgs.lib;
       # supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
@@ -13,8 +15,16 @@
       forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
         pkgs = import nixpkgs { inherit system; };
       });
+      pkgs = nixpkgs.legacyPackages.${supportedSystems};
+      inherit (poetry2nix.lib.mkPoetry2Nix { inherit pkgs; }) mkPoetryApplication;
+      myPythonApp = mkPoetryApplication { projectDir = ./.; };
     in
     {
+      apps."x86_64-linux" .default = {
+        type = "app";
+        # replace <script> with the name in the [tool.poetry.scripts] section of your pyproject.toml
+        program = "${myPythonApp}/bin/main";
+      };
       devShells = forEachSupportedSystem ({ pkgs }: {
         default = pkgs.mkShell {
           # environment = {
@@ -50,6 +60,8 @@
             unset SOURCE_DATE_EPOCH
           '';
         };
+
+
       });
     };
 }
