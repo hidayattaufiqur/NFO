@@ -11,20 +11,23 @@
     let
       lib = nixpkgs.lib;
       # supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
+      system = "x86_64-linux";
+      pkgs = nixpkgs.legacyPackages.${system};
+      inherit (poetry2nix.lib.mkPoetry2Nix { inherit pkgs; }) mkPoetryApplication;
+      myPythonApp = mkPoetryApplication { projectDir = ./.; };
+
       supportedSystems = [ "x86_64-linux" ];
       forEachSupportedSystem = f: nixpkgs.lib.genAttrs supportedSystems (system: f {
         pkgs = import nixpkgs { inherit system; };
       });
-      pkgs = nixpkgs.legacyPackages.${supportedSystems};
-      inherit (poetry2nix.lib.mkPoetry2Nix { inherit pkgs; }) mkPoetryApplication;
-      myPythonApp = mkPoetryApplication { projectDir = ./.; };
     in
     {
-      apps."x86_64-linux" .default = {
+      apps.${system}.default = {
         type = "app";
         # replace <script> with the name in the [tool.poetry.scripts] section of your pyproject.toml
         program = "${myPythonApp}/bin/main";
       };
+
       devShells = forEachSupportedSystem ({ pkgs }: {
         default = pkgs.mkShell {
           # environment = {
@@ -60,8 +63,6 @@
             unset SOURCE_DATE_EPOCH
           '';
         };
-
-
       });
     };
 }

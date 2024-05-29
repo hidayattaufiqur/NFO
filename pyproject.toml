@@ -1,12 +1,12 @@
 [tool.poetry]
-name = "ontology-be"
+name = "app"
 version = "0.1.0"
 description = "the backend for Nusantara Food Ontology project"
 authors = ["Hidayat Taufiqur <hidayattaufiqur@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.scripts]
-main = "app.__main__:create_app()"
+main = "app:create_app()"
 
 [tool.poetry.dependencies]
 python = ">=3.11,<3.13"
@@ -28,8 +28,13 @@ llmsherpa = "^0.1.4"
 flair = "^0.13.1"
 scipy = "1.11"
 beautifulsoup4 = "^4.12.3"
+gunicorn = "^22.0.0"
 
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+packages = [
+    { include = "app" },
+]
