@@ -4,7 +4,6 @@ from llmsherpa.readers import LayoutPDFReader
 from flair.nn import Classifier 
 from flair.data import Sentence
 from segtok.segmenter import split_single
-from bs4 import BeautifulSoup
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import  LLMChain
@@ -107,7 +106,6 @@ def get_important_terms_from_pdf():
         "status_code": 200,
         "data": {
             "filename": filename,
-            # "extracted_text": extracted_text, 
             "predicted_tags": predicted_tags,
             "important_terms": awan_llm_response
         }
@@ -132,22 +130,9 @@ def get_important_terms_from_url():
             domain = db_response["domain"]
             scope = db_response["scope"]
 
-        logger.info("fetching url")
-        html_doc = requests.get(url) 
-
-        logger.info(html_doc)
-
-        if html_doc.status_code != 200:
-            logger.error("error fetching url")
-            return jsonify(helper.response_template({
-                "message": "Error fetching url",
-                "status_code": 500,
-                "data": None
-            })), 500
-
-        logger.info("extracting text from url")
-        soup = BeautifulSoup(html_doc.text, 'html.parser')
-        extracted_text = soup.get_text()
+        logger.info(f"extracting texts from {url}")
+        response = requests.get("https://r.jina.ai/" + url)
+        extracted_text = response.text
 
         logger.info("predicting tags with flair NER model")
         predicted_tags = predict_with_flair(extracted_text)
@@ -297,6 +282,7 @@ def predict_with_flair(sentences):
 
     return tagged_sentences
 
+# TODO: make the domain and scope dynamic
 def prompt_awan_llm(tagged_sentences, domain = "web scraping", scope = "web scraping using Python"):
     url = "https://api.awanllm.com/v1/chat/completions"
 
