@@ -3,8 +3,9 @@ import requests
 import os
 import logging
 import uuid
+import re
 
-from flask import jsonify, redirect, url_for, session, request, Blueprint
+from flask import jsonify, redirect, url_for, new_authorization_responsesession, request, Blueprint
 # from flask_login import LoginManager, current_user
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
@@ -21,7 +22,7 @@ bp = Blueprint('auth', __name__)
 
 # login_manager = LoginManager(app) 
 
-os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # !!! Only for testing, remove for production !!!
+# os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # !!! Only for testing, remove for production !!!
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", default=False)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", default=False)
 GOOGLE_DISCOVERY_URL = (
@@ -31,8 +32,12 @@ GOOGLE_DISCOVERY_URL = (
 def create_flow():
     logger.info("initializing flow")
     flow = Flow.from_client_secrets_file(
-        'client_secrets.json',
-        scopes=['https://www.googleapis.com/auth/userinfo.profile','openid'],
+        'client_secret.json',
+        scopes=[
+            'https://www.googleapis.com/auth/userinfo.profile',
+            'openid',
+            'https://www.googleapis.com/auth/userinfo.email'
+            ],
         redirect_uri=url_for('auth.callback', _external=True)
     )
     return flow
@@ -50,7 +55,15 @@ def callback():
     try: 
         user_id = uuid.uuid4()
         flow = create_flow()
-        flow.fetch_token(authorization_response=request.url)
+
+        # hacky way to replace http to https on redirect
+        authorization_response = request.url
+        new_authorization_response = re.sub(
+            "http:",
+            "https:",
+            authorization_response
+        )
+        flow.fetch_token(authorization_response=new_authorization_response)
 
         if not session['state'] == request.args['state']: abort(500)  
 
@@ -58,7 +71,7 @@ def callback():
         request_session = requests.session()
         token_request = Request(session=request_session)
         id_info = google.oauth2.id_token.verify_oauth2_token(
-            credentials.id_token, token_request, GOOGLE_CLIENT_ID
+            credentials.id_token, token_request, GOOGLE_CLIENT_ID, clock_skew_in_seconds=8
         )
 
         res = db.create_user(user_id, id_info['name'], id_info['email'], id_info['picture'])
@@ -68,8 +81,8 @@ def callback():
         return jsonify(helper.response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
     
     except Exception as e:
-        logger.error(f"{e}")
-        return jsonify(helper.response_template({"message": f"{e}", "status_code": 500, "data": None}))
+        logger.error(f"an error occurred at route {request.path} {e}")
+        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} {e}", "status_code": 500, "data": None}))
 
     
 @bp.route('/profile')
