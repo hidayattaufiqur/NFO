@@ -82,7 +82,7 @@ def callback():
     
     except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
-        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} {e}", "status_code": 500, "data": None}))
+        return jsonify(helper.response_template({"message": f"an error occurred at rout {request.path} with error: {e}", "status_code": 500, "data": None}))
 
     
 @bp.route('/profile')
@@ -100,5 +100,5 @@ def profile():
         return jsonify(helper.response_template(({"message": "user profile", "status_code": 200, "data": {"user_id": user_id}})))
 
     except Exception as e: 
-        logger.error(f"{e}")
-        return jsonify(helper.response_template({"message": "error in retrieving user id", "status_code": 500, "data": None}))
+        logger.error(f"an error occurred at route {request.path} {e}")
+        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))

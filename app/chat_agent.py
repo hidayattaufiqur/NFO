@@ -76,7 +76,8 @@ async def conversation(conversation_id=None):
         db.close_connection(db_conn)
 
     except Exception as e:
-        return jsonify(helper.chat_agent_response_template({"message": f"Error: {e}", "status_code": 500, "prompt": data["prompt"], "output": None})), 500
+        logger.info(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(helper.chat_agent_response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": data["prompt"], "output": None})), 500
 
     return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": data["prompt"], "output": response_json})) 
 
@@ -86,7 +87,8 @@ def get_detail_conversation(conversation_id):
         db_response = db.get_conversation_detail_by_id(conversation_id)
 
     except Exception as e:
-        return jsonify(helper.response_template({"message": f"Error: {e}", "status_code": 500, "data": None})), 500
+        logger.info(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
     return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response}))
 
@@ -96,7 +98,8 @@ def get_all_conversations_by_user_id(user_id):
         db_response = db.get_all_conversations_from_a_user(user_id)
 
     except Exception as e:
-        return jsonify(helper.response_template({"message": f"Error: {e}", "status_code": 500, "data": None})), 500
+        logger.info(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
     return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response}))
 
@@ -117,7 +120,8 @@ def delete_conversation(conversation_id):
         db.delete_conversation(conversation_id)
 
     except Exception as e:
-        return jsonify(helper.response_template({"message": f"Error: {e}", "status_code": 500})), 500
+        logger.info(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
 
     return jsonify(helper.response_template({"message": "Deleting Has Been Successful", "status_code": 200, "data": None}))
 
@@ -135,7 +139,8 @@ def save_competency_questions(conversation_id):
         else: db.create_competency_question(cq_id, user_id, conversation_id, data["competency_question"])
 
     except Exception as e:
-        return jsonify(helper.response_template({"message": f"Error: {e}", "status_code": 500})), 500
+        logger.info(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
 
     return jsonify(helper.response_template({"message": "Saving Competency Question Has Been Successful", "status_code": 200, "data": None}))
 
@@ -145,7 +150,8 @@ def get_competency_questions(conversation_id):
         db_response = db.get_all_competency_questions_by_convo_id(conversation_id)
 
     except Exception as e:
-        return jsonify(helper.response_template({"message": f"Error: {e}", "status_code": 500, "data": None})), 500
+        logger.info(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
     return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response}))
 
@@ -155,6 +161,7 @@ def validating_competency_questions(cq_id):
        db.validating_competency_question(cq_id, True)
 
     except Exception as e:
-        return jsonify(helper.response_template({"message": f"Error: {e}", "status_code": 500})), 500
+        logger.info(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
 
     return jsonify(helper.response_template({"message": "Updating Competency Question Has Been Successful", "status_code": 200, "data": None}))

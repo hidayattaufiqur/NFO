@@ -90,9 +90,9 @@ def get_important_terms_from_pdf():
         db.create_important_terms(important_terms_id, user_id, conversation_id, awan_llm_response["choices"][0]["message"]["content"])
 
     except Exception as e: 
-        logger.error(f"{e}")
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
         return helper.response_template({
-            "message": f"Error extracting text from pdf with error: {e}",
+            "message": f"an error occurred at route {request.path} with error: {e}",
             "status_code": 500,
             "data": None
         }), 500
@@ -147,9 +147,9 @@ def get_important_terms_from_url():
         db.create_important_terms(important_terms_id, user_id, conversation_id, awan_llm_response["choices"][0]["message"]["content"])
 
     except Exception as e: 
-        logger.error(f"{e}")
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
         return helper.response_template({
-            "message": "Error extracting text from url",
+            "message": f"an error occurred at route {request.path} with error: {e}",
             "status_code": 500,
             "data": None
         }), 500
@@ -204,7 +204,8 @@ async def generate_classes_and_properties():
         response_json = json.loads(response["text"])
         
     except Exception as e:
-        return jsonify(helper.chat_agent_response_template({"message": f"Error: {e}", "status_code": 500, "prompt": prompt, "output": None})), 500
+        logger.info(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(helper.chat_agent_response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": prompt, "output": None})), 500
 
     return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
 
