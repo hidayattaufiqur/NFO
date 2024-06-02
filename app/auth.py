@@ -5,7 +5,7 @@ import logging
 import uuid
 import re
 
-from flask import jsonify, redirect, url_for, new_authorization_responsesession, request, Blueprint
+from flask import jsonify, redirect, url_for, session, request, Blueprint
 # from flask_login import LoginManager, current_user
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
