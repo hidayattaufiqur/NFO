@@ -8,7 +8,8 @@ configurations below follow Google Cloud documentation
 [https://cloud.google.com/appengine/docs/flexible/python/runtime#recommended_gunicorn_configuration]
 '''
 
-workers = multiprocessing.cpu_count() * 2 + 1
+# workers = multiprocessing.cpu_count() * 2 + 1
+worker = 1
 forwarded_allow_ips = '*'
 secure_scheme_headers = {'X-FORWARDED-PROTO': 'https'}
 
