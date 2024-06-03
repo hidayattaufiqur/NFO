@@ -33,8 +33,9 @@ jobs:
         env:
           GCE_HOST: ${{ secrets.GCE_HOST }}
           GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
+          PUBLIC_PEM: ${{ secrets.PUBLIC_PEM }}
         run: |
-          ssh -o StrictHostKeyChecking=no $GCE_USERNAME@$GCE_HOST "sudo systemctl restart ontology-be"
+          ssh -o StrictHostKeyChecking=no -i $PUBLIC_PEM $GCE_USERNAME@$GCE_HOST "sudo systemctl restart ontology-be"
 
       - name: Clean up SSH key 🚀
         if: always()
