@@ -3,40 +3,49 @@ name: Deploy to GCE 🚀
 on:
   push:
     branches:
-      - "main" 
+      - "main"
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout current branch ✅
-        uses: actions/checkout@v4
+    - name: Checkout current branch ✔
+      uses: actions/checkout@v4
 
-      - name: Set up SSH key and whitelist GCE IP address ❄️
-        env:
-          GCE_SSH_KEY: ${{ secrets.GCE_SSH_KEY }}
-          GCE_HOST: ${{ secrets.GCE_HOST }}
-        run: |
-          mkdir -p ~/.ssh
-          echo "${GCE_SSH_KEY}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
-          ssh-keyscan ${GCE_HOST} >> ~/.ssh/known_hosts
+    - name: Set up SSH key and whitelist GCE IP address ❄️
+      env:
+        GCE_SSH_KEY: ${{ secrets.GCE_SSH_KEY }}
+        GCE_HOST: ${{ secrets.GCE_HOST }}
+      run: |
+        mkdir -p ~/.ssh
+        echo "${GCE_SSH_KEY}" | tr -d '\r' | ssh-add -
+        ssh-keyscan ${GCE_HOST} >> ~/.ssh/known_hosts
 
-      - name: Copy files to remote server 🚙
-        env:
-          GCE_HOST: ${{ secrets.GCE_HOST }}
-          GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
-        run: |
-          scp -r * $GCE_USERNAME@$GCE_HOST:Fun/Projects/ontology-BE
+    - name: Create .env file dynamically 🖋
+      env:
+        ENV: ${{ secrets.ENV }}
+        GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      run: |
+        echo "ENV=${ENV}" >> .env
+        echo "GCE_USERNAME=${GCE_USERNAME}" >> .env
+        echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> .env
 
-      - name: Restart Systemd Unit 🚀
-        env:
-          GCE_HOST: ${{ secrets.GCE_HOST }}
-          GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
-          PUBLIC_PEM: ${{ secrets.PUBLIC_PEM }}
-        run: |
-          ssh -o StrictHostKeyChecking=no -i $PUBLIC_PEM $GCE_USERNAME@$GCE_HOST "sudo systemctl restart ontology-be"
+    - name: Copy files to remote server 🚛
+      env:
+        GCE_HOST: ${{ secrets.GCE_HOST }}
+        GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
+      run: |
+        scp -r * ${GCE_USERNAME}@${GCE_HOST}:/home/${GCE_USERNAME}/Fun/Projects/ontology-BE
 
-      - name: Clean up SSH key 🚀
-        if: always()
-        run: rm -f ~/.ssh/id_rsa
+    - name: Restart Systemd Unit 🚀
+      env:
+        GCE_HOST: ${{ secrets.GCE_HOST }}
+        GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
+      run: |
+        ssh -o StrictHostKeyChecking=no ${GCE_USERNAME}@${GCE_HOST} "sudo systemctl restart ontology-be"
+
+    - name: Clean up SSH key ✔
+      if: always()
+      run: |
+        ssh-add -D
