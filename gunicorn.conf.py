@@ -26,4 +26,3 @@ loglevel = 'info'
 
 # Daemonize the Gunicorn process (run in the background)
 # daemon = True
-

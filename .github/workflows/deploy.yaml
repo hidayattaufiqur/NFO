@@ -12,13 +12,7 @@ jobs:
     - name: Checkout current branch ✔
       uses: actions/checkout@v4
 
-    - name: Debug Environment Vars
-      run: |
-        echo "GCE_HOST: ${{ secrets.GCE_HOST }}"
-        echo "GCE_USERNAME: ${{ secrets.GCE_USERNAME }}"
-        echo "GCE_SSH_KEY: ${{ secrets.GCE_SSH_KEY }}" | tr -d '\r' | head -c 10
-
-    - name: Set up SSH key and whitelist GCE IP address ❄️
+    - name: Set up SSH key ❄️
       env:
         GCE_SSH_KEY: ${{ secrets.GCE_SSH_KEY }}
         GCE_HOST: ${{ secrets.GCE_HOST }}
@@ -32,21 +26,21 @@ jobs:
       env:
         ENV: ${{ secrets.ENV }}
       run: |
-        echo "ENV=${ENV}" >> .env
+        echo "ENV=${ENV}" >> env
 
     - name: Copy files to remote server 🚛
       env:
         GCE_HOST: ${{ secrets.GCE_HOST }}
         GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
       run: |
-        scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r * ${GCE_USERNAME}@${GCE_HOST}:/home/${GCE_USERNAME}/Fun/Projects/ontology-BE
+        scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r env deploy.sh ${GCE_USERNAME}@${GCE_HOST}:/home/${GCE_USERNAME}/Fun/Projects/ontology-BE
 
     - name: Restart Systemd Unit 🚀
       env:
         GCE_HOST: ${{ secrets.GCE_HOST }}
         GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
       run: |
-        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${GCE_USERNAME}@${GCE_HOST} "sudo systemctl restart ontology-be"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${GCE_USERNAME}@${GCE_HOST} "chmod +x /home/${GCE_USERNAME}/Fun/Projects/ontology-BE/deploy.sh && /home/${GCE_USERNAME}/Fun/Projects/ontology-BE/deploy.sh"
 
     - name: Clean up SSH key ✔
       if: always()
