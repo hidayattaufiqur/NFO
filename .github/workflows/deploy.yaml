@@ -18,25 +18,22 @@ jobs:
         GCE_HOST: ${{ secrets.GCE_HOST }}
       run: |
         mkdir -p ~/.ssh
-        echo "${GCE_SSH_KEY}" | tr -d '\r' | ssh-add -
+        echo "${GCE_SSH_KEY}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
         ssh-keyscan ${GCE_HOST} >> ~/.ssh/known_hosts
 
     - name: Create .env file dynamically 🖋
       env:
         ENV: ${{ secrets.ENV }}
-        GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
-        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: |
         echo "ENV=${ENV}" >> .env
-        echo "GCE_USERNAME=${GCE_USERNAME}" >> .env
-        echo "OPENAI_API_KEY=${OPENAI_API_KEY}" >> .env
 
     - name: Copy files to remote server 🚛
       env:
         GCE_HOST: ${{ secrets.GCE_HOST }}
         GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
       run: |
-        scp -r * ${GCE_USERNAME}@${GCE_HOST}:/home/${GCE_USERNAME}/Fun/Projects/ontology-BE
+        scp -r * ${GCE_USERNAME}@${GCE_HOST}:/home/${GCE_USERNAME}/Projects/ontology-BE
 
     - name: Restart Systemd Unit 🚀
       env:
@@ -47,5 +44,4 @@ jobs:
 
     - name: Clean up SSH key ✔
       if: always()
-      run: |
-        ssh-add -D
+      run: rm -f ~/.ssh/id_rsa
