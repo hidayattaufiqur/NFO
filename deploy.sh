@@ -5,6 +5,9 @@ cd Fun/Projects/ontology-BE
 echo "pulling from repo..."
 git pull 
 
+echo "injecting .env..."
+mv env .env
+
 echo "init/installing deps using poetry..."
 nix develop --command bash -c "poetry install"
 
