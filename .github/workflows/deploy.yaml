@@ -33,14 +33,14 @@ jobs:
         GCE_HOST: ${{ secrets.GCE_HOST }}
         GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
       run: |
-        scp -r * ${GCE_USERNAME}@${GCE_HOST}:/home/${GCE_USERNAME}/Projects/ontology-BE
+        scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r * ${GCE_USERNAME}@${GCE_HOST}:/home/${GCE_USERNAME}/Projects/ontology-BE
 
     - name: Restart Systemd Unit 🚀
       env:
         GCE_HOST: ${{ secrets.GCE_HOST }}
         GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
       run: |
-        ssh -o StrictHostKeyChecking=no ${GCE_USERNAME}@${GCE_HOST} "sudo systemctl restart ontology-be"
+        ssh -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no ${GCE_USERNAME}@${GCE_HOST} "sudo systemctl restart ontology-be"
 
     - name: Clean up SSH key ✔
       if: always()
