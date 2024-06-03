@@ -33,7 +33,7 @@ jobs:
         GCE_HOST: ${{ secrets.GCE_HOST }}
         GCE_USERNAME: ${{ secrets.GCE_USERNAME }}
       run: |
-        scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r * ${GCE_USERNAME}@${GCE_HOST}:/home/${GCE_USERNAME}/Projects/ontology-BE
+        scp -i ~/.ssh/id_rsa -o StrictHostKeyChecking=no -r * ${GCE_USERNAME}@${GCE_HOST}:/home/${GCE_USERNAME}/Fun/Projects/ontology-BE
 
     - name: Restart Systemd Unit 🚀
       env:
