@@ -16,8 +16,6 @@ using flair or something else to get the important terms
 - [x] scope in step 3 is actually using domain within conversation 
 
 - [ ] user can go back to previous steps
-- [ ] delete user
-- [ ] 
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video

@@ -81,7 +81,6 @@ def init_db():
                     terms VARCHAR(1000) NOT NULL,
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP,
-                    validated_at TIMESTAMP,
                     deleted_at TIMESTAMP
                 );
             ''')
@@ -119,6 +118,7 @@ def close_pool():
     logger.info("closing db pool connection")
     pool.closeall()
 
+
 """users"""
 def create_user(user_id, name, email, profile_pic_url):
     conn = get_pool_connection()
@@ -144,7 +144,7 @@ def get_user_by_email(email):
     try:
         logger.info("fetching user by email")
         with conn.cursor() as cur:
-            cur.execute('SELECT * FROM users WHERE email = %s AND deleted_at IS NULL', (email,))
+            cur.execute('SELECT user_id, name, email, profile_pic_url, created_at FROM users WHERE email = %s AND deleted_at IS NULL', (email,))
             user = cur.fetchone()
             return user
     except Exception as e:
@@ -152,6 +152,7 @@ def get_user_by_email(email):
         return None
     finally:
         close_connection(conn)
+
 
 """conversations"""
 def create_conversation(conversation_id, user_id, domain, scope):
@@ -204,7 +205,7 @@ def get_all_conversations_from_a_user(user_id):
     try:
         logger.info("fetching conversations from a user")
         with conn.cursor() as cur:
-            cur.execute('SELECT * FROM conversations WHERE user_id = %s AND deleted_at IS NULL', (user_id,))
+            cur.execute('SELECT conversation_id, title, domain, scope, is_active, created_at FROM conversations WHERE user_id = %s AND deleted_at IS NULL', (user_id,))
             convos = cur.fetchall()
             return convos
     except Exception as e:
@@ -241,6 +242,7 @@ def delete_conversation(conversation_id):
             cur.execute('''
                 UPDATE conversations 
                 SET deleted_at = CURRENT_TIMESTAMP
+                SET is_active = FALSE
                 WHERE conversation_id = %s; 
             ''', (conversation_id,))
             conn.commit()
@@ -249,6 +251,7 @@ def delete_conversation(conversation_id):
         return None
     finally:
         close_connection(conn)
+
 
 """competency questions"""
 def create_competency_question(cq_id, user_id, convo_id, question):
@@ -274,7 +277,7 @@ def get_all_competency_questions_by_convo_id(convo_id):
     try:
         logger.info("fetching competency_questions from a conversation")
         with conn.cursor() as cur:
-            cur.execute('SELECT id, is_valid, question, user_id FROM competency_questions WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
+            cur.execute('SELECT cq_id, user_id, conversation_id, is_valid, question, created_at FROM competency_questions WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
             cqs = cur.fetchall()
             return cqs
     except Exception as e:
@@ -301,6 +304,7 @@ def validating_competency_question(cq_id, is_valid):
         return None
     finally:
         close_connection(conn)
+
 
 """important terms"""
 def create_important_terms(important_terms_id, user_id, convo_id, terms):
@@ -342,7 +346,7 @@ def get_important_terms_by_conversation_id(convo_id):
         logger.info("fetching important terms by conversation id")
         with conn.cursor() as cur:
             cur.execute('SELECT * FROM important_terms WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
-            terms = cur.fetchall()  # Fetch all important terms for the conversation
+            terms = cur.fetchall()
             return terms
     except Exception as e:
         logger.error(f"Error fetching important terms by conversation id: {e}")
