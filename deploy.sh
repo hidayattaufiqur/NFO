@@ -5,7 +5,7 @@ cd Fun/Projects/ontology-BE
 echo "pulling from repo..."
 git stash
 git pull
-git pop
+git stash pop
 
 echo "injecting .env..."
 mv env .env
