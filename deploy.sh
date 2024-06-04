@@ -3,7 +3,8 @@ echo "changing dir..."
 cd Fun/Projects/ontology-BE
 
 echo "pulling from repo..."
-git pull 
+git fetch origin main
+git reset --hard origin/main
 
 echo "injecting .env..."
 mv env .env
