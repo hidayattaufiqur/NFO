@@ -1,3 +1,4 @@
+import psycopg
 import psycopg2
 import psycopg2.pool
 import psycopg2.extras
@@ -104,7 +105,7 @@ def init_db():
 """db connections"""
 def get_connection():
     logger.info("establishing psycopg connection")
-    return psycopg2.connect(connection_string)
+    return psycopg.connect(connection_string) # psycopg is needed for PostgresChatMessageHistory.create_tables() on chat_agent.py
 
 def get_pool_connection():
     logger.info("establishing pool connection")

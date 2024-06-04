@@ -65,11 +65,12 @@ async def conversation(conversation_id=None):
         logger.info(f"invoking prompt to OpenAI")
         response = await x.ainvoke({"input": data["prompt"]})
         response_json = json.loads(response["text"])
+        logger.info(f"llm response: {response_json}")
         response_json.update({"conversation_id": conversation_id}) 
 
         # If the conversation is new, we need to update the domain and scope in the database 
         if db_response["domain"] != response_json["domain"] or db_response["scope"] != response_json["scope"]:
-            db.update_conversation(response_json["domain"], db_response["id"], response_json["domain"], response_json["scope"], True)
+            db.update_conversation(response_json["scope"], conversation_id, response_json["domain"], response_json["scope"], True)
 
         logger.info("successfully invoked OpenAI prompt and updated the conversation history")
 
