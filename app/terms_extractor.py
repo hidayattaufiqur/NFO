@@ -24,7 +24,7 @@ bp = Blueprint('terms_extractor', __name__, url_prefix='/terms_extractor')
 llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
 @bp.route('/pdf', methods=['POST'])
-def get_important_terms_from_pdf():
+async def get_important_terms_from_pdf():
     filename = ""
     filepath = ""
 
@@ -42,6 +42,7 @@ def get_important_terms_from_pdf():
         user_id = session.get('user_id')
         conversation_id = data["conversation_id"]
 
+        # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
         db_response = db.get_conversation_detail_by_id(conversation_id)
 
         if db_response is None: 
@@ -85,9 +86,32 @@ def get_important_terms_from_pdf():
         logger.info(f"awan llm response: {awan_llm_response}")
 
         important_terms_id = uuid.uuid4()
+        terms = awan_llm_response["choices"][0]["message"]["content"]
 
         logger.info("saving important terms to database")
-        db.create_important_terms(important_terms_id, user_id, conversation_id, awan_llm_response["choices"][0]["message"]["content"])
+        db.create_important_terms(important_terms_id, user_id, conversation_id, terms)
+
+        prompt = {
+            "domain": domain,
+            "scope": scope,
+            "important_terms": terms
+        }
+
+        logger.info(f"Prompt: {prompt}")
+
+        x = LLMChain(
+            llm=llm,
+            prompt=PromptTemplate(
+                input_variables=["domain", "scope", "important_terms"],
+                template=helper.CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
+                template_format="jinja2"
+            ),
+            verbose=True
+        )
+
+        logger.info(f"Invoking prompt to OpenAI")
+        llm_response = await x.ainvoke(prompt)
+        llm_response_json = json.loads(llm_response["text"])
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -107,12 +131,13 @@ def get_important_terms_from_pdf():
         "data": {
             "filename": filename,
             "predicted_tags": predicted_tags,
-            "important_terms": awan_llm_response
+            "llm_output": llm_response_json
         }
     }), 200
 
+
 @bp.route("/url", methods=["POST"])
-def get_important_terms_from_url(): 
+async def get_important_terms_from_url(): 
     try:
         logger.info("extracting url from request body")
         data = request.json
@@ -121,6 +146,7 @@ def get_important_terms_from_url():
         conversation_id = data["conversation_id"]
         url = data["url"]
 
+        # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
         db_response = db.get_conversation_detail_by_id(conversation_id)
 
         if db_response is None: 
@@ -142,9 +168,32 @@ def get_important_terms_from_url():
         logger.info(f"awan llm response: {awan_llm_response}")
 
         important_terms_id = uuid.uuid4()
+        terms = awan_llm_response["choices"][0]["message"]["content"]
 
         logger.info("saving important terms to database")
-        db.create_important_terms(important_terms_id, user_id, conversation_id, awan_llm_response["choices"][0]["message"]["content"])
+        db.create_important_terms(important_terms_id, user_id, conversation_id, terms)
+
+        prompt = {
+            "domain": domain,
+            "scope": scope,
+            "important_terms": terms
+        }
+
+        logger.info(f"Prompt: {prompt}")
+
+        x = LLMChain(
+            llm=llm,
+            prompt=PromptTemplate(
+                input_variables=["domain", "scope", "important_terms"],
+                template=helper.CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
+                template_format="jinja2"
+            ),
+            verbose=True
+        )
+
+        logger.info(f"Invoking prompt to OpenAI")
+        llm_response = await x.ainvoke(prompt)
+        llm_response_json = json.loads(llm_response["text"])
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -160,9 +209,10 @@ def get_important_terms_from_url():
         "data": {
             "url": url,
             "predicted_tags": predicted_tags,
-            "important_terms": awan_llm_response
+            "llm_output": llm_response_json
         }
     }), 200
+
 
 @bp.route('/generate', methods=['POST'])
 async def generate_classes_and_properties():
@@ -209,6 +259,7 @@ async def generate_classes_and_properties():
 
     return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
 
+
 def extract_text_from_pdf(pdf_file_path):
     try: 
         logger.info("offloading pdf reading to llmsherpa api")
@@ -230,6 +281,8 @@ def extract_text_from_pdf(pdf_file_path):
         logger.error(f"{e}")
         return None
 
+
+# TODO: improve performance of this function
 def predict_with_flair(sentences): 
     tagged_sentences = []
 
@@ -283,8 +336,8 @@ def predict_with_flair(sentences):
 
     return tagged_sentences
 
-# TODO: make the domain and scope dynamic
-def prompt_awan_llm(tagged_sentences, domain = "web scraping", scope = "web scraping using Python"):
+
+def prompt_awan_llm(tagged_sentences, domain, scope):
     url = "https://api.awanllm.com/v1/chat/completions"
 
     payload = json.dumps({

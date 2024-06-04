@@ -14,8 +14,10 @@ using flair or something else to get the important terms
 - [x] create terms table to store important terms
 - [x] generate classes, object properties, and data properties out of important terms using LLM 
 - [x] scope in step 3 is actually using domain within conversation 
+- [x] fuse important terms and class and instance generation into the same endpoint
 
 - [ ] user can go back to previous steps
+- [ ] work on the 7th step
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video
