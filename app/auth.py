@@ -74,9 +74,10 @@ def callback():
             credentials.id_token, token_request, GOOGLE_CLIENT_ID, clock_skew_in_seconds=8
         )
 
-        res = db.create_user(user_id, id_info['name'], id_info['email'], id_info['picture'])
+        db.create_user(user_id, id_info['name'], id_info['email'], id_info['picture'])
+
         session['user_info'] = id_info
-        session['user_id'] = res['user_id']
+        session['user_id'] = user_id
         logger.info(f"user: {id_info['name']} logged in successfully")
         return jsonify(helper.response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
     
