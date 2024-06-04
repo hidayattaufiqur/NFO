@@ -1,4 +1,6 @@
-import psycopg, psycopg2, psycopg2.pool, psycopg2.extras
+import psycopg2
+import psycopg2.pool
+import psycopg2.extras
 import os
 import logging
 
@@ -20,12 +22,12 @@ pool = psycopg2.pool.ThreadedConnectionPool(
     cursor_factory=psycopg2.extras.RealDictCursor
 )
 
-connection_string=f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres" 
+connection_string = f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres"
 
 def init_db():
     conn = get_pool_connection()
     try:
-        logger.info(f"initializing database")
+        logger.info("initializing database")
         with conn.cursor() as cur:
             cur.execute('''
                 CREATE TABLE IF NOT EXISTS users (
@@ -45,7 +47,7 @@ def init_db():
                     id SERIAL PRIMARY KEY,
                     conversation_id UUID NOT NULL UNIQUE,
                     user_id UUID REFERENCES users(user_id) ON DELETE SET NULL,
-                    title varchar(255),
+                    title VARCHAR(255),
                     domain VARCHAR(255) NOT NULL,
                     scope VARCHAR(255) NOT NULL,
                     is_active BOOLEAN DEFAULT TRUE,
@@ -84,16 +86,26 @@ def init_db():
                 );
             ''')
 
-            logger.info(f"database initialized")
+            cur.execute('''
+                CREATE INDEX IF NOT EXISTS idx_users_user_id ON users(user_id);
+                CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+                CREATE INDEX IF NOT EXISTS idx_conversations_conversation_id ON conversations(conversation_id);
+                CREATE INDEX IF NOT EXISTS idx_conversations_user_id ON conversations(user_id);
+                CREATE INDEX IF NOT EXISTS idx_competency_questions_cq_id ON competency_questions(cq_id);
+                CREATE INDEX IF NOT EXISTS idx_competency_questions_user_id ON competency_questions(user_id);
+                CREATE INDEX IF NOT EXISTS idx_important_terms_important_terms_id ON important_terms(important_terms_id);
+                CREATE INDEX IF NOT EXISTS idx_important_terms_user_id ON important_terms(user_id);
+            ''')
+
+            logger.info("database initialized")
             conn.commit()
     finally:
         close_connection(conn)
 
-        
 """db connections"""
-def get_connection(): 
+def get_connection():
     logger.info("establishing psycopg connection")
-    return psycopg.connect(connection_string)
+    return psycopg2.connect(connection_string)
 
 def get_pool_connection():
     logger.info("establishing pool connection")
@@ -107,7 +119,6 @@ def close_pool():
     logger.info("closing db pool connection")
     pool.closeall()
 
-
 """users"""
 def create_user(user_id, name, email, profile_pic_url):
     conn = get_pool_connection()
@@ -116,30 +127,31 @@ def create_user(user_id, name, email, profile_pic_url):
             cur.execute('''
                 INSERT INTO users (user_id, name, email, profile_pic_url)
                 VALUES (%s, %s, %s, %s)
+                ON CONFLICT (email) DO NOTHING
                 RETURNING *;
             ''', (user_id, name, email, profile_pic_url))
             user = cur.fetchone()
             conn.commit()
             return user
-    except psycopg2.errors.UniqueViolation:
-        return get_user_by_email(email)
+    except Exception as e:
+        logger.error(f"Error creating user: {e}")
+        return None
     finally:
         close_connection(conn)
 
 def get_user_by_email(email):
     conn = get_pool_connection()
     try:
-        logger.info(f"fetching user by email")
+        logger.info("fetching user by email")
         with conn.cursor() as cur:
             cur.execute('SELECT * FROM users WHERE email = %s AND deleted_at IS NULL', (email,))
             user = cur.fetchone()
             return user
-    except Exception as e: 
-        logger.error(f"{e}")
+    except Exception as e:
+        logger.error(f"Error fetching user by email: {e}")
         return None
     finally:
         close_connection(conn)
-
 
 """conversations"""
 def create_conversation(conversation_id, user_id, domain, scope):
@@ -155,8 +167,8 @@ def create_conversation(conversation_id, user_id, domain, scope):
             convo = cur.fetchone()
             conn.commit()
             return convo
-    except Exception as e: 
-        logger.error(f"{e}")
+    except Exception as e:
+        logger.error(f"Error creating conversation: {e}")
         return None
     finally:
         close_connection(conn)
@@ -175,14 +187,14 @@ def get_conversation_detail_by_id(convo_id):
                     c.conversation_id,
                     JSON_AGG(message_store.message) AS messages
                 FROM conversations c
-                JOIN message_store ON c.conversation_id = CAST(message_store.session_id AS UUID)
-                WHERE c.conversation_id = %s AND deleted_at IS NULL
+                LEFT JOIN message_store ON c.conversation_id = CAST(message_store.session_id AS UUID)
+                WHERE c.conversation_id = %s AND c.deleted_at IS NULL
                 GROUP BY c.domain, c.scope, c.user_id, c.is_active, c.id;
             ''', (convo_id,))
             convo = cur.fetchone()
             return convo
-    except Exception as e: 
-        logger.error(f"{e}")
+    except Exception as e:
+        logger.error(f"Error fetching conversation detail by id: {e}")
         return None
     finally:
         close_connection(conn)
@@ -195,8 +207,8 @@ def get_all_conversations_from_a_user(user_id):
             cur.execute('SELECT * FROM conversations WHERE user_id = %s AND deleted_at IS NULL', (user_id,))
             convos = cur.fetchall()
             return convos
-    except Exception as e: 
-        logger.error(f"{e}")
+    except Exception as e:
+        logger.error(f"Error fetching conversations from a user: {e}")
         return None
     finally:
         close_connection(conn)
@@ -215,27 +227,27 @@ def update_conversation(title, convo_id, domain, scope, is_active):
             convo = cur.fetchone()
             conn.commit()
             return convo
-    except Exception as e: 
-        logger.error(f"{e}")
+    except Exception as e:
+        logger.error(f"Error updating conversation: {e}")
         return None
     finally:
         close_connection(conn)
 
 def delete_conversation(conversation_id):
     conn = get_pool_connection()
-    try: 
+    try:
         logger.info("deleting a conversation")
         with conn.cursor() as cur:
             cur.execute('''
                 UPDATE conversations 
                 SET deleted_at = CURRENT_TIMESTAMP
                 WHERE conversation_id = %s; 
-            ''', (conversation_id, ))
+            ''', (conversation_id,))
             conn.commit()
-    except Exception as e: 
-        logger.error(f"{e}")
+    except Exception as e:
+        logger.error(f"Error deleting conversation: {e}")
         return None
-    finally: 
+    finally:
         close_connection(conn)
 
 """competency questions"""
@@ -251,7 +263,8 @@ def create_competency_question(cq_id, user_id, convo_id, question):
             cq = cur.fetchone()
             conn.commit()
             return cq
-    except: 
+    except Exception as e:
+        logger.error(f"Error creating competency question: {e}")
         return None
     finally:
         close_connection(conn)
@@ -264,8 +277,8 @@ def get_all_competency_questions_by_convo_id(convo_id):
             cur.execute('SELECT id, is_valid, question, user_id FROM competency_questions WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
             cqs = cur.fetchall()
             return cqs
-    except Exception as e: 
-        logger.error(f"{e}")
+    except Exception as e:
+        logger.error(f"Error fetching competency questions by conversation id: {e}")
         return None
     finally:
         close_connection(conn)
@@ -283,8 +296,8 @@ def validating_competency_question(cq_id, is_valid):
             cq = cur.fetchone()
             conn.commit()
             return cq
-    except Exception as e: 
-        logger.error(f"{e}")
+    except Exception as e:
+        logger.error(f"Error validating competency question: {e}")
         return None
     finally:
         close_connection(conn)
@@ -302,9 +315,9 @@ def create_important_terms(important_terms_id, user_id, convo_id, terms):
             ''', (important_terms_id, user_id, convo_id, terms))
             terms = cur.fetchone()
             conn.commit()
-            return terms 
-    except Exception as e: 
-        logger.error(f"{e}")
+            return terms
+    except Exception as e:
+        logger.error(f"Error creating important terms: {e}")
         return None
     finally:
         close_connection(conn)
@@ -317,8 +330,8 @@ def get_important_terms_by_id(important_terms_id):
             cur.execute('SELECT * FROM important_terms WHERE important_terms_id = %s AND deleted_at IS NULL', (important_terms_id,))
             terms = cur.fetchone()
             return terms
-    except Exception as e: 
-        logger.error(f"{e}")
+    except Exception as e:
+        logger.error(f"Error fetching important terms by id: {e}")
         return None
     finally:
         close_connection(conn)
@@ -326,13 +339,13 @@ def get_important_terms_by_id(important_terms_id):
 def get_important_terms_by_conversation_id(convo_id):
     conn = get_pool_connection()
     try:
-        logger.info("fetching important terms by id")
+        logger.info("fetching important terms by conversation id")
         with conn.cursor() as cur:
             cur.execute('SELECT * FROM important_terms WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
-            terms = cur.fetchone()
+            terms = cur.fetchall()  # Fetch all important terms for the conversation
             return terms
-    except Exception as e: 
-        logger.error(f"{e}")
+    except Exception as e:
+        logger.error(f"Error fetching important terms by conversation id: {e}")
         return None
     finally:
         close_connection(conn)
