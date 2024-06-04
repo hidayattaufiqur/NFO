@@ -82,16 +82,34 @@ async def conversation(conversation_id=None):
 
     return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": data["prompt"], "output": response_json})) 
 
+
 @bp.route('/<conversation_id>', methods=['GET'])
 def get_detail_conversation(conversation_id): 
     try: 
         db_response = db.get_conversation_detail_by_id(conversation_id)
+        conversation_id = db_response["conversation_id"]
+        domain = db_response["domain"]
+        scope = db_response["scope"]
+        is_active = db_response["is_active"]
+        prompt = db_response["messages"][0]["data"]["content"]
+        competency_questions = db_response["messages"][1]["data"]["content"]
 
     except Exception as e:
         logger.info(f"an error occurred at route {request.path} with error: {e}")
         return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
-    return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response}))
+    return jsonify(helper.response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": {
+            "conversation_id": conversation_id,
+            "prompt": prompt,
+            "domain": domain,
+            "scope": scope,
+            "is_active": is_active,
+            "competency_questions": competency_questions
+        }
+    })), 200
 
 @bp.route('/all/<user_id>', methods=['GET'])
 def get_all_conversations_by_user_id(user_id): 
@@ -102,7 +120,8 @@ def get_all_conversations_by_user_id(user_id):
         logger.info(f"an error occurred at route {request.path} with error: {e}")
         return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
-    return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response}))
+    return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response})), 200
+
 
 @bp.route('/<conversation_id>', methods=['DELETE'])
 def delete_conversation(conversation_id): 
@@ -126,6 +145,7 @@ def delete_conversation(conversation_id):
 
     return jsonify(helper.response_template({"message": "Deleting Has Been Successful", "status_code": 200, "data": None}))
 
+
 @bp.route('/competency_questions/<conversation_id>', methods=['POST']) 
 def save_competency_questions(conversation_id):
     try: 
@@ -145,6 +165,7 @@ def save_competency_questions(conversation_id):
 
     return jsonify(helper.response_template({"message": "Saving Competency Question Has Been Successful", "status_code": 200, "data": None}))
 
+
 @bp.route('/competency_questions/<conversation_id>', methods=['GET'])
 def get_competency_questions(conversation_id):
     try: 
@@ -154,7 +175,7 @@ def get_competency_questions(conversation_id):
         logger.info(f"an error occurred at route {request.path} with error: {e}")
         return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
-    return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response}))
+    return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response})), 200
 
 @bp.route('/competency_questions/validate/<cq_id>', methods=['GET'])
 def validating_competency_questions(cq_id):
@@ -165,4 +186,4 @@ def validating_competency_questions(cq_id):
         logger.info(f"an error occurred at route {request.path} with error: {e}")
         return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
 
-    return jsonify(helper.response_template({"message": "Updating Competency Question Has Been Successful", "status_code": 200, "data": None}))
+    return jsonify(helper.response_template({"message": "Updating Competency Question Has Been Successful", "status_code": 200, "data": None})), 200
