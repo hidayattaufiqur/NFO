@@ -85,6 +85,15 @@ async def get_important_terms_from_pdf():
         awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
         logger.info(f"awan llm response: {awan_llm_response}")
 
+        # Check if there is an error invoking awan llm
+        if "statusCode" in awan_llm_response:
+            logger.error(f"Error invoking awan llm with error: {awan_llm_response['message']}")
+            return helper.response_template({
+                "message": f"Error invoking awan llm with error: {awan_llm_response['message']}",
+                "status_code": awan_llm_response["statusCode"],
+                "data": None
+            }), 500
+
         important_terms_id = uuid.uuid4()
         terms = awan_llm_response["choices"][0]["message"]["content"]
 
@@ -159,13 +168,24 @@ async def get_important_terms_from_url():
         logger.info(f"extracting texts from {url}")
         response = requests.get("https://r.jina.ai/" + url)
         extracted_text = response.text
+        logger.info(f"extracted_text: {extracted_text}")
 
         logger.info("predicting tags with flair NER model")
         predicted_tags = predict_with_flair(extracted_text)
+        logger.info(f"predicted_tags: {predicted_tags}")
 
         logger.info("invoking awan llm")
         awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
         logger.info(f"awan llm response: {awan_llm_response}")
+
+        # Check if there is an error invoking awan llm
+        if "statusCode" in awan_llm_response:
+            logger.error(f"Error invoking awan llm with error: {awan_llm_response['message']}")
+            return helper.response_template({
+                "message": f"Error invoking awan llm with error: {awan_llm_response['message']}",
+                "status_code": awan_llm_response["statusCode"],
+                "data": None
+            }), 500
 
         important_terms_id = uuid.uuid4()
         terms = awan_llm_response["choices"][0]["message"]["content"]
@@ -196,9 +216,9 @@ async def get_important_terms_from_url():
         llm_response_json = json.loads(llm_response["text"])
 
     except Exception as e: 
-        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        logger.error(f"an error occurred at route {request.path} with error message: {e}")
         return helper.response_template({
-            "message": f"an error occurred at route {request.path} with error: {e}",
+            "message": f"an error occurred at route {request.path} with error message: {e}",
             "status_code": 500,
             "data": None
         }), 500
@@ -208,7 +228,6 @@ async def get_important_terms_from_url():
         "status_code": 200,
         "data": {
             "url": url,
-            "predicted_tags": predicted_tags,
             "llm_output": llm_response_json
         }
     }), 200
