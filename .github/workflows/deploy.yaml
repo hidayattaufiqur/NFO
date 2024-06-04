@@ -27,7 +27,7 @@ jobs:
         ENV: ${{ secrets.ENV }}
         CLIENT_SECRET: ${{ secrets.CLIENT_SECRET }}
       run: |
-        echo "ENV=${ENV}" >> env
+        echo "${ENV}" >> env
         echo "${CLIENT_SECRET}" >> client_secret.json
 
     - name: Copy files to remote server 🚛
