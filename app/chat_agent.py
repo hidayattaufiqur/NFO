@@ -22,7 +22,7 @@ bp = Blueprint('conversation', __name__, url_prefix='/conversation')
 
 llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
-@bp.route('/', methods=['POST'])
+@bp.route('', methods=['POST'])
 @bp.route('/<conversation_id>', methods=['POST'])
 async def conversation(conversation_id=None):
     try: 
@@ -78,7 +78,7 @@ async def conversation(conversation_id=None):
 
     except Exception as e:
         logger.info(f"an error occurred at route {request.path} with error: {e}")
-        return jsonify(helper.chat_agent_response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": data["prompt"], "output": None})), 500
+        return jsonify(helper.chat_agent_response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": None, "output": None})), 500
 
     return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": data["prompt"], "output": response_json})) 
 
