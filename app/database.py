@@ -1,3 +1,5 @@
+from langchain_community.chat_message_histories.sql import SQLChatMessageHistory
+
 import psycopg
 import psycopg2
 import psycopg2.pool
@@ -103,6 +105,15 @@ def init_db():
         close_connection(conn)
 
 """db connections"""
+def get_chat_message_history_connection(table_name, session_id):
+    logger.info("establishing SQLChatMessageHistory connection")
+    history = SQLChatMessageHistory( 
+        table_name=table_name,
+        session_id=session_id,
+        connection_string=connection_string
+    )
+    return history
+
 def get_connection():
     logger.info("establishing psycopg connection")
     return psycopg.connect(connection_string) # psycopg is needed for PostgresChatMessageHistory.create_tables() on chat_agent.py

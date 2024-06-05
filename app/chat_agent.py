@@ -30,9 +30,6 @@ async def conversation(conversation_id=None):
         user_id = session.get('user_id')
         db_conn = db.get_connection()
 
-        table_name = "message_store"
-        PostgresChatMessageHistory.create_tables(db_conn, table_name)
-
         if conversation_id is None: 
             conversation_id = uuid.uuid4()
             db_response = db.create_conversation(conversation_id, user_id, "domain", "scope") 
@@ -42,14 +39,11 @@ async def conversation(conversation_id=None):
         if db_response is None: 
             return jsonify(helper.chat_agent_response_template({"message": "Conversation Not Found", "status_code": 404, "prompt": data["prompt"], "output": None})), 404 
 
+        table_name = "message_store"
         session_id = str(conversation_id)
 
         logger.info(f"accessing conversation history")
-        history = PostgresChatMessageHistory(
-            table_name, 
-            session_id,
-            sync_connection=db_conn,
-        )
+        history = db.get_chat_message_history_connection(table_name, session_id)
 
         logger.info("creating LLMChain")
         x = LLMChain(
