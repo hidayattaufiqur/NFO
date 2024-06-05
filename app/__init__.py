@@ -11,7 +11,7 @@ load_dotenv()
 def create_app(): 
     app = Flask(__name__)
 
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1)
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     app.secret_key = os.environ.get("FLASK_SECRET_KEY", default=False)
     app.config['UPLOAD_FOLDER'] = helper.UPLOAD_FOLDER
     app.config['MAX_CONTENT_LENGTH'] = helper.MAX_CONTENT_LENGTH
