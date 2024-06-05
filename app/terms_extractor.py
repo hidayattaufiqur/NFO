@@ -23,6 +23,9 @@ bp = Blueprint('terms_extractor', __name__, url_prefix='/terms_extractor')
 
 llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
+logger.info("loading flair NER model")
+tagger = Classifier.load("ner") # load flair NER model 
+
 @bp.route('/pdf', methods=['POST'])
 async def get_important_terms_from_pdf():
     filename = ""
@@ -301,57 +304,29 @@ def extract_text_from_pdf(pdf_file_path):
         return None
 
 
-# TODO: improve performance of this function
 def predict_with_flair(sentences): 
     tagged_sentences = []
 
-    logger.info("loading flair NER model")
-    tagger = Classifier.load("ner") # load flair NER model 
-
     logger.info("predicting NER tags")
-    if type(sentences) == str:
-        sentence = helper.clean_text(sentences)
-        logger.info("split sentence into segments")
-        splitted_sentence = [Sentence(sent) for sent in split_single(sentence) if sent != ""]
+    if isinstance(sentences, str):
+        sentences = [sentences]
+    
+    for sentence in sentences:
+        cleaned_sentence = helper.clean_text(sentence)
+        logger.info("splitting sentence into segments")
+        splitted_sentences = [Sentence(sent) for sent in split_single(cleaned_sentence) if sent]
         logger.info("text splitted successfully")
-        tagger.predict(splitted_sentence) # predict NER tags
+        tagger.predict(splitted_sentences) # predict NER tags
 
-        for sent in splitted_sentence:
+        for sent in splitted_sentences:
             logger.info("extracting NER tags")
-            for entity in sent.get_spans("ner"): 
-                logger.info(f"entity-text {entity.text}")
-                logger.info(f"entity-tag {entity.tag}")
-                logger.info(f"entity-score {entity.score}")
-                logger.info(f"entity-labels {entity.labels}")
-                logger.info(f"entity-unlabeled_identifier {entity.unlabeled_identifier}")
-
-                tagged_sentence = {}
-                tagged_sentence.update({"text": entity.text})
-                tagged_sentence.update({"tag": entity.tag})
-                tagged_sentence.update({"score": entity.score})
-                tagged_sentences.append(tagged_sentence)
-    else: 
-        for sentence in sentences: # if it's a list than iterate over the list
-            sentence = helper.clean_text(sentence)
-            logger.info("split sentence into segments")
-            splitted_sentence = [Sentence(sent) for sent in split_single(sentence)]
-            logger.info("text splitted successfully")
-            tagger.predict(splitted_sentence) # predict NER tags
-
-            for sent in splitted_sentence:
-                logger.info("extracting NER tags")
-                for entity in sent.get_spans("ner"): 
-                    logger.info(f"entity-text {entity.text}")
-                    logger.info(f"entity-tag {entity.tag}")
-                    logger.info(f"entity-score {entity.score}")
-                    logger.info(f"entity-labels {entity.labels}")
-                    logger.info(f"entity-unlabeled_identifier {entity.unlabeled_identifier}")
-
-                    tagged_sentence = {}
-                    tagged_sentence.update({"text": entity.text})
-                    tagged_sentence.update({"tag": entity.tag})
-                    tagged_sentence.update({"score": entity.score})
-                    tagged_sentences.append(tagged_sentence)
+            for entity in sent.get_spans("ner"):
+                logger.debug(f"entity: {entity.to_dict()}")
+                tagged_sentences.append({
+                    "text": entity.text,
+                    "tag": entity.tag,
+                    "score": entity.score
+                })
 
     return tagged_sentences
 
