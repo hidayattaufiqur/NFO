@@ -26,6 +26,19 @@ llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 @bp.route('/<conversation_id>', methods=['POST'])
 async def conversation(conversation_id=None):
     try: 
+        logger.info(f"Headers: {request.headers}")
+        logger.info(f"Body: {request.get_data(as_text=True)}")
+        
+        if request.is_json:
+            data = request.get_json()
+            logger.info(f"Parsed JSON data: {data}")
+        else:
+            return jsonify(helper.response_template({
+                "message": "Invalid data type, expecting application/json.",
+                "status_code": 400,
+                "data": None
+            })), 400
+
         data = request.json
         user_id = session.get('user_id')
         db_conn = db.get_connection()
@@ -34,7 +47,8 @@ async def conversation(conversation_id=None):
             conversation_id = uuid.uuid4()
             db_response = db.create_conversation(conversation_id, user_id, "domain", "scope") 
             logger.info(f"db_response: {db_response}")
-        else: db_response = None
+        else: 
+            db_response = db.get_conversation_detail_by_id(conversation_id)
 
         if db_response is None: 
             return jsonify(helper.chat_agent_response_template({"message": "Conversation Not Found", "status_code": 404, "prompt": data["prompt"], "output": None})), 404 
@@ -80,13 +94,26 @@ async def conversation(conversation_id=None):
 @bp.route('/<conversation_id>', methods=['GET'])
 def get_detail_conversation(conversation_id): 
     try: 
+        logger.info(f"Headers: {request.headers}")
+        logger.info(f"Body: {request.get_data(as_text=True)}")
+
         db_response = db.get_conversation_detail_by_id(conversation_id)
+
+        if db_response is None: 
+            logger.info(f"an error occurred at route {request.path}")
+            return jsonify(helper.response_template({"message": f"an error occurred at route {request.path}", "status_code": 500, "data": None})), 500
+
         conversation_id = db_response["conversation_id"]
         domain = db_response["domain"]
         scope = db_response["scope"]
         is_active = db_response["is_active"]
-        prompt = db_response["messages"][0]["data"]["content"]
-        competency_questions = db_response["messages"][1]["data"]["content"]
+
+        if type(db_response["messages"][0]) != 'dict':
+            prompt = json.loads(db_response["messages"][0])["data"]["content"]
+            competency_questions = json.loads(db_response["messages"][1])["data"]["content"]
+        else:
+            prompt = db_response["messages"][0]["data"]["content"]
+            competency_questions = db_response["messages"][1]["data"]["content"]
 
     except Exception as e:
         logger.info(f"an error occurred at route {request.path} with error: {e}")
