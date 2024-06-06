@@ -124,7 +124,7 @@ def get_pool_connection():
 
 def close_connection(conn):
     logger.info("closing db connection")
-    conn.close()
+    pool.putconn(conn)
 
 def close_pool():
     logger.info("closing db pool connection")
