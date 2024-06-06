@@ -17,6 +17,8 @@ using flair or something else to get the important terms
 - [x] fuse important terms and class and instance generation into the same endpoint
 
 - [ ] user can go back to previous steps
+- [ ] change the flow of authentication
+- [ ] work on the 76th step
 - [ ] work on the 7th step
 
 # mid priority
