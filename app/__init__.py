@@ -1,6 +1,7 @@
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 from flask import Flask 
+from flask_cors import CORS
 
 from . import helper
 
@@ -10,6 +11,16 @@ load_dotenv()
 
 def create_app(): 
     app = Flask(__name__)
+
+    resources = {
+        r"/*": { "origins": os.environ.get('CORS_WHITELIST', '').split(',') }
+    }
+
+    CORS(
+        app,
+        resources=resources,
+        supports_credentials=True
+    )
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
     app.secret_key = os.environ.get("FLASK_SECRET_KEY", default=False)
