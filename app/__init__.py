@@ -6,19 +6,19 @@ from flask_cors import CORS
 from . import helper
 
 import os
+import logging
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
 def create_app(): 
+    logger.info("initializing flask app")
     app = Flask(__name__)
 
-    resources = {
-        r"/*": { "origins": os.environ.get('CORS_WHITELIST', '').split(',') }
-    }
-
+    logger.info("initializing CORS config")
     CORS(
         app,
-        resources=resources,
+        origins=os.environ.get('CORS_WHITELIST', '').split(','),
         supports_credentials=True
     )
 
