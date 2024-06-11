@@ -165,6 +165,20 @@ def get_user_by_email(email):
     finally:
         close_connection(conn)
 
+def get_user_by_id(user_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("fetching user by email")
+        with conn.cursor() as cur:
+            cur.execute('SELECT user_id, name, email, profile_pic_url, created_at FROM users WHERE user_id = %s AND deleted_at IS NULL', (user_id,))
+            user = cur.fetchone()
+            return user
+    except Exception as e:
+        logger.error(f"Error fetching user by user_id: {e}")
+        return None
+    finally:
+        close_connection(conn)
+
 
 """conversations"""
 def create_conversation(conversation_id, user_id, domain, scope):

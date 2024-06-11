@@ -18,7 +18,7 @@ using flair or something else to get the important terms
 
 - [ ] user can go back to previous steps
 - [ ] change the flow of authentication
-- [ ] work on the 76th step
+- [ ] work on the 6th step
 - [ ] work on the 7th step
 
 # mid priority

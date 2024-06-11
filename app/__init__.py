@@ -1,22 +1,24 @@
 from werkzeug.middleware.proxy_fix import ProxyFix
 from dotenv import load_dotenv
 from flask import Flask 
+from flask_login import LoginManager
 from flask_cors import CORS
 
 from . import helper
 
 import os
 import logging
-logger = logging.getLogger(__name__)
 
-load_dotenv()
+logger = logging.getLogger(__name__)
+login_manager = LoginManager()
+_ = load_dotenv()
 
 def create_app(): 
     logger.info("initializing flask app")
     app = Flask(__name__)
 
     logger.info("initializing CORS config")
-    CORS(
+    _ = CORS(
         app,
         origins=os.environ.get('CORS_WHITELIST', '').split(','),
         supports_credentials=True
@@ -36,12 +38,15 @@ def create_app():
     def index():
         return 'Hello, world!'
 
-    from . import auth
-    from . import chat_agent 
-    from . import terms_extractor
+    from .auth import load_user, bp as auth_bp
+    from .chat_agent import bp as chat_agent_bp
+    from .terms_extractor import bp as terms_extractor_bp
 
-    app.register_blueprint(auth.bp)
-    app.register_blueprint(chat_agent.bp)
-    app.register_blueprint(terms_extractor.bp)
+    login_manager.init_app(app)
+    login_manager.user_loader(load_user)
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(chat_agent_bp)
+    app.register_blueprint(terms_extractor_bp)
 
     return app
