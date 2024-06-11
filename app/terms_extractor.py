@@ -165,7 +165,7 @@ async def get_important_terms_from_url():
         refresh_session()
 
         logger.info("extracting url from request body")
-        data = request.json
+        data = request.get_json()
 
         user_id = session.get('user_id')
         conversation_id = data["conversation_id"]
@@ -259,7 +259,7 @@ async def generate_classes_and_properties():
 
         refresh_session()
 
-        data = request.json
+        data = request.get_json()
         terms_id = data["important_terms_id"]
         domain = data["domain"]
         scope = data["scope"]

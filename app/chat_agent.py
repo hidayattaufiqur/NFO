@@ -46,7 +46,7 @@ async def conversation(conversation_id=None):
                 "data": None
             })), 400
 
-        data = request.json
+        data = request.get_json()
         user_id = session.get('user_id')
         db_conn = db.get_connection()
 

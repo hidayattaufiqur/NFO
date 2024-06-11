@@ -76,36 +76,46 @@ def create_flow():
 
 @bp.route('/login')
 def login():
-    # try: 
-        # logger.info("parsing request body")
-        # data = request.get_json()
-        # client_id = data.get('client_id')
-        # access_token = data.get('access_token')
-        # 
-        # id_info = google.oauth2.id_token.verify_oauth2_token(
-        #     access_token, requests.Request(), client_id, clock_skew_in_seconds=8
-        # )
-        #
-        # db.create_user(user_id, id_info['name'], id_info['email'], id_info['picture']) # create user if not exists else do nothing
-        #
-        # session['user_info'] = id_info
-        # session['user_id'] = id_info['user_id']
-        # user = User(user_id=user_id, name=id_info['name'], email=id_info['email'], profile_pic=id_info['picture'])
-        # login_user(user)
-        #
-        # logger.info(f"user: {id_info['name']} logged in successfully")
-        flow = create_flow()
-        authorization_url, state = flow.authorization_url()
-        session['state'] = state 
-        logging.info("redirecting to authorization_url")
-        return redirect(authorization_url)
+    try: 
+        logger.info("parsing request body")
+        data = request.get_json()
+        client_id = data.get('client_id')
+        access_token = data.get('access_token')
+
+        id_info = google.oauth2.id_token.verify_oauth2_token(
+            access_token, requests.Request(), client_id, clock_skew_in_seconds=8
+        )
+
+        logger.info("looking up user by email")
+        user_info = db.get_user_by_email(id_info['email'])
+        if user_info: 
+            user_id = user_info['user_id']
+        else:
+            logger.info("creating a new user in database")
+            user_id = uuid.uuid4()
+            user_info = db.create_user(user_id, id_info['name'], id_info['email'], id_info['picture']) 
+
+        session['user_info'] = id_info
+        session['user_id'] = user_id
+        session.permanent = True
+
+        user = User(user_id=user_id, name=id_info['name'], email=id_info['email'], profile_pic=id_info['picture'])
+        _ = login_user(user)
+
+        logger.info(f"user: {id_info['name']} logged in successfully")
+        # flow = create_flow()
+        # authorization_url, state = flow.authorization_url()
+        # session['state'] = state 
+        # logging.info("redirecting to authorization_url")
+        # return redirect(authorization_url)
 
 
-    #     return jsonify(helper.response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
-    #
-    # except Exception as e: 
-    #     logger.error(f"an error occurred at route {request.path} {e}")
-    #     return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+        return jsonify(helper.response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} {e}")
+        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+
 
 @bp.route('/login/callback')
 def callback():
@@ -144,7 +154,6 @@ def callback():
         session['user_id'] = user_id
         session.permanent = True
 
-        logger.debug(f"is it here? {session}")
         user = User(user_id=user_id, name=id_info['name'], email=id_info['email'], profile_pic=id_info['picture'])
         _ = login_user(user)
 
@@ -164,6 +173,8 @@ def profile():
 
         if auth_response: 
             return jsonify(auth_response), 401
+
+        refresh_session()
 
         user_info = {
             'name': current_user.name,
