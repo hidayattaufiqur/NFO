@@ -1,13 +1,15 @@
 from flask import request, Blueprint, jsonify, session
+from flask_login import current_user
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
-from langchain.chains import  LLMChain
+from langchain.chains import LLMChain
 from langchain_postgres import PostgresChatMessageHistory
 from langchain.memory import ConversationBufferWindowMemory
 
 from . import database as db
 from . import helper
+from .auth import is_authorized
 
 import json
 import logging
@@ -26,6 +28,10 @@ llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 @bp.route('/<conversation_id>', methods=['POST'])
 async def conversation(conversation_id=None):
     try: 
+        auth_response = is_authorized()
+        if auth_response: 
+            return jsonify(auth_response)
+
         logger.info(f"Headers: {request.headers}")
         logger.info(f"Body: {request.get_data(as_text=True)}")
         
@@ -94,6 +100,10 @@ async def conversation(conversation_id=None):
 @bp.route('/<conversation_id>', methods=['GET'])
 def get_detail_conversation(conversation_id): 
     try: 
+        auth_response = is_authorized()
+        if auth_response: 
+            return jsonify(auth_response)
+
         logger.info(f"Headers: {request.headers}")
         logger.info(f"Body: {request.get_data(as_text=True)}")
 
@@ -132,9 +142,14 @@ def get_detail_conversation(conversation_id):
         }
     })), 200
 
+
 @bp.route('/all/<user_id>', methods=['GET'])
 def get_all_conversations_by_user_id(user_id): 
     try: 
+        auth_response = is_authorized()
+        if auth_response: 
+            return jsonify(auth_response)
+
         db_response = db.get_all_conversations_from_a_user(user_id)
 
     except Exception as e:
@@ -147,6 +162,10 @@ def get_all_conversations_by_user_id(user_id):
 @bp.route('/<conversation_id>', methods=['DELETE'])
 def delete_conversation(conversation_id): 
     try: 
+        auth_response = is_authorized()
+        if auth_response: 
+            return jsonify(auth_response)
+
         db_conn = db.get_connection()
         table_name = "message_store"
         session_id = conversation_id
@@ -169,7 +188,11 @@ def delete_conversation(conversation_id):
 
 @bp.route('/competency_questions/<conversation_id>', methods=['POST']) 
 def save_competency_questions(conversation_id):
-    try: 
+    try:
+        auth_response = is_authorized()
+        if auth_response: 
+            return jsonify(auth_response)
+
         data = request.json
         cq_id = uuid.uuid4()
         user_id = session.get('user_id')
@@ -190,6 +213,10 @@ def save_competency_questions(conversation_id):
 @bp.route('/competency_questions/<conversation_id>', methods=['GET'])
 def get_competency_questions(conversation_id):
     try: 
+        auth_response = is_authorized()
+        if auth_response: 
+            return jsonify(auth_response)
+
         db_response = db.get_all_competency_questions_by_convo_id(conversation_id)
 
     except Exception as e:
@@ -198,10 +225,15 @@ def get_competency_questions(conversation_id):
 
     return jsonify(helper.response_template({"message": "Success", "status_code": 200, "data": db_response})), 200
 
+
 @bp.route('/competency_questions/validate/<cq_id>', methods=['GET'])
 def validating_competency_questions(cq_id):
     try: 
-       db.validating_competency_question(cq_id, True)
+        auth_response = is_authorized()
+        if auth_response: 
+            return jsonify(auth_response)
+
+        db.validating_competency_question(cq_id, True)
 
     except Exception as e:
         logger.info(f"an error occurred at route {request.path} with error: {e}")

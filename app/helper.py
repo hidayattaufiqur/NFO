@@ -93,6 +93,11 @@ def response_template(data):
 
     return response
 
+def is_authorized(current_user):
+    if not current_user.is_authenticated:
+        return response_template({"message": f"User is Unauthorized. Please Login", "status_code": 401, "data": None})
+    return None
+
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 

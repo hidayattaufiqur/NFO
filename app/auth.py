@@ -146,9 +146,13 @@ def callback():
 
     
 @bp.route('/profile')
-@login_required
 def profile():
     try: 
+        auth_response = is_authorized()
+
+        if auth_response: 
+            return jsonify(auth_response)
+
         user_info = {
             'name': current_user.name,
             'email': current_user.email,
@@ -161,3 +165,9 @@ def profile():
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} {e}")
         return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+
+
+def is_authorized():
+    if not current_user.is_authenticated:
+        return helper.response_template({"message": f"User is Unauthorized. Please Login", "status_code": 401, "data": None})
+    return None

@@ -10,6 +10,7 @@ from langchain.chains import  LLMChain
 
 from . import database as db
 from . import helper
+from .auth import is_authorized
 
 import logging 
 import os
@@ -32,6 +33,10 @@ async def get_important_terms_from_pdf():
     filepath = ""
 
     try: 
+        auth_response = is_authorized()
+        if auth_response: 
+            return jsonify(auth_response)
+
         if "file" not in request.files:
             logger.error("no file is uploaded")
             return jsonify(helper.response_template({
@@ -151,6 +156,10 @@ async def get_important_terms_from_pdf():
 @bp.route("/url", methods=["POST"])
 async def get_important_terms_from_url(): 
     try:
+        auth_response = is_authorized()
+        if auth_response: 
+            return jsonify(auth_response)
+
         logger.info("extracting url from request body")
         data = request.json
 
@@ -240,6 +249,10 @@ async def get_important_terms_from_url():
 async def generate_classes_and_properties():
     prompt = ""
     try:
+        auth_response = is_authorized()
+        if auth_response: 
+            return jsonify(auth_response)
+
         data = request.json
         terms_id = data["important_terms_id"]
         domain = data["domain"]
