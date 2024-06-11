@@ -73,7 +73,7 @@ def create_flow():
     return flow
 
 
-@bp.route('/login')
+@bp.route('/login', methods=['POST'])
 def login():
     try: 
         logger.info("parsing request body")
