@@ -43,7 +43,6 @@ class User(UserMixin):
 def load_user(user_id):
     logger.info("loading user from email")
     user_info = User.get(user_id) 
-    logger.info(f"user loaded successfully: {user_info}")
     if user_info:
         return user_info
     return None

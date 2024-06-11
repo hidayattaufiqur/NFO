@@ -33,12 +33,8 @@ async def conversation(conversation_id=None):
 
         refresh_session()
 
-        logger.info(f"Headers: {request.headers}")
-        logger.info(f"Body: {request.get_data(as_text=True)}")
-        
         if request.is_json:
             data = request.get_json()
-            logger.info(f"Parsed JSON data: {data}")
         else:
             return jsonify(helper.response_template({
                 "message": "Invalid data type, expecting application/json.",
@@ -53,7 +49,6 @@ async def conversation(conversation_id=None):
         if conversation_id is None: 
             conversation_id = uuid.uuid4()
             db_response = db.create_conversation(conversation_id, user_id, "domain", "scope") 
-            logger.info(f"db_response: {db_response}")
         else: 
             db_response = db.get_conversation_detail_by_id(conversation_id)
 
@@ -80,7 +75,6 @@ async def conversation(conversation_id=None):
         logger.info(f"invoking prompt to OpenAI")
         response = await x.ainvoke({"input": data["prompt"]})
         response_json = json.loads(response["text"])
-        logger.info(f"llm response: {response_json}")
         response_json.update({"conversation_id": conversation_id}) 
 
         # If the conversation is new, we need to update the domain and scope in the database 
@@ -106,9 +100,6 @@ def get_detail_conversation(conversation_id):
             return jsonify(auth_response), 401
 
         refresh_session()
-
-        logger.info(f"Headers: {request.headers}")
-        logger.info(f"Body: {request.get_data(as_text=True)}")
 
         db_response = db.get_conversation_detail_by_id(conversation_id)
 

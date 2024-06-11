@@ -62,9 +62,6 @@ async def get_important_terms_from_pdf():
             domain = db_response["domain"]
             scope = db_response["scope"]
 
-        logger.info(f"domain: {domain}")
-        logger.info(f"scope: {scope}")
-
         file = request.files['file']
         if file.filename == '':
             logger.error("no file selected")
@@ -93,7 +90,6 @@ async def get_important_terms_from_pdf():
 
         logger.info("invoking awan llm")
         awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
-        logger.info(f"awan llm response: {awan_llm_response}")
 
         # Check if there is an error invoking awan llm
         if "statusCode" in awan_llm_response:
@@ -115,8 +111,6 @@ async def get_important_terms_from_pdf():
             "scope": scope,
             "important_terms": terms
         }
-
-        logger.info(f"Prompt: {prompt}")
 
         x = LLMChain(
             llm=llm,
@@ -184,15 +178,12 @@ async def get_important_terms_from_url():
         logger.info(f"extracting texts from {url}")
         response = requests.get("https://r.jina.ai/" + url)
         extracted_text = response.text
-        logger.info(f"extracted_text: {extracted_text}")
 
         logger.info("predicting tags with flair NER model")
         predicted_tags = predict_with_flair(extracted_text)
-        logger.info(f"predicted_tags: {predicted_tags}")
 
         logger.info("invoking awan llm")
         awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
-        logger.info(f"awan llm response: {awan_llm_response}")
 
         # Check if there is an error invoking awan llm
         if "statusCode" in awan_llm_response:
@@ -214,8 +205,6 @@ async def get_important_terms_from_url():
             "scope": scope,
             "important_terms": terms
         }
-
-        logger.info(f"Prompt: {prompt}")
 
         x = LLMChain(
             llm=llm,
