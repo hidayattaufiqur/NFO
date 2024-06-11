@@ -38,3 +38,7 @@ build-backend = "poetry.core.masonry.api"
 packages = [
     { include = "app" },
 ]
+
+[tool.basedpyright]
+venvPath = "."
+typeCheckingMode = "basic"
