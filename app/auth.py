@@ -4,6 +4,7 @@ import os
 import logging
 import uuid
 import re
+import datetime
 
 from flask import jsonify, redirect, url_for, session, request, Blueprint
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user, user_needs_refresh
@@ -11,9 +12,6 @@ from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 from . import helper
 from . import database as db
-
-# TODO: add login manager user_loader function
-# TODO: use this to check authenticated user instead
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -50,6 +48,18 @@ def load_user(user_id):
         return user_info
     return None
 
+def is_authorized():
+    if not current_user.is_authenticated:
+        return helper.response_template({"message": f"User is Unauthorized. Please Login", "status_code": 401, "data": None})
+    return None
+
+def refresh_session():
+    if user_needs_refresh.send(current_user._get_current_object()):
+        session.permanent = True
+        session.modified = True
+        session['_fresh'] = True
+        session['_permanent'] = datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=30)
+
 def create_flow():
     logger.info("initializing flow")
     flow = Flow.from_client_secrets_file(
@@ -62,6 +72,7 @@ def create_flow():
         redirect_uri=url_for('auth.callback', _external=True)
     )
     return flow
+
 
 @bp.route('/login')
 def login():
@@ -131,6 +142,7 @@ def callback():
 
         session['user_info'] = id_info
         session['user_id'] = user_id
+        session.permanent = True
 
         logger.debug(f"is it here? {session}")
         user = User(user_id=user_id, name=id_info['name'], email=id_info['email'], profile_pic=id_info['picture'])
@@ -151,7 +163,7 @@ def profile():
         auth_response = is_authorized()
 
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
 
         user_info = {
             'name': current_user.name,
@@ -165,9 +177,3 @@ def profile():
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} {e}")
         return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
-
-
-def is_authorized():
-    if not current_user.is_authenticated:
-        return helper.response_template({"message": f"User is Unauthorized. Please Login", "status_code": 401, "data": None})
-    return None

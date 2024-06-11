@@ -15,9 +15,9 @@ using flair or something else to get the important terms
 - [x] generate classes, object properties, and data properties out of important terms using LLM 
 - [x] scope in step 3 is actually using domain within conversation 
 - [x] fuse important terms and class and instance generation into the same endpoint
+- [x] change the flow of authentication
 
 - [ ] user can go back to previous steps
-- [ ] change the flow of authentication
 - [ ] work on the 6th step
 - [ ] work on the 7th step
 
@@ -27,10 +27,10 @@ using flair or something else to get the important terms
 - [x] restructure code (e.g. handlers to one new specific file)
 - [x] Implement error handling for API calls
 - [x] better error log and response per route
+- [x] secure routes using oauth session key
+- [x] Implement user authorization and session management
 
-- [ ] secure routes using oauth session key
 - [ ] implement DB migration
-- [ ] Implement user authorization and session management
 - [ ] update README
 
 # low priority

@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 from flask import Flask 
 from flask_login import LoginManager
 from flask_cors import CORS
+from datetime import timedelta
 
 from . import helper
 
@@ -29,6 +30,7 @@ def create_app():
     app.config['UPLOAD_FOLDER'] = helper.UPLOAD_FOLDER
     app.config['MAX_CONTENT_LENGTH'] = helper.MAX_CONTENT_LENGTH
     app.config['PREFERRED_URL_SCHEME'] = 'https'
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 
     from . import database as db
 

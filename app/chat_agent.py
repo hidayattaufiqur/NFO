@@ -1,5 +1,4 @@
 from flask import request, Blueprint, jsonify, session
-from flask_login import current_user
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
@@ -9,7 +8,7 @@ from langchain.memory import ConversationBufferWindowMemory
 
 from . import database as db
 from . import helper
-from .auth import is_authorized
+from .auth import is_authorized, refresh_session
 
 import json
 import logging
@@ -30,7 +29,9 @@ async def conversation(conversation_id=None):
     try: 
         auth_response = is_authorized()
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
+
+        refresh_session()
 
         logger.info(f"Headers: {request.headers}")
         logger.info(f"Body: {request.get_data(as_text=True)}")
@@ -102,7 +103,9 @@ def get_detail_conversation(conversation_id):
     try: 
         auth_response = is_authorized()
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
+
+        refresh_session()
 
         logger.info(f"Headers: {request.headers}")
         logger.info(f"Body: {request.get_data(as_text=True)}")
@@ -148,7 +151,9 @@ def get_all_conversations_by_user_id(user_id):
     try: 
         auth_response = is_authorized()
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
+
+        refresh_session()
 
         db_response = db.get_all_conversations_from_a_user(user_id)
 
@@ -164,7 +169,9 @@ def delete_conversation(conversation_id):
     try: 
         auth_response = is_authorized()
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
+
+        refresh_session()
 
         db_conn = db.get_connection()
         table_name = "message_store"
@@ -191,7 +198,9 @@ def save_competency_questions(conversation_id):
     try:
         auth_response = is_authorized()
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
+
+        refresh_session()
 
         data = request.json
         cq_id = uuid.uuid4()
@@ -215,7 +224,9 @@ def get_competency_questions(conversation_id):
     try: 
         auth_response = is_authorized()
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
+
+        refresh_session()
 
         db_response = db.get_all_competency_questions_by_convo_id(conversation_id)
 
@@ -231,7 +242,9 @@ def validating_competency_questions(cq_id):
     try: 
         auth_response = is_authorized()
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
+
+        refresh_session()
 
         db.validating_competency_question(cq_id, True)
 

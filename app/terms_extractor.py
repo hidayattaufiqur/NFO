@@ -10,7 +10,7 @@ from langchain.chains import  LLMChain
 
 from . import database as db
 from . import helper
-from .auth import is_authorized
+from .auth import is_authorized, refresh_session
 
 import logging 
 import os
@@ -35,7 +35,9 @@ async def get_important_terms_from_pdf():
     try: 
         auth_response = is_authorized()
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
+
+        refresh_session()
 
         if "file" not in request.files:
             logger.error("no file is uploaded")
@@ -158,7 +160,9 @@ async def get_important_terms_from_url():
     try:
         auth_response = is_authorized()
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
+
+        refresh_session()
 
         logger.info("extracting url from request body")
         data = request.json
@@ -251,7 +255,9 @@ async def generate_classes_and_properties():
     try:
         auth_response = is_authorized()
         if auth_response: 
-            return jsonify(auth_response)
+            return jsonify(auth_response), 401
+
+        refresh_session()
 
         data = request.json
         terms_id = data["important_terms_id"]
