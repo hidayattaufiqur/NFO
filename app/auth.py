@@ -1,4 +1,5 @@
 import google.oauth2.id_token
+import google.oauth2.credentials
 import requests
 import os
 import logging
@@ -72,21 +73,30 @@ def create_flow():
     )
     return flow
 
+def get_user_info_token_from_access_token(access_token):
+    url = 'https://www.googleapis.com/oauth2/v3/userinfo'
+
+    headers = {
+        'Authorization': f'Bearer {access_token}'
+    }
+
+    response = requests.get(url, headers=headers)
+    
+    if response.status_code == 200:
+        return response.json()
+    else:
+        raise ValueError(f"Failed to retrieve user info. Status code: {response.status_code}, Response: {response.text}")
+
 
 @bp.route('/login', methods=['POST'])
 def login():
     try: 
         logger.info("parsing request body")
         data = request.get_json()
-        client_id = data.get('client_id')
         access_token = data.get('access_token')
 
-        request_session = requests.session()
-        token_request = Request(session=request_session)
-
-        id_info = google.oauth2.id_token.verify_oauth2_token(
-            access_token, token_request, client_id, clock_skew_in_seconds=8
-        )
+        logger.info("fetching user info from access_token")
+        id_info = get_user_info_token_from_access_token(access_token)
 
         logger.info("looking up user by email")
         user_info = db.get_user_by_email(id_info['email'])
