@@ -52,14 +52,12 @@
           ];
 
           shellHook = with pkgs; ''
-            cowsay "`${python311}/bin/python3 --version` environment activated"
-
-            python -m venv ./.venv
-
-            . ./.venv/bin/activate
             echo
             echo 
-            cowsay "venv activated"
+            echo "`${python311}/bin/python3 --version` environment activated"
+            python -m venv ./.venv
+            . ./.venv/bin/activate
+            echo "venv activated"
             unset SOURCE_DATE_EPOCH
           '';
         };

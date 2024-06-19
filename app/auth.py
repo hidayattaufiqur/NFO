@@ -81,8 +81,11 @@ def login():
         client_id = data.get('client_id')
         access_token = data.get('access_token')
 
+        request_session = requests.session()
+        token_request = Request(session=request_session)
+
         id_info = google.oauth2.id_token.verify_oauth2_token(
-            access_token, requests.Request(), client_id, clock_skew_in_seconds=8
+            access_token, token_request, client_id, clock_skew_in_seconds=8
         )
 
         logger.info("looking up user by email")

@@ -285,7 +285,10 @@ async def generate_classes_and_properties():
         
     except Exception as e:
         logger.info(f"an error occurred at route {request.path} with error: {e}")
-        return jsonify(helper.chat_agent_response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": prompt, "output": None})), 500
+        return jsonify(
+            helper.chat_agent_response_template(
+                {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": prompt, "output": None})
+        ), 500
 
     return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
 

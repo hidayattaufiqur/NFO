@@ -17,6 +17,7 @@ using flair or something else to get the important terms
 - [x] fuse important terms and class and instance generation into the same endpoint
 - [x] change the flow of authentication
 
+- [ ] saves object and data properties to DB
 - [ ] user can go back to previous steps
 - [ ] work on the 6th step
 - [ ] work on the 7th step
