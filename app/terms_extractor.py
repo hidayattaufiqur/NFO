@@ -17,6 +17,7 @@ import os
 import json
 import requests
 import uuid
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -25,7 +26,9 @@ bp = Blueprint('terms_extractor', __name__, url_prefix='/terms_extractor')
 llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
 logger.info("loading flair NER model")
+start_time = time.time()
 tagger = Classifier.load("ner") # load flair NER model 
+logger.info(f"NER loaded in {round(time.time() - start_time, 3)}S")
 
 @bp.route('/pdf', methods=['POST'])
 async def get_important_terms_from_pdf():
@@ -219,6 +222,9 @@ async def get_important_terms_from_url():
         logger.info(f"Invoking prompt to OpenAI")
         llm_response = await x.ainvoke(prompt)
         llm_response_json = json.loads(llm_response["text"])
+
+        logger.info("saving classes to database")
+
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error message: {e}")
