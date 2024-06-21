@@ -82,8 +82,9 @@ async def conversation(conversation_id=None):
             db.update_conversation(response_json["scope"], conversation_id, response_json["domain"], response_json["scope"], True)
 
         logger.info("successfully invoked OpenAI prompt and updated the conversation history")
+        logger.info("closing ChatMessageHistory db connection")
 
-        db.close_connection(db_conn)
+        db_conn.close()
 
     except Exception as e:
         logger.info(f"an error occurred at route {request.path} with error: {e}")
