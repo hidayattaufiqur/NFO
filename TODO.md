@@ -17,10 +17,13 @@ using flair or something else to get the important terms
 - [x] fuse important terms and class and instance generation into the same endpoint
 - [x] change the flow of authentication
 
-- [ ] saves object and data properties to DB
+- [i] saves object and data properties to DB
 - [ ] user can go back to previous steps
 - [ ] work on the 6th step
 - [ ] work on the 7th step
+- [ ] create class data junction db command and query
+- [ ] consider hadnling the logic on a higher level (e.g. in the service layer)
+- [ ] refactor the code to make it more modular, readable, and maintainable
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video
