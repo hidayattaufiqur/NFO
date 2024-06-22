@@ -4,8 +4,14 @@ meta {
   seq: 1
 }
 
-get {
-  url: {{dev_url}}/login
-  body: none
+post {
+  url: {{dev}}/login
+  body: json
   auth: none
+}
+
+body:json {
+  {
+    "access_token": ""
+  }
 }
