@@ -1,25 +1,18 @@
 meta {
   name: Upload pdf
   type: http
-  seq: 1
+  seq: 3
 }
 
 post {
-  url: {{dev_url}}/terms_extractor/pdf
-  body: multipartForm
+  url: {{dev}}/terms_extractor/url
+  body: json
   auth: none
 }
 
-body:form-urlencoded {
-  file: undefined
-  domain: web%20protocol
-  scope: http%20protocol
-}
-
-body:multipart-form {
-  file: @file(/home/nixos-box/Documents/APJK/Tugas Besar/Hypertext transfer protocol performance analysis in traditionalandsoftwaredefined networks during Slowlorisattack.pdf)
-  conversation_id: 12065419-59bb-4277-b5bd-0fe24bf7556e
-  ~domain: Computer Networking
-  ~scope: Hypertext transfer protocol performance analysis in traditional
-  and software defined networks during Slowloris attack
+body:json {
+  {
+    "conversation_id": "d4dc0b41-4524-4273-a72e-1146b78d84eb",
+    "url": "https://revou.co/panduan-teknis/web-scraping-python"
+  }
 }
