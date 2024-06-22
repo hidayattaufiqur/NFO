@@ -33,14 +33,14 @@ def create_app():
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 
     from . import database as db
-
-    db.init_db()
+    with app.app_context():
+        db.init_db(app)
 
     @app.route('/')
     def index():
         return 'Hello, world!'
 
-    from .auth import load_user, bp as auth_bp
+    from .modules.auth import load_user, bp as auth_bp
     from .chat_agent import bp as chat_agent_bp
     from .terms_extractor import bp as terms_extractor_bp
 

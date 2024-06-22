@@ -1,18 +1,20 @@
-import google.oauth2.id_token
 import google.oauth2.credentials
 import requests
 import os
 import logging
-import uuid
-import re
 import datetime
 
-from flask import jsonify, url_for, session, request, Blueprint
-from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user, user_needs_refresh
+from flask import url_for, session, Blueprint, jsonify, request
+from flask_login import LoginManager, UserMixin, login_required, logout_user, login_user, current_user, user_needs_refresh
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
-from . import helper
-from . import database as db
+
+# import from app.modules.auth import *
+from .model import *
+
+from app.helper import *
+
+import uuid
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
@@ -35,7 +37,7 @@ class User(UserMixin):
 
     @staticmethod
     def get(user_id):
-        user_info = db.get_user_by_id(user_id)
+        user_info = get_user_by_id(user_id)
         if user_info:
             return User(user_id=user_info['user_id'], name=user_info['name'], email=user_info['email'], profile_pic=user_info['profile_pic_url'])
         return None
@@ -50,7 +52,7 @@ def load_user(user_id):
 
 def is_authorized():
     if not current_user.is_authenticated:
-        return helper.response_template({"message": f"User is Unauthorized. Please Login", "status_code": 401, "data": None})
+        return response_template({"message": f"User is Unauthorized. Please Login", "status_code": 401, "data": None})
     return None
 
 def refresh_session():
@@ -87,10 +89,8 @@ def get_user_info_token_from_access_token(access_token):
     else:
         raise ValueError(f"Failed to retrieve user info. Status code: {response.status_code}, Response: {response.text}")
 
-
-@bp.route('/login', methods=['POST'])
-def login():
-    try: 
+def login_service():
+    try:
         logger.info("parsing request body")
         data = request.get_json()
         access_token = data.get('access_token')
@@ -99,13 +99,13 @@ def login():
         id_info = get_user_info_token_from_access_token(access_token)
 
         logger.info("looking up user by email")
-        user_info = db.get_user_by_email(id_info['email'])
-        if user_info: 
+        user_info = get_user_by_email(id_info['email'])
+        if user_info:
             user_id = user_info['user_id']
         else:
             logger.info("creating a new user in database")
             user_id = uuid.uuid4()
-            user_info = db.create_user(user_id, id_info['name'], id_info['email'], id_info['picture']) 
+            user_info = create_user(user_id, id_info['name'], id_info['email'], id_info['picture'])
 
         session['user_info'] = id_info
         session['user_id'] = user_id
@@ -121,17 +121,14 @@ def login():
         # logging.info("redirecting to authorization_url")
         # return redirect(authorization_url)
 
+        return jsonify(response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
 
-        return jsonify(helper.response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
-
-    except Exception as e: 
+    except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
-        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
-
-
-@bp.route('/login/callback')
-def callback():
-    try: 
+        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+    
+def callback_service():
+    try:
         flow = create_flow()
 
         # hacky way to replace http to https on redirect
@@ -144,7 +141,7 @@ def callback():
 
         flow.fetch_token(authorization_response=new_authorization_response)
 
-        if not session['state'] == request.args['state']: abort(500)  
+        if not session['state'] == request.args['state']: abort(500)
 
         credentials = flow.credentials
         request_session = requests.session()
@@ -154,13 +151,13 @@ def callback():
         )
 
         logger.info("looking up user by email")
-        user_info = db.get_user_by_email(id_info['email'])
-        if user_info: 
+        user_info = get_user_by_email(id_info['email'])
+        if user_info:
             user_id = user_info['user_id']
         else:
             logger.info("creating user in database")
             user_id = uuid.uuid4()
-            user_info = db.create_user(user_id, id_info['name'], id_info['email'], id_info['picture']) 
+            user_info = create_user(user_id, id_info['name'], id_info['email'], id_info['picture'])
 
         session['user_info'] = id_info
         session['user_id'] = user_id
@@ -171,19 +168,17 @@ def callback():
 
         logger.info(f"user: {id_info['name']} logged in successfully")
 
-        return jsonify(helper.response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
-    
+        return jsonify(response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
+
     except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
-        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
 
-    
-@bp.route('/profile')
-def profile():
-    try: 
+def profile_service():
+    try:
         auth_response = is_authorized()
 
-        if auth_response: 
+        if auth_response:
             return jsonify(auth_response), 401
 
         refresh_session()
@@ -195,8 +190,9 @@ def profile():
         }
 
         logger.info("user fetched successfully")
-        return jsonify(helper.response_template(({"message": "user profile", "status_code": 200, "data": user_info})))
+        return jsonify(response_template(({"message": "user profile", "status_code": 200, "data": user_info})))
 
-    except Exception as e: 
+    except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
-        return jsonify(helper.response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+    

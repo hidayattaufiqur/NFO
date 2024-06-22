@@ -8,7 +8,7 @@ from langchain.memory import ConversationBufferWindowMemory
 
 from . import database as db
 from . import helper
-from .auth import is_authorized, refresh_session
+from .modules.auth import is_authorized, refresh_session
 
 import json
 import logging

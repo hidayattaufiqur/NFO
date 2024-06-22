@@ -1,4 +1,5 @@
 from langchain_community.chat_message_histories.sql import SQLChatMessageHistory
+from flask import current_app, g
 
 import psycopg
 import psycopg2
@@ -15,20 +16,22 @@ logger = logging.getLogger(__name__)
 psycopg2.extras.register_uuid()
 logger.info("UUID extras has been registered on psycopg2")
 
-pool = psycopg2.pool.ThreadedConnectionPool(
-    1, 20,
-    user=os.environ.get('DB_USER'),
-    password=os.environ.get('DB_PASSWORD'),
-    host=os.environ.get('DB_HOST'),
-    port=os.environ.get('DB_PORT'),
-    database=os.environ.get('DB_NAME'),
-    cursor_factory=psycopg2.extras.RealDictCursor
-)
-
 connection_string = f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@localhost/postgres"
 
-def init_db():
+def init_db(app):
+    global pool
+    pool = psycopg2.pool.ThreadedConnectionPool(
+        1, 20,
+        user=os.environ.get('DB_USER'),
+        password=os.environ.get('DB_PASSWORD'),
+        host=os.environ.get('DB_HOST'),
+        port=os.environ.get('DB_PORT'),
+        database=os.environ.get('DB_NAME'),
+        cursor_factory=psycopg2.extras.RealDictCursor
+    )
+    app.teardown_appcontext(close_pool_connection)
     conn = get_pool_connection()
+
     try:
         logger.info("initializing database")
         with conn.cursor() as cur:
@@ -224,7 +227,7 @@ def init_db():
             logger.info("database initialized")
             conn.commit()
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 
 """db connections"""
@@ -243,64 +246,19 @@ def get_connection():
 
 def get_pool_connection():
     logger.info("establishing pool connection")
-    return pool.getconn()
+    if "conn" not in g: 
+        g.conn = pool.getconn()  
+    return g.conn # return conn object from flask.g namespace for better efficiency
 
-def close_connection(conn):
+def close_pool_connection(conn):
     logger.info("closing db connection")
-    pool.putconn(conn)
-
-def close_pool():
+    conn = g.pop('conn', None)
+    if conn is not None:
+        pool.putconn(conn)
+        
+def close_all_pool_connection():
     logger.info("closing db pool connection")
     pool.closeall()
-
-
-"""users"""
-def create_user(user_id, name, email, profile_pic_url):
-    conn = get_pool_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute('''
-                INSERT INTO users (user_id, name, email, profile_pic_url)
-                VALUES (%s, %s, %s, %s)
-                ON CONFLICT (email) DO NOTHING
-                RETURNING *;
-            ''', (user_id, name, email, profile_pic_url))
-            user = cur.fetchone()
-            conn.commit()
-            return user
-    except Exception as e:
-        logger.error(f"Error creating user: {e}")
-        return None
-    finally:
-        close_connection(conn)
-
-def get_user_by_email(email):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching user by email")
-        with conn.cursor() as cur:
-            cur.execute('SELECT user_id, name, email, profile_pic_url, created_at FROM users WHERE email = %s AND deleted_at IS NULL', (email,))
-            user = cur.fetchone()
-            return user
-    except Exception as e:
-        logger.error(f"Error fetching user by email: {e}")
-        return None
-    finally:
-        close_connection(conn)
-
-def get_user_by_id(user_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching user by email")
-        with conn.cursor() as cur:
-            cur.execute('SELECT user_id, name, email, profile_pic_url, created_at FROM users WHERE user_id = %s AND deleted_at IS NULL', (user_id,))
-            user = cur.fetchone()
-            return user
-    except Exception as e:
-        logger.error(f"Error fetching user by user_id: {e}")
-        return None
-    finally:
-        close_connection(conn)
 
 
 """conversations"""
@@ -321,7 +279,7 @@ def create_conversation(conversation_id, user_id, domain, scope):
         logger.error(f"Error creating conversation: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_conversation_detail_by_id(convo_id):
     conn = get_pool_connection()
@@ -347,7 +305,7 @@ def get_conversation_detail_by_id(convo_id):
         logger.error(f"Error fetching conversation detail by id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_all_conversations_from_a_user(user_id):
     conn = get_pool_connection()
@@ -361,7 +319,7 @@ def get_all_conversations_from_a_user(user_id):
         logger.error(f"Error fetching conversations from a user: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def update_conversation(title, convo_id, domain, scope, is_active):
     conn = get_pool_connection()
@@ -381,7 +339,7 @@ def update_conversation(title, convo_id, domain, scope, is_active):
         logger.error(f"Error updating conversation: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def delete_conversation(conversation_id):
     conn = get_pool_connection()
@@ -399,7 +357,7 @@ def delete_conversation(conversation_id):
         logger.error(f"Error deleting conversation: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 
 """competency questions"""
@@ -419,7 +377,7 @@ def create_competency_question(cq_id, user_id, convo_id, question):
         logger.error(f"Error creating competency question: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_all_competency_questions_by_convo_id(convo_id):
     conn = get_pool_connection()
@@ -433,7 +391,7 @@ def get_all_competency_questions_by_convo_id(convo_id):
         logger.error(f"Error fetching competency questions by conversation id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def validating_competency_question(cq_id, is_valid):
     conn = get_pool_connection()
@@ -452,7 +410,7 @@ def validating_competency_question(cq_id, is_valid):
         logger.error(f"Error validating competency question: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 
 """important terms"""
@@ -473,7 +431,7 @@ def create_important_terms(important_terms_id, user_id, convo_id, terms):
         logger.error(f"Error creating important terms: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_important_terms_by_id(important_terms_id):
     conn = get_pool_connection()
@@ -487,7 +445,7 @@ def get_important_terms_by_id(important_terms_id):
         logger.error(f"Error fetching important terms by id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_important_terms_by_conversation_id(convo_id):
     conn = get_pool_connection()
@@ -501,7 +459,7 @@ def get_important_terms_by_conversation_id(convo_id):
         logger.error(f"Error fetching important terms by conversation id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 
 """classes"""
@@ -522,7 +480,7 @@ def create_class(class_id, convo_id, name, desc=""):
         logger.error(f"Error inserting a class: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_class_by_id(class_id):
     conn = get_pool_connection()
@@ -536,7 +494,7 @@ def get_class_by_id(class_id):
         logger.error(f"Error fetching class by id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_class_by_name(name):
     conn = get_pool_connection()
@@ -550,7 +508,7 @@ def get_class_by_name(name):
         logger.error(f"Error fetching class by name: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_all_classes_by_conversation_id(convo_id):
     conn = get_pool_connection()
@@ -564,7 +522,7 @@ def get_all_classes_by_conversation_id(convo_id):
         logger.error(f"Error fetching classes by conversation id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 
 """data properties"""
@@ -585,7 +543,7 @@ def create_data_property(data_property_id, class_id, name, data_type):
         logger.error(f"Error inserting a data property: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_data_property_by_id(data_property_id):
     conn = get_pool_connection()
@@ -599,7 +557,7 @@ def get_data_property_by_id(data_property_id):
         logger.error(f"Error fetching data property by id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_data_property_by_name(name):
     conn = get_pool_connection()
@@ -613,7 +571,7 @@ def get_data_property_by_name(name):
         logger.error(f"Error fetching data property by name: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_all_data_properties_by_class_id(class_id):
     conn = get_pool_connection()
@@ -627,7 +585,7 @@ def get_all_data_properties_by_class_id(class_id):
         logger.error(f"Error fetching data properties by class id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 
 """object properties"""
@@ -648,7 +606,7 @@ def create_object_property(object_property_id, class_id, name):
         logger.error(f"Error inserting an object property: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_object_property_by_id(object_property_id):
     conn = get_pool_connection()
@@ -662,7 +620,7 @@ def get_object_property_by_id(object_property_id):
         logger.error(f"Error fetching object property by id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_object_property_by_name(name):
     conn = get_pool_connection()
@@ -676,7 +634,7 @@ def get_object_property_by_name(name):
         logger.error(f"Error fetching object property by name: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_all_object_properties_by_domain_id(domain_id):
     conn = get_pool_connection()
@@ -690,7 +648,7 @@ def get_all_object_properties_by_domain_id(domain_id):
         logger.error(f"Error fetching object properties by domain id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 
 """classes data junction"""
@@ -722,7 +680,7 @@ def create_classes_data_junction(class_id, data_property_id):
         logger.error(f"Error inserting classes data junction: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_classes_data_junction_by_class_id(class_id):
     conn = get_pool_connection()
@@ -736,7 +694,7 @@ def get_classes_data_junction_by_class_id(class_id):
         logger.error(f"Error fetching classes data junction by class id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_classes_data_junction_by_data_property_id(data_property_id):
     conn = get_pool_connection()
@@ -750,7 +708,7 @@ def get_classes_data_junction_by_data_property_id(data_property_id):
         logger.error(f"Error fetching classes data junction by data property id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 
 """classes object junction"""
@@ -771,7 +729,7 @@ def create_classes_object_junction(class_id, object_property_id):
         logger.error(f"Error inserting classes object junction: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_classes_object_junction_by_class_id(class_id):
     conn = get_pool_connection()
@@ -785,7 +743,7 @@ def get_classes_object_junction_by_class_id(class_id):
         logger.error(f"Error fetching classes object junction by class id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_classes_object_junction_by_object_property_id(object_property_id):
     conn = get_pool_connection()
@@ -799,7 +757,7 @@ def get_classes_object_junction_by_object_property_id(object_property_id):
         logger.error(f"Error fetching classes object junction by object property id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 """domains"""
 def create_domain(domain_id, object_property_id, name):
@@ -819,7 +777,7 @@ def create_domain(domain_id, object_property_id, name):
         logger.error(f"Error inserting a domain: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_domain_by_id(domain_id):
     conn = get_pool_connection()
@@ -833,7 +791,7 @@ def get_domain_by_id(domain_id):
         logger.error(f"Error fetching domain by id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_domain_by_name(name):
     conn = get_pool_connection()
@@ -847,7 +805,7 @@ def get_domain_by_name(name):
         logger.error(f"Error fetching domain by name: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_all_domains_by_object_property_id(object_property_id):
     conn = get_pool_connection()
@@ -861,7 +819,7 @@ def get_all_domains_by_object_property_id(object_property_id):
         logger.error(f"Error fetching domains by object property id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 
 """ranges"""
@@ -882,7 +840,7 @@ def create_range(range_id, object_property_id, name):
         logger.error(f"Error inserting a range: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_range_by_id(range_id):
     conn = get_pool_connection()
@@ -896,7 +854,7 @@ def get_range_by_id(range_id):
         logger.error(f"Error fetching range by id: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_range_by_name(name):
     conn = get_pool_connection()
@@ -910,7 +868,7 @@ def get_range_by_name(name):
         logger.error(f"Error fetching range by name: {e}")
         return None
     finally:
-        close_connection(conn)
+        close_pool_connection(conn)
 
 def get_all_ranges_by_object_property_id(object_property_id):
     conn = get_pool_connection()
