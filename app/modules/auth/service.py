@@ -3,18 +3,16 @@ import requests
 import os
 import logging
 import datetime
+import uuid
+import re
 
 from flask import url_for, session, Blueprint, jsonify, request
 from flask_login import LoginManager, UserMixin, login_required, logout_user, login_user, current_user, user_needs_refresh
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 
-# import from app.modules.auth import *
 from .model import *
-
 from app.helper import *
-
-import uuid
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
