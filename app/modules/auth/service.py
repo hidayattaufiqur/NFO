@@ -12,7 +12,7 @@ from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 
 from .model import *
-from app.helper import *
+from app.utils import *
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
