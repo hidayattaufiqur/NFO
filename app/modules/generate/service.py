@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, request, session
+from flask import jsonify, request, session
 from werkzeug.utils import secure_filename
 from llmsherpa.readers import LayoutPDFReader
 from flair.nn import Classifier 
@@ -8,9 +8,11 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import  LLMChain
 
-from . import database as db
-from . import helper
-from .modules.auth import is_authorized, refresh_session
+from app.database import *
+from app.utils import * 
+from app.modules.auth import is_authorized, refresh_session
+from app.modules.conversation import get_conversation_detail_by_id
+from .model import *
 
 import logging 
 import os
@@ -21,7 +23,6 @@ import time
 
 logger = logging.getLogger(__name__)
 
-bp = Blueprint('terms_extractor', __name__, url_prefix='/terms_extractor')
 
 llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
@@ -30,8 +31,7 @@ start_time = time.time()
 tagger = Classifier.load("ner") # load flair NER model 
 logger.info(f"NER loaded in {round(time.time() - start_time, 3)}S")
 
-@bp.route('/pdf', methods=['POST'])
-async def get_important_terms_from_pdf():
+async def get_important_terms_from_pdf_service():
     filename = ""
     filepath = ""
 
@@ -56,7 +56,7 @@ async def get_important_terms_from_pdf():
         conversation_id = data["conversation_id"]
 
         # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
-        db_response = db.get_conversation_detail_by_id(conversation_id)
+        db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None: 
             domain = data["domain"]
@@ -107,7 +107,7 @@ async def get_important_terms_from_pdf():
         terms = awan_llm_response["choices"][0]["message"]["content"]
 
         logger.info("saving important terms to database")
-        db.create_important_terms(important_terms_id, user_id, conversation_id, terms)
+        create_important_terms(important_terms_id, user_id, conversation_id, terms)
 
         prompt = {
             "domain": domain,
@@ -151,9 +151,7 @@ async def get_important_terms_from_pdf():
         }
     }), 200
 
-
-@bp.route("/url", methods=["POST"])
-async def get_important_terms_from_url(): 
+async def get_important_terms_from_url_service(): 
     try:
         auth_response = is_authorized()
         if auth_response: 
@@ -169,7 +167,7 @@ async def get_important_terms_from_url():
         url = data["url"]
 
         # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
-        db_response = db.get_conversation_detail_by_id(conversation_id)
+        db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None: 
             domain = data["domain"]
@@ -201,7 +199,7 @@ async def get_important_terms_from_url():
         terms = awan_llm_response["choices"][0]["message"]["content"]
 
         logger.info("saving important terms to database")
-        db.create_important_terms(important_terms_id, user_id, conversation_id, terms)
+        create_important_terms(important_terms_id, user_id, conversation_id, terms)
 
         prompt = {
             "domain": domain,
@@ -243,9 +241,7 @@ async def get_important_terms_from_url():
         }
     }), 200
 
-
-@bp.route('/generate', methods=['POST'])
-async def generate_classes_and_properties():
+async def generate_classes_and_properties_service():
     prompt = ""
     try:
         auth_response = is_authorized()
@@ -259,7 +255,7 @@ async def generate_classes_and_properties():
         domain = data["domain"]
         scope = data["scope"]
         
-        db_response = db.get_important_terms_by_id(terms_id)
+        db_response = get_important_terms_by_id(terms_id)
         if db_response is None: 
             return helper.response_template({
                 "message": "There is no important terms with such ID",
@@ -297,7 +293,6 @@ async def generate_classes_and_properties():
         ), 500
 
     return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
-
 
 def extract_text_from_pdf(pdf_file_path):
     try: 
