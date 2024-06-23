@@ -7,7 +7,7 @@ from app.utils import *
 
 def is_authorized():
     if not current_user.is_authenticated:
-        return response_template({"message": f"User is Unauthorized. Please Login", "status_code": 400, "data": None})
+        return response_template({"message": f"User is Unauthorized. Please Login", "status_code": 401, "data": None})
     return None
 
 def refresh_session():
