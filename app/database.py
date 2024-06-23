@@ -232,8 +232,6 @@ def init_db(app):
 
 
 """db connections"""
-
-
 def get_chat_message_history_connection(table_name, session_id):
     logger.info("establishing SQLChatMessageHistory connection")
     history = SQLChatMessageHistory(
@@ -269,120 +267,7 @@ def close_all_pool_connection():
     pool.closeall()
 
 
-"""competency questions"""
-def create_competency_question(cq_id, user_id, convo_id, question):
-    conn = get_pool_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute('''
-                INSERT INTO competency_questions (cq_id, user_id, conversation_id, question)
-                VALUES (%s, %s, %s, %s)
-                RETURNING *;
-            ''', (cq_id, user_id, convo_id, question))
-            cq = cur.fetchone()
-            conn.commit()
-            return cq
-    except Exception as e:
-        logger.error(f"Error creating competency question: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-def get_all_competency_questions_by_convo_id(convo_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching competency_questions from a conversation")
-        with conn.cursor() as cur:
-            cur.execute('SELECT cq_id, user_id, conversation_id, is_valid, question, created_at FROM competency_questions WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
-            cqs = cur.fetchall()
-            return cqs
-    except Exception as e:
-        logger.error(
-            f"Error fetching competency questions by conversation id: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-def validating_competency_question(cq_id, is_valid):
-    conn = get_pool_connection()
-    try:
-        with conn.cursor() as cur:
-            cur.execute('''
-                UPDATE competency_questions
-                SET is_valid = %s, updated_at = CURRENT_TIMESTAMP, validated_at = CURRENT_TIMESTAMP
-                WHERE id = %s
-                RETURNING *;
-            ''', (is_valid, cq_id))
-            cq = cur.fetchone()
-            conn.commit()
-            return cq
-    except Exception as e:
-        logger.error(f"Error validating competency question: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-"""important terms"""
-
-
-def create_important_terms(important_terms_id, user_id, convo_id, terms):
-    conn = get_pool_connection()
-    try:
-        logger.info("creating important terms")
-        with conn.cursor() as cur:
-            cur.execute('''
-                INSERT INTO important_terms (important_terms_id, user_id, conversation_id, terms)
-                VALUES (%s, %s, %s, %s)
-                RETURNING *;
-            ''', (important_terms_id, user_id, convo_id, terms))
-            terms = cur.fetchone()
-            conn.commit()
-            return terms
-    except Exception as e:
-        logger.error(f"Error creating important terms: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-def get_important_terms_by_id(important_terms_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching important terms by id")
-        with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM important_terms WHERE important_terms_id = %s AND deleted_at IS NULL', (important_terms_id,))
-            terms = cur.fetchone()
-            return terms
-    except Exception as e:
-        logger.error(f"Error fetching important terms by id: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-def get_important_terms_by_conversation_id(convo_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching important terms by conversation id")
-        with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM important_terms WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
-            terms = cur.fetchall()
-            return terms
-    except Exception as e:
-        logger.error(f"Error fetching important terms by conversation id: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
 """classes"""
-
-
 def create_class(class_id, convo_id, name, desc=""):
     conn = get_pool_connection()
     try:
