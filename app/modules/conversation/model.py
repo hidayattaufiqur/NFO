@@ -109,10 +109,10 @@ def create_competency_question(cq_id, user_id, convo_id, question):
     try:
         with conn.cursor() as cur:
             cur.execute('''
-                INSERT INTO competency_questions (cq_id, user_id, conversation_id, question)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO competency_questions (cq_id, user_id, conversation_id, question, is_valid)
+                VALUES (%s, %s, %s, %s, %s)
                 RETURNING *;
-            ''', (cq_id, user_id, convo_id, question))
+            ''', (cq_id, user_id, convo_id, question, True)) # it's instantly validated because user only saves valid CQ
             cq = cur.fetchone()
             conn.commit()
             return cq
