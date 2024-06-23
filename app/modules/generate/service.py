@@ -35,9 +35,10 @@ async def get_important_terms_from_pdf_service():
     filepath = ""
 
     try: 
+        logger.info("am i here?")
         if "file" not in request.files:
             logger.error("no file is uploaded")
-            return jsonify(helper.response_template({
+            return jsonify(response_template({
                 "message": "no file uploaded",
                 "status_code": 400,
                 "data": None
@@ -47,6 +48,8 @@ async def get_important_terms_from_pdf_service():
 
         user_id = session.get('user_id')
         conversation_id = data["conversation_id"]
+
+        
 
         # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
         db_response = get_conversation_detail_by_id(conversation_id)
@@ -61,21 +64,21 @@ async def get_important_terms_from_pdf_service():
         file = request.files['file']
         if file.filename == '':
             logger.error("no file selected")
-            return jsonify(helper.response_template({
+            return jsonify(response_template({
                 "message": "No file selected",
                 "status_code": 400,
                 "data": None
             })), 400
 
-        if file and helper.allowed_file(file.filename):
+        if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
-            filepath = os.path.join(helper.UPLOAD_FOLDER, filename)
+            filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
 
         extracted_text = extract_text_from_pdf(filepath)
         if extracted_text is None: 
             logger.error("error extracting text from pdf")
-            return jsonify(helper.response_template({
+            return jsonify(response_template({
                 "message": "Error extracting text from pdf",
                 "status_code": 500,
                 "data": None
@@ -90,7 +93,7 @@ async def get_important_terms_from_pdf_service():
         # Check if there is an error invoking awan llm
         if "statusCode" in awan_llm_response:
             logger.error(f"Error invoking awan llm with error: {awan_llm_response['message']}")
-            return helper.response_template({
+            return response_template({
                 "message": f"Error invoking awan llm with error: {awan_llm_response['message']}",
                 "status_code": awan_llm_response["statusCode"],
                 "data": None
@@ -112,7 +115,7 @@ async def get_important_terms_from_pdf_service():
             llm=llm,
             prompt=PromptTemplate(
                 input_variables=["domain", "scope", "important_terms"],
-                template=helper.CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
+                template=CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
                 template_format="jinja2"
             ),
             verbose=True
@@ -120,10 +123,11 @@ async def get_important_terms_from_pdf_service():
 
         logger.info(f"Invoking prompt to OpenAI")
         llm_response = await x.ainvoke(prompt)
+        llm_response_json = json.loads(llm_response["text"])
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
-        return helper.response_template({
+        return response_template({
             "message": f"an error occurred at route {request.path} with error: {e}",
             "status_code": 500,
             "data": None
@@ -133,7 +137,7 @@ async def get_important_terms_from_pdf_service():
     logger.info("deleting file from server")
     os.remove(filepath)
 
-    return helper.response_template({
+    return response_template({
         "message": "File uploaded successfully",
         "status_code": 200,
         "data": {
@@ -175,7 +179,7 @@ async def get_important_terms_from_url_service():
         # Check if there is an error invoking awan llm
         if "statusCode" in awan_llm_response:
             logger.error(f"Error invoking awan llm with error: {awan_llm_response['message']}")
-            return helper.response_template({
+            return response_template({
                 "message": f"Error invoking awan llm with error: {awan_llm_response['message']}",
                 "status_code": awan_llm_response["statusCode"],
                 "data": None
@@ -197,13 +201,14 @@ async def get_important_terms_from_url_service():
             llm=llm,
             prompt=PromptTemplate(
                 input_variables=["domain", "scope", "important_terms"],
-                template=helper.CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
+                template=CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
                 template_format="jinja2"
             ),
             verbose=True
         )
 
         logger.info(f"Invoking prompt to OpenAI")
+        llm_response = await x.ainvoke(prompt)
         llm_response_json = json.loads(llm_response["text"])
 
         logger.info("saving classes to database")
@@ -211,13 +216,13 @@ async def get_important_terms_from_url_service():
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error message: {e}")
-        return helper.response_template({
+        return response_template({
             "message": f"an error occurred at route {request.path} with error message: {e}",
             "status_code": 500,
             "data": None
         }), 500
     
-    return helper.response_template({
+    return response_template({
         "message": "Url fetched successfully",
         "status_code": 200,
         "data": {
@@ -236,7 +241,7 @@ async def generate_classes_and_properties_service():
         
         db_response = get_important_terms_by_id(terms_id)
         if db_response is None: 
-            return helper.response_template({
+            return response_template({
                 "message": "There is no important terms with such ID",
                 "status_code": 404, 
                 "data": None
@@ -254,7 +259,7 @@ async def generate_classes_and_properties_service():
             llm=llm,
             prompt=PromptTemplate(
                 input_variables=["domain", "scope", "important_terms"],
-                template=helper.CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
+                template=CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
                 template_format="jinja2"
             ),
             verbose=True
@@ -267,11 +272,11 @@ async def generate_classes_and_properties_service():
     except Exception as e:
         logger.info(f"an error occurred at route {request.path} with error: {e}")
         return jsonify(
-            helper.chat_agent_response_template(
+            chat_agent_response_template(
                 {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": prompt, "output": None})
         ), 500
 
-    return jsonify(helper.chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
+    return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
 
 def extract_text_from_pdf(pdf_file_path):
     try: 
@@ -303,7 +308,7 @@ def predict_with_flair(sentences):
         sentences = [sentences]
     
     for sentence in sentences:
-        cleaned_sentence = helper.clean_text(sentence)
+        cleaned_sentence = clean_text(sentence)
         logger.info("splitting sentence into segments")
         splitted_sentences = [Sentence(sent) for sent in split_single(cleaned_sentence) if sent]
         logger.info("text splitted successfully")
