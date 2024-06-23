@@ -11,6 +11,7 @@ from langchain.memory import ConversationBufferWindowMemory
 
 from app.utils import response_template, chat_agent_response_template
 from app.database import get_connection, get_chat_message_history_connection
+from app.utils import *
 from .model import *
 
 import json
@@ -68,7 +69,7 @@ async def conversation_service(conversation_id):
             llm=llm,
             prompt=PromptTemplate(
                 input_variables=["input", "history"],
-                template=helper.SYSTEM_MESSAGE
+                template=SYSTEM_MESSAGE
             ),
             verbose=True,
             memory=ConversationBufferWindowMemory(
@@ -145,7 +146,7 @@ def get_detail_conversation_service(conversation_id):
     })), 200
 
 
-def get_all_conversations_by_user_id(user_id):
+def get_all_conversations_by_user_id_service(user_id):
     try:
         auth_response = is_authorized()
         if auth_response:

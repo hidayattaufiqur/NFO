@@ -102,3 +102,58 @@ def delete_conversation(conversation_id):
         return None
     finally:
         close_pool_connection(conn)
+
+
+def create_competency_question(cq_id, user_id, convo_id, question):
+    conn = get_pool_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO competency_questions (cq_id, user_id, conversation_id, question)
+                VALUES (%s, %s, %s, %s)
+                RETURNING *;
+            ''', (cq_id, user_id, convo_id, question))
+            cq = cur.fetchone()
+            conn.commit()
+            return cq
+    except Exception as e:
+        logger.error(f"Error creating competency question: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def get_all_competency_questions_by_convo_id(convo_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("fetching competency_questions from a conversation")
+        with conn.cursor() as cur:
+            cur.execute('SELECT cq_id, user_id, conversation_id, is_valid, question, created_at FROM competency_questions WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
+            cqs = cur.fetchall()
+            return cqs
+    except Exception as e:
+        logger.error(
+            f"Error fetching competency questions by conversation id: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def validating_competency_question(cq_id, is_valid):
+    conn = get_pool_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE competency_questions
+                SET is_valid = %s, updated_at = CURRENT_TIMESTAMP, validated_at = CURRENT_TIMESTAMP
+                WHERE id = %s
+                RETURNING *;
+            ''', (is_valid, cq_id))
+            cq = cur.fetchone()
+            conn.commit()
+            return cq
+    except Exception as e:
+        logger.error(f"Error validating competency question: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
