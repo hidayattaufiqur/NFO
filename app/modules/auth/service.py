@@ -7,7 +7,7 @@ import uuid
 import re
 
 from flask import url_for, session, Blueprint, jsonify, request
-from flask_login import LoginManager, UserMixin, login_required, logout_user, login_user, current_user, user_needs_refresh
+from flask_login import LoginManager, UserMixin, login_user, current_user, user_needs_refresh
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 
