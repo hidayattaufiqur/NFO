@@ -161,6 +161,7 @@ def profile_service():
         refresh_session()
 
         user_info = {
+            'user_id': current_user.user_id,
             'name': current_user.name,
             'email': current_user.email,
             'profile_pic': current_user.profile_pic
