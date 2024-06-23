@@ -98,7 +98,7 @@ def login_service():
         # logging.info("redirecting to authorization_url")
         # return redirect(authorization_url)
 
-        return jsonify(response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
+        return jsonify(response_template({"message": "User logged in successfully", "status_code": 200, "data": { "user_id": user_id,"name": id_info['name'], "profile_pic_url": id_info['picture']}}))
 
     except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
