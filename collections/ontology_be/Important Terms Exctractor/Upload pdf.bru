@@ -5,8 +5,8 @@ meta {
 }
 
 post {
-  url: {{dev}}/terms_extractor/url
-  body: json
+  url: {{dev}}/terms_extractor/pdf
+  body: multipartForm
   auth: none
 }
 
@@ -15,4 +15,9 @@ body:json {
     "conversation_id": "d4dc0b41-4524-4273-a72e-1146b78d84eb",
     "url": "https://revou.co/panduan-teknis/web-scraping-python"
   }
+}
+
+body:multipart-form {
+  file: @file(/home/nixos-box/Documents/Project/Ontology/Testing/Tutorial Web Scraping dengan Python bagi Pemula 2024 _ RevoU.pdf)
+  conversation_id: acf1d10b-bd36-43b4-8415-9214eb16fa96
 }

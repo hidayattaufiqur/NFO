@@ -16,6 +16,9 @@ using flair or something else to get the important terms
 - [x] scope in step 3 is actually using domain within conversation 
 - [x] fuse important terms and class and instance generation into the same endpoint
 - [x] change the flow of authentication
+- [x] consider hadnling the logic on a higher level (e.g. in the service layer)
+- [x] refactor the code to make it more modular, readable, and maintainable
+- [x] saved CQ should be validated instantly
 
 - [ ] user can go back to previous steps
 - [ ] work on the 6th step
@@ -23,8 +26,7 @@ using flair or something else to get the important terms
 
 - [i] saves object and data properties to DB
 - [ ] create class data junction db command and query
-- [x] consider hadnling the logic on a higher level (e.g. in the service layer)
-- [x] refactor the code to make it more modular, readable, and maintainable
+- [ ] add documentations for saving class and data properties endpoints
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video
