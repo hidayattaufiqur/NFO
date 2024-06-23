@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{dev_url}}/conversation/competency_questions/validate/:cq_id
+  url: {{dev}}/conversation/competency_questions/validate/:cq_id
   body: none
   auth: none
+}
+
+params:path {
+  cq_id: 
 }

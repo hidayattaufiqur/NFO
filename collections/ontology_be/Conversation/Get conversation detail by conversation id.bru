@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{prod}}/conversation/:conversation_id
+  url: {{dev}}/conversation/:conversation_id
   body: none
   auth: none
+}
+
+params:path {
+  conversation_id: 
 }

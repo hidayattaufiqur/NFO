@@ -23,8 +23,8 @@ using flair or something else to get the important terms
 
 - [i] saves object and data properties to DB
 - [ ] create class data junction db command and query
-- [ ] consider hadnling the logic on a higher level (e.g. in the service layer)
-- [ ] refactor the code to make it more modular, readable, and maintainable
+- [x] consider hadnling the logic on a higher level (e.g. in the service layer)
+- [x] refactor the code to make it more modular, readable, and maintainable
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video

@@ -5,9 +5,13 @@ meta {
 }
 
 post {
-  url: {{dev_url}}/conversation/competency_questions/:convo_id
+  url: {{dev}}/conversation/competency_questions/:convo_id
   body: json
   auth: none
+}
+
+params:path {
+  convo_id: 
 }
 
 body:json {
