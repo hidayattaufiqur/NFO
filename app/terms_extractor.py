@@ -10,7 +10,7 @@ from langchain.chains import  LLMChain
 
 from . import database as db
 from . import helper
-from .auth import is_authorized, refresh_session
+from .modules.auth import is_authorized, refresh_session
 
 import logging 
 import os

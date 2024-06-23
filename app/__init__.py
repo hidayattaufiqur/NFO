@@ -42,14 +42,14 @@ def create_app():
         return 'Hello, world!'
 
     from .modules.auth import load_user, bp as auth_bp
-    from .chat_agent import bp as chat_agent_bp
+    # from .modules.conversation import bp as chat_agent_bp
     from .terms_extractor import bp as terms_extractor_bp
 
     login_manager.init_app(app)
     login_manager.user_loader(load_user)
 
     app.register_blueprint(auth_bp)
-    app.register_blueprint(chat_agent_bp)
+    # app.register_blueprint(chat_agent_bp)
     app.register_blueprint(terms_extractor_bp)
 
     return app
