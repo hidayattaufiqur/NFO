@@ -19,7 +19,7 @@ login_manager = LoginManager()
 
 class User(UserMixin):
     def __init__(self, user_id, name, email, profile_pic):
-        self.id = user_id
+        self.user_id = user_id
         self.name = name
         self.email = email
         self.profile_pic = profile_pic
