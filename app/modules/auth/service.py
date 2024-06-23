@@ -1,13 +1,11 @@
 import google.oauth2.credentials
 import requests
-import os
 import logging
-import datetime
 import uuid
 import re
 
 from flask import url_for, session, Blueprint, jsonify, request
-from flask_login import LoginManager, UserMixin, login_user, current_user, user_needs_refresh
+from flask_login import LoginManager, UserMixin, login_user, current_user
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 
@@ -18,13 +16,6 @@ logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 bp = Blueprint('auth', __name__)
 login_manager = LoginManager() 
-
-# os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # !!! Only for testing, remove for production !!!
-GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", default=False)
-GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", default=False)
-GOOGLE_DISCOVERY_URL = (
-    "https://accounts.google.com/.well-known/openid-configuration"
-)
 
 class User(UserMixin):
     def __init__(self, user_id, name, email, profile_pic):
@@ -47,18 +38,6 @@ def load_user(user_id):
     if user_info:
         return user_info
     return None
-
-def is_authorized():
-    if not current_user.is_authenticated:
-        return response_template({"message": f"User is Unauthorized. Please Login", "status_code": 401, "data": None})
-    return None
-
-def refresh_session():
-    if user_needs_refresh.send(current_user._get_current_object()):
-        session.permanent = True
-        session.modified = True
-        session['_fresh'] = True
-        session['_permanent'] = datetime.datetime.now(datetime.UTC) + datetime.timedelta(minutes=30)
 
 def create_flow():
     logger.info("initializing flow")

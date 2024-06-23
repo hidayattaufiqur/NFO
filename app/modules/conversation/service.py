@@ -1,5 +1,4 @@
 from langchain_postgres import PostgresChatMessageHistory
-from app.modules.auth import is_authorized, refresh_session
 
 from flask import request, jsonify, session
 from dotenv import load_dotenv
@@ -28,12 +27,6 @@ llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
 async def conversation_service(conversation_id):
     try:
-        auth_response = is_authorized()
-        if auth_response:
-            return jsonify(auth_response), 401
-
-        refresh_session()
-
         if request.is_json:
             data = request.get_json()
         else:
@@ -102,12 +95,6 @@ async def conversation_service(conversation_id):
 
 def get_detail_conversation_service(conversation_id):
     try:
-        auth_response = is_authorized()
-        if auth_response:
-            return jsonify(auth_response), 401
-
-        refresh_session()
-
         db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None:
@@ -148,12 +135,6 @@ def get_detail_conversation_service(conversation_id):
 
 def get_all_conversations_by_user_id_service(user_id):
     try:
-        auth_response = is_authorized()
-        if auth_response:
-            return jsonify(auth_response), 401
-
-        refresh_session()
-
         db_response = get_all_conversations_from_a_user(user_id)
 
     except Exception as e:
@@ -166,12 +147,6 @@ def get_all_conversations_by_user_id_service(user_id):
 
 def delete_conversation_service(conversation_id):
     try:
-        auth_response = is_authorized()
-        if auth_response:
-            return jsonify(auth_response), 401
-
-        refresh_session()
-
         db_conn = get_connection()
         table_name = "message_store"
         session_id = conversation_id
@@ -195,12 +170,6 @@ def delete_conversation_service(conversation_id):
 
 def save_competency_questions_service(conversation_id):
     try:
-        auth_response = is_authorized()
-        if auth_response:
-            return jsonify(auth_response), 401
-
-        refresh_session()
-
         data = request.json
         cq_id = uuid.uuid4()
         user_id = session.get('user_id')
@@ -224,12 +193,6 @@ def save_competency_questions_service(conversation_id):
 
 def get_competency_questions_service(conversation_id):
     try:
-        auth_response = is_authorized()
-        if auth_response:
-            return jsonify(auth_response), 401
-
-        refresh_session()
-
         db_response = get_all_competency_questions_by_convo_id(
             conversation_id)
 
@@ -243,12 +206,6 @@ def get_competency_questions_service(conversation_id):
 
 def validating_competency_questions_service(cq_id):
     try:
-        auth_response = is_authorized()
-        if auth_response:
-            return jsonify(auth_response), 401
-
-        refresh_session()
-
         validating_competency_question(cq_id, True)
 
     except Exception as e:

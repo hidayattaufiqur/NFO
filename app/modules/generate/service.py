@@ -10,7 +10,6 @@ from langchain.chains import  LLMChain
 
 from app.database import *
 from app.utils import * 
-from app.modules.auth import is_authorized, refresh_session
 from app.modules.conversation import get_conversation_detail_by_id
 from .model import *
 
@@ -36,12 +35,6 @@ async def get_important_terms_from_pdf_service():
     filepath = ""
 
     try: 
-        auth_response = is_authorized()
-        if auth_response: 
-            return jsonify(auth_response), 401
-
-        refresh_session()
-
         if "file" not in request.files:
             logger.error("no file is uploaded")
             return jsonify(helper.response_template({
@@ -127,7 +120,6 @@ async def get_important_terms_from_pdf_service():
 
         logger.info(f"Invoking prompt to OpenAI")
         llm_response = await x.ainvoke(prompt)
-        llm_response_json = json.loads(llm_response["text"])
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -153,12 +145,6 @@ async def get_important_terms_from_pdf_service():
 
 async def get_important_terms_from_url_service(): 
     try:
-        auth_response = is_authorized()
-        if auth_response: 
-            return jsonify(auth_response), 401
-
-        refresh_session()
-
         logger.info("extracting url from request body")
         data = request.get_json()
 
@@ -218,7 +204,6 @@ async def get_important_terms_from_url_service():
         )
 
         logger.info(f"Invoking prompt to OpenAI")
-        llm_response = await x.ainvoke(prompt)
         llm_response_json = json.loads(llm_response["text"])
 
         logger.info("saving classes to database")
@@ -244,12 +229,6 @@ async def get_important_terms_from_url_service():
 async def generate_classes_and_properties_service():
     prompt = ""
     try:
-        auth_response = is_authorized()
-        if auth_response: 
-            return jsonify(auth_response), 401
-
-        refresh_session()
-
         data = request.get_json()
         terms_id = data["important_terms_id"]
         domain = data["domain"]
