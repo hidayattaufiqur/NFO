@@ -22,7 +22,6 @@ import time
 
 logger = logging.getLogger(__name__)
 
-
 llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
 logger.info("loading flair NER model")
@@ -35,7 +34,6 @@ async def get_important_terms_from_pdf_service():
     filepath = ""
 
     try: 
-        logger.info("am i here?")
         if "file" not in request.files:
             logger.error("no file is uploaded")
             return jsonify(response_template({
@@ -50,7 +48,6 @@ async def get_important_terms_from_pdf_service():
         conversation_id = data["conversation_id"]
 
         
-
         # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
         db_response = get_conversation_detail_by_id(conversation_id)
 
