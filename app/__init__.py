@@ -4,6 +4,7 @@ from flask import Flask
 from flask_login import LoginManager
 from flask_cors import CORS
 from datetime import timedelta
+
 from .utils import *
 
 import os
@@ -42,14 +43,14 @@ def create_app():
         return 'Hello, world!'
 
     from .modules.auth import load_user, bp as auth_bp
-    from .modules.conversation import bp as chat_agent_bp
+    from .modules.conversation import bp as conversation_bp
     from .modules.generate import bp as generate_bp
 
     login_manager.init_app(app)
     login_manager.user_loader(load_user)
 
     app.register_blueprint(auth_bp)
-    app.register_blueprint(chat_agent_bp)
+    app.register_blueprint(conversation_bp)
     app.register_blueprint(generate_bp)
 
     return app
