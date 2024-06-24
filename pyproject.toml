@@ -29,6 +29,7 @@ flair = "^0.13.1"
 scipy = "1.11"
 gunicorn = "^22.0.0"
 flask-cors = "^4.0.1"
+spacy = "^3.7.5"
 
 
 [build-system]
