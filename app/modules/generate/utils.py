@@ -36,6 +36,22 @@ def print_time_for_each_process():
     logger.info(f"Prompt time: {round(prompt_time, 2)}s")
     logger.info(f"Prompt time awanllm: {round(prompt_time_awan, 2)}s")
 
+def extract_text_from_url(url):
+    global text_extraction_time
+    try:
+        start_time = time.time()
+        response = requests.get(
+            "https://r.jina.ai/" + url,
+            headers={"X-Return-Format": "text"},
+        )
+        extracted_text = response.text
+        end_time = time.time()
+        text_extraction_time = end_time - start_time
+        logger.info(f"texts have been extracted in {end_time-start_time:,.2f} ")
+        return extracted_text
+    except Exception as e:
+        logger.error(f"Error extracting text from url: {e}")
+        return None
 
 def extract_text_from_pdf(pdf_file_path):
     global text_extraction_time

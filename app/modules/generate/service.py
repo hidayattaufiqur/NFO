@@ -150,14 +150,14 @@ async def get_important_terms_from_url_service():
         logger.info(f"extracting texts from {url}")
 
         start_time = time.time()
-        response = requests.get(
-            "https://r.jina.ai/" + url,
-            headers={"X-Return-Format": "text"},
-        )
 
         logger.info(f"texts have been extracted in {time.time()-start_time:,.2f} ")
-        extracted_text = response.text
+        extracted_text = extract_text_from_url(url)
 
+        if extracted_text is None: 
+            logger.error("error extracting text from url")
+            raise ValueError("Error extracting text from url")
+            
         logger.info("predicting tags with spacy NER model")
         # predicted_tags = predict_with_flair(extracted_text)
         predicted_tags = predict_with_spacy(extracted_text)
