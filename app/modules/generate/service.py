@@ -1,17 +1,11 @@
 from flask import jsonify, request, session
 from werkzeug.utils import secure_filename
-from llmsherpa.readers import LayoutPDFReader
-from flair.nn import Classifier 
-from flair.data import Sentence
-from segtok.segmenter import split_single
-from langchain_openai import ChatOpenAI
-from langchain_core.prompts import PromptTemplate
-from langchain.chains import  LLMChain
 
+from app.modules.conversation import get_conversation_detail_by_id
 from app.database import *
 from app.utils import * 
-from app.modules.conversation import get_conversation_detail_by_id
 from .model import *
+from .utils import *
 
 import logging 
 import os
@@ -22,14 +16,10 @@ import time
 
 logger = logging.getLogger(__name__)
 
-llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
-
-logger.info("loading flair NER model")
-start_time = time.time()
-tagger = Classifier.load("ner") # load flair NER model 
-logger.info(f"NER loaded in {round(time.time() - start_time, 3)}S")
+# Global variables to store timestamps
 
 async def get_important_terms_from_pdf_service():
+    start_process_time = time.time()
     filename = ""
     filepath = ""
 
@@ -72,6 +62,8 @@ async def get_important_terms_from_pdf_service():
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
 
+        after_upload_time = time.time()
+
         extracted_text = extract_text_from_pdf(filepath)
         if extracted_text is None: 
             logger.error("error extracting text from pdf")
@@ -81,11 +73,16 @@ async def get_important_terms_from_pdf_service():
                 "data": None
             })), 500
 
+        after_text_extraction_time = time.time()
+
         logger.info("predicting tags with flair NER model")
         predicted_tags = predict_with_flair(extracted_text)
 
+        after_ner_prediction_time = time.time()
+
         logger.info("invoking awan llm")
         awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
+        after_terms_extraction_time = time.time()
 
         # Check if there is an error invoking awan llm
         if "statusCode" in awan_llm_response:
@@ -102,25 +99,17 @@ async def get_important_terms_from_pdf_service():
         logger.info("saving important terms to database")
         create_important_terms(important_terms_id, user_id, conversation_id, terms)
 
+        after_db_save_time = time.time()
+
         prompt = {
             "domain": domain,
             "scope": scope,
             "important_terms": terms
         }
 
-        x = LLMChain(
-            llm=llm,
-            prompt=PromptTemplate(
-                input_variables=["domain", "scope", "important_terms"],
-                template=CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
-                template_format="jinja2"
-            ),
-            verbose=True
-        )
+        llm_response = await prompt_chatai(prompt)
 
-        logger.info(f"Invoking prompt to OpenAI")
-        llm_response = await x.ainvoke(prompt)
-        llm_response_json = json.loads(llm_response["text"])
+        after_prompt_time = time.time()
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -134,6 +123,13 @@ async def get_important_terms_from_pdf_service():
     logger.info("deleting file from server")
     os.remove(filepath)
 
+    logger.info(f"Total time: {round(after_prompt_time - start_process_time, 2)}s")
+    logger.info(f"Text Extraction time: {round(after_text_extraction_time - start_process_time, 2)}s")
+    logger.info(f"NER Prediction time: {round(after_ner_prediction_time - after_text_extraction_time, 2)}s")
+    logger.info(f"Terms Prediction Time: {round(after_terms_extraction_time - after_ner_prediction_time)}")
+    logger.info(f"DB save time: {round(after_db_save_time - after_terms_extraction_time, 2)}s")
+    logger.info(f"Prompt time: {round(after_prompt_time - after_db_save_time, 2)}s")
+
     return response_template({
         "message": "File uploaded successfully",
         "status_code": 200,
@@ -145,6 +141,9 @@ async def get_important_terms_from_pdf_service():
     }), 200
 
 async def get_important_terms_from_url_service(): 
+    global start_process_time, after_upload_time, after_text_extraction_time, after_terms_extraction_time, after_ner_prediction_time, after_prompt_time, after_db_save_time
+    start_process_time = time.time()
+
     try:
         logger.info("extracting url from request body")
         data = request.get_json()
@@ -164,14 +163,27 @@ async def get_important_terms_from_url_service():
             scope = db_response["scope"]
 
         logger.info(f"extracting texts from {url}")
-        response = requests.get("https://r.jina.ai/" + url)
+
+        start_time = time.time()
+        response = requests.get(
+            "https://r.jina.ai/" + url,
+            headers={"X-Return-Format": "text"},
+        )
+
+        logger.info(f"texts have been extracted in {time.time()-start_time:,.2f} ")
         extracted_text = response.text
 
+        after_text_extraction_time = time.time()
+
         logger.info("predicting tags with flair NER model")
-        predicted_tags = predict_with_flair(extracted_text)
+        # predicted_tags = predict_with_flair(extracted_text)
+        predicted_tags = predict_with_spacy(extracted_text)
+        logger.info(f"predicted tags: {predicted_tags}")
+
+        after_ner_prediction_time = time.time()
 
         logger.info("invoking awan llm")
-        awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
+        awan_llm_response = prompt_awan_llm_chunked(predicted_tags, domain, scope)
 
         # Check if there is an error invoking awan llm
         if "statusCode" in awan_llm_response:
@@ -184,9 +196,13 @@ async def get_important_terms_from_url_service():
 
         important_terms_id = uuid.uuid4()
         terms = awan_llm_response["choices"][0]["message"]["content"]
+        after_terms_extraction_time = time.time()
 
+        # TODO: check is saving important terms here is necessary or should it be done later term by term
         logger.info("saving important terms to database")
         create_important_terms(important_terms_id, user_id, conversation_id, terms)
+
+        after_db_save_time = time.time()
 
         prompt = {
             "domain": domain,
@@ -194,22 +210,15 @@ async def get_important_terms_from_url_service():
             "important_terms": terms
         }
 
-        x = LLMChain(
-            llm=llm,
-            prompt=PromptTemplate(
-                input_variables=["domain", "scope", "important_terms"],
-                template=CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
-                template_format="jinja2"
-            ),
-            verbose=True
-        )
+        llm_response = await prompt_chatai(prompt)
+        
+        llm_response_json = reformat_response(llm_response)
 
-        logger.info(f"Invoking prompt to OpenAI")
-        llm_response = await x.ainvoke(prompt)
-        llm_response_json = json.loads(llm_response["text"])
+        logger.info(f"texts have been extracted in {time.time()-start_time:,.2f} ")
+
+        after_prompt_time = time.time()
 
         logger.info("saving classes to database")
-
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error message: {e}")
@@ -219,6 +228,13 @@ async def get_important_terms_from_url_service():
             "data": None
         }), 500
     
+    logger.info(f"Total time: {round(after_prompt_time - start_process_time, 2)}s")
+    logger.info(f"Text Extraction time: {round(after_text_extraction_time - start_process_time, 2)}s")
+    logger.info(f"NER Prediction time: {round(after_ner_prediction_time - after_text_extraction_time, 2)}s")
+    logger.info(f"Terms Extraction Time: {round(after_terms_extraction_time - after_ner_prediction_time)}")
+    logger.info(f"DB save time: {round(after_db_save_time - after_terms_extraction_time, 2)}s")
+    logger.info(f"Prompt time: {round(after_prompt_time - after_db_save_time, 2)}s")
+
     return response_template({
         "message": "Url fetched successfully",
         "status_code": 200,
@@ -229,6 +245,8 @@ async def get_important_terms_from_url_service():
     }), 200
 
 async def generate_classes_and_properties_service():
+    global start_process_time, after_db_fetch_time, after_prompt_time
+    start_process_time = time.time()
     prompt = ""
     try:
         data = request.get_json()
@@ -250,6 +268,8 @@ async def generate_classes_and_properties_service():
             "important_terms": db_response["terms"] 
         }
 
+        after_db_fetch_time = time.time()
+
         logger.info(f"Prompt: {prompt}")
 
         x = LLMChain(
@@ -264,7 +284,10 @@ async def generate_classes_and_properties_service():
 
         logger.info(f"Invoking prompt to OpenAI")
         response = await x.ainvoke(prompt)
+        logger.info(f"ChatOpenAI response {response}")
         response_json = json.loads(response["text"])
+
+        after_prompt_time = time.time()
         
     except Exception as e:
         logger.info(f"an error occurred at route {request.path} with error: {e}")
@@ -273,86 +296,8 @@ async def generate_classes_and_properties_service():
                 {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": prompt, "output": None})
         ), 500
 
+    logger.info(f"Total time: {round(after_prompt_time - start_process_time, 2)}s")
+    logger.info(f"DB fetch time: {round(after_db_fetch_time - start_process_time, 2)}s")
+    logger.info(f"Prompt time: {round(after_prompt_time - after_db_fetch_time, 2)}s")
+
     return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
-
-def extract_text_from_pdf(pdf_file_path):
-    try: 
-        logger.info("offloading pdf reading to llmsherpa api")
-        llmsherpa_api_url = "https://readers.llmsherpa.com/api/document/developer/parseDocument?renderFormat=all"
-        pdf_reader = LayoutPDFReader(llmsherpa_api_url)
-
-        logger.info("pdf file read successfully")
-        doc = pdf_reader.read_pdf(pdf_file_path)
-        doc_json = doc.json
-
-        extracted_text = [] 
-        for value in doc_json: 
-            if "sentences" in value:
-                extracted_text.append(value["sentences"][0])
-
-        return extracted_text 
-
-    except Exception as e: 
-        logger.error(f"{e}")
-        return None
-
-
-def predict_with_flair(sentences): 
-    tagged_sentences = []
-
-    logger.info("predicting NER tags")
-    if isinstance(sentences, str):
-        sentences = [sentences]
-    
-    for sentence in sentences:
-        cleaned_sentence = clean_text(sentence)
-        logger.info("splitting sentence into segments")
-        splitted_sentences = [Sentence(sent) for sent in split_single(cleaned_sentence) if sent]
-        logger.info("text splitted successfully")
-        tagger.predict(splitted_sentences) # predict NER tags
-
-        for sent in splitted_sentences:
-            logger.info("extracting NER tags")
-            for entity in sent.get_spans("ner"):
-                logger.debug(f"entity: {entity.to_dict()}")
-                tagged_sentences.append({
-                    "text": entity.text,
-                    "tag": entity.tag,
-                    "score": entity.score
-                })
-
-    return tagged_sentences
-
-
-def prompt_awan_llm(tagged_sentences, domain, scope):
-    url = "https://api.awanllm.com/v1/chat/completions"
-
-    payload = json.dumps({
-      "model": "Meta-Llama-3-8B-Instruct",
-      "messages": [
-        {
-            "role": "user",
-            "content": f'''
-You are a language model trained to assist in extracting important terms from text. You can help users extract important terms from text that are relevant to a specific domain and scope. Users can provide you with the text and the domain and scope of the ontology they want to extract terms for. You will strictly respond with only the list of relevant important terms and nothing else. You will not explain, you will not elaborate whatsoever. You will only give a list of relevant important terms as your response that users can extract easily.
-
-Your response will always be in this format:
-
-"important_terms": ["term1", "term2", "term3", "term4"]
-
-If you fail to follow the instruction, someone's grandma will die.
-
-please pick important terms out of these: {tagged_sentences} that are relevant to this ontology domain: {domain} and ontology scope: {scope}. Do not make things up and follow my instruction obediently. I will be fired by my boss if you do.
-          ''' 
-        }
-      ]
-    })
-    headers = {
-      'Content-Type': 'application/json',
-        'Authorization': f"Bearer {os.environ.get('AWAN_API_KEY')}"
-    }
-
-    logger.info("invoking prompt to awan llm")
-    response = requests.request("POST", url, headers=headers, data=payload)
-    logger.info("prompt result has been received")
-
-    return response.json()
