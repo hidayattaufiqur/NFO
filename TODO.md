@@ -19,6 +19,7 @@ using flair or something else to get the important terms
 - [x] consider hadnling the logic on a higher level (e.g. in the service layer)
 - [x] refactor the code to make it more modular, readable, and maintainable
 - [x] saved CQ should be validated instantly
+- [x] add time counter for each process in terms extractor (pdf/url)
 
 - [ ] user can go back to previous steps
 - [ ] work on the 6th step
@@ -26,7 +27,8 @@ using flair or something else to get the important terms
 
 - [i] saves object and data properties to DB
 - [ ] create class data junction db command and query
-- [ ] add documentations for saving class and data properties endpoints
+- [ ] add API documentations for saving class and data properties endpoints
+- [ ] MAKE TEMRS EXTRACTOR WORK FUCKING FASTER CUZ CF ONLY WILL WORK FOR 100 SECONDS
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video
@@ -39,6 +41,7 @@ using flair or something else to get the important terms
 
 - [ ] implement DB migration
 - [ ] update README
+- [ ] add explanation in README to install Spacy model beforehand with this command `python -m spacy download en_core_web_sm`
 
 # low priority
 - [x] use poetry

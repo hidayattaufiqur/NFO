@@ -97,9 +97,4 @@ Navigate to `http://localhost:5000` and you should see a message `hello, world!`
 
 ## TODO
 List any pending tasks or features that are planned for future development: 
-
-- [ ] Implement user authorization and session management
-- [ ] Implement error handling for API calls
-- [x] Implement interaction between user and LLM through langchain for validating or revising generated CQs
-- [x] Implement generated CQs storing to a database
-- [ ] Implement logging 
+[TODO](./TODO.md)
