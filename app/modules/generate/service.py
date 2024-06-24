@@ -16,8 +16,6 @@ import time
 
 logger = logging.getLogger(__name__)
 
-# Global variables to store timestamps
-
 async def get_important_terms_from_pdf_service():
     start_process_time = time.time()
     filename = ""
@@ -37,7 +35,6 @@ async def get_important_terms_from_pdf_service():
         user_id = session.get('user_id')
         conversation_id = data["conversation_id"]
 
-        
         # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
         db_response = get_conversation_detail_by_id(conversation_id)
 
@@ -62,8 +59,6 @@ async def get_important_terms_from_pdf_service():
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             file.save(filepath)
 
-        after_upload_time = time.time()
-
         extracted_text = extract_text_from_pdf(filepath)
         if extracted_text is None: 
             logger.error("error extracting text from pdf")
@@ -73,18 +68,14 @@ async def get_important_terms_from_pdf_service():
                 "data": None
             })), 500
 
-        after_text_extraction_time = time.time()
-
-        logger.info("predicting tags with flair NER model")
-        predicted_tags = predict_with_flair(extracted_text)
-
-        after_ner_prediction_time = time.time()
+        logger.info("predicting tags with spacy NER model")
+        # predicted_tags = predict_with_flair(extracted_text)
+        predicted_tags = predict_with_spacy(extracted_text)
+        logger.info(f"predicted tags: {predicted_tags}")
 
         logger.info("invoking awan llm")
-        awan_llm_response = prompt_awan_llm(predicted_tags, domain, scope)
-        after_terms_extraction_time = time.time()
+        awan_llm_response = prompt_awan_llm_chunked(predicted_tags, domain, scope)
 
-        # Check if there is an error invoking awan llm
         if "statusCode" in awan_llm_response:
             logger.error(f"Error invoking awan llm with error: {awan_llm_response['message']}")
             return response_template({
@@ -96,10 +87,9 @@ async def get_important_terms_from_pdf_service():
         important_terms_id = uuid.uuid4()
         terms = awan_llm_response["choices"][0]["message"]["content"]
 
+        # TODO: check is saving important terms here is necessary or should it be done later term by term
         logger.info("saving important terms to database")
         create_important_terms(important_terms_id, user_id, conversation_id, terms)
-
-        after_db_save_time = time.time()
 
         prompt = {
             "domain": domain,
@@ -108,8 +98,8 @@ async def get_important_terms_from_pdf_service():
         }
 
         llm_response = await prompt_chatai(prompt)
-
-        after_prompt_time = time.time()
+        llm_response_json = reformat_response(llm_response)
+        end_time = time.time()
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -123,12 +113,8 @@ async def get_important_terms_from_pdf_service():
     logger.info("deleting file from server")
     os.remove(filepath)
 
-    logger.info(f"Total time: {round(after_prompt_time - start_process_time, 2)}s")
-    logger.info(f"Text Extraction time: {round(after_text_extraction_time - start_process_time, 2)}s")
-    logger.info(f"NER Prediction time: {round(after_ner_prediction_time - after_text_extraction_time, 2)}s")
-    logger.info(f"Terms Prediction Time: {round(after_terms_extraction_time - after_ner_prediction_time)}")
-    logger.info(f"DB save time: {round(after_db_save_time - after_terms_extraction_time, 2)}s")
-    logger.info(f"Prompt time: {round(after_prompt_time - after_db_save_time, 2)}s")
+    logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
+    print_time_for_each_process()
 
     return response_template({
         "message": "File uploaded successfully",
@@ -141,7 +127,6 @@ async def get_important_terms_from_pdf_service():
     }), 200
 
 async def get_important_terms_from_url_service(): 
-    global start_process_time, after_upload_time, after_text_extraction_time, after_terms_extraction_time, after_ner_prediction_time, after_prompt_time, after_db_save_time
     start_process_time = time.time()
 
     try:
@@ -173,19 +158,14 @@ async def get_important_terms_from_url_service():
         logger.info(f"texts have been extracted in {time.time()-start_time:,.2f} ")
         extracted_text = response.text
 
-        after_text_extraction_time = time.time()
-
-        logger.info("predicting tags with flair NER model")
+        logger.info("predicting tags with spacy NER model")
         # predicted_tags = predict_with_flair(extracted_text)
         predicted_tags = predict_with_spacy(extracted_text)
         logger.info(f"predicted tags: {predicted_tags}")
 
-        after_ner_prediction_time = time.time()
-
         logger.info("invoking awan llm")
         awan_llm_response = prompt_awan_llm_chunked(predicted_tags, domain, scope)
 
-        # Check if there is an error invoking awan llm
         if "statusCode" in awan_llm_response:
             logger.error(f"Error invoking awan llm with error: {awan_llm_response['message']}")
             return response_template({
@@ -196,13 +176,10 @@ async def get_important_terms_from_url_service():
 
         important_terms_id = uuid.uuid4()
         terms = awan_llm_response["choices"][0]["message"]["content"]
-        after_terms_extraction_time = time.time()
 
         # TODO: check is saving important terms here is necessary or should it be done later term by term
         logger.info("saving important terms to database")
         create_important_terms(important_terms_id, user_id, conversation_id, terms)
-
-        after_db_save_time = time.time()
 
         prompt = {
             "domain": domain,
@@ -211,15 +188,10 @@ async def get_important_terms_from_url_service():
         }
 
         llm_response = await prompt_chatai(prompt)
-        
         llm_response_json = reformat_response(llm_response)
-
         logger.info(f"texts have been extracted in {time.time()-start_time:,.2f} ")
 
-        after_prompt_time = time.time()
-
-        logger.info("saving classes to database")
-
+        end_time = time.time()
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error message: {e}")
         return response_template({
@@ -228,12 +200,8 @@ async def get_important_terms_from_url_service():
             "data": None
         }), 500
     
-    logger.info(f"Total time: {round(after_prompt_time - start_process_time, 2)}s")
-    logger.info(f"Text Extraction time: {round(after_text_extraction_time - start_process_time, 2)}s")
-    logger.info(f"NER Prediction time: {round(after_ner_prediction_time - after_text_extraction_time, 2)}s")
-    logger.info(f"Terms Extraction Time: {round(after_terms_extraction_time - after_ner_prediction_time)}")
-    logger.info(f"DB save time: {round(after_db_save_time - after_terms_extraction_time, 2)}s")
-    logger.info(f"Prompt time: {round(after_prompt_time - after_db_save_time, 2)}s")
+    logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
+    print_time_for_each_process()
 
     return response_template({
         "message": "Url fetched successfully",
