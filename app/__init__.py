@@ -33,6 +33,8 @@ def create_app():
     app.config['MAX_CONTENT_LENGTH'] = MAX_CONTENT_LENGTH
     app.config['PREFERRED_URL_SCHEME'] = 'https'
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
+    app.config['SESSION_COOKIE_SAMESITE'] = "None"
+    app.config['SESSION_COOKIE_SECURE'] = True
 
     from . import database as db
     with app.app_context():
