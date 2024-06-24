@@ -24,6 +24,9 @@ class User(UserMixin):
         self.email = email
         self.profile_pic = profile_pic
 
+    def get_id(self):
+        return str(self.user_id)
+
     @staticmethod
     def get(user_id):
         user_info = get_user_by_id(user_id)
