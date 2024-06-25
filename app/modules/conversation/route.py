@@ -3,7 +3,7 @@ from app.utils import require_authorization
 
 from .service import *
 
-bp = Blueprint('conversation', __name__, url_prefix='/conversation')
+bp = Blueprint('conversation', __name__, url_prefix='/conversations')
 
 @bp.route('', methods=['POST'])
 @bp.route('/<conversation_id>', methods=['POST'])
@@ -18,7 +18,7 @@ def get_detail_conversation(conversation_id):
     return get_detail_conversation_service(conversation_id)
 
 
-@bp.route('/all/<user_id>', methods=['GET'])
+@bp.route('/users/<user_id>', methods=['GET'])
 @require_authorization
 def get_all_conversations_by_user_id(user_id):
     return get_all_conversations_by_user_id_service(user_id)
@@ -30,13 +30,13 @@ def delete_conversation(conversation_id):
     return delete_conversation_service(conversation_id)
 
 
-@bp.route('/competency_questions/<conversation_id>', methods=['POST'])
+@bp.route('/competency-questions/<conversation_id>', methods=['POST'])
 @require_authorization
 def save_competency_questions(conversation_id):
     return save_competency_questions_service(conversation_id)
 
 
-@bp.route('/competency_questions/<conversation_id>', methods=['GET'])
+@bp.route('/competency-questions/<conversation_id>', methods=['GET'])
 @require_authorization
 def get_competency_questions(conversation_id):
     return get_competency_questions_service(conversation_id)
