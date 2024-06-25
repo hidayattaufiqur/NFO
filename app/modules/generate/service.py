@@ -10,7 +10,6 @@ from .utils import *
 import logging 
 import os
 import json
-import requests
 import uuid
 import time
 
@@ -35,12 +34,16 @@ async def get_important_terms_from_pdf_service():
         user_id = session.get('user_id')
         conversation_id = data["conversation_id"]
 
+        logger.info(f"conversation_id: {conversation_id}")
         # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
         db_response = get_conversation_detail_by_id(conversation_id)
 
+        logger.info(f"db_response: {db_response}")
+
         if db_response is None: 
-            domain = data["domain"]
-            scope = data["scope"]
+            # domain = data["domain"]
+            # scope = data["scope"]
+            raise ValueError("No conversation found with such id")
         else: 
             domain = db_response["domain"]
             scope = db_response["scope"]
@@ -67,6 +70,7 @@ async def get_important_terms_from_pdf_service():
                 "status_code": 500,
                 "data": None
             })), 500
+        logger.info(f"extracted text: {extracted_text}")
 
         logger.info("predicting tags with spacy NER model")
         # predicted_tags = predict_with_flair(extracted_text)
@@ -99,7 +103,6 @@ async def get_important_terms_from_pdf_service():
 
         llm_response = await prompt_chatai(prompt)
         llm_response_json = reformat_response(llm_response)
-        end_time = time.time()
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -113,6 +116,7 @@ async def get_important_terms_from_pdf_service():
     logger.info("deleting file from server")
     os.remove(filepath)
 
+    end_time = time.time()
     logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
     print_time_for_each_process()
 
@@ -121,7 +125,6 @@ async def get_important_terms_from_pdf_service():
         "status_code": 200,
         "data": {
             "filename": filename,
-            "predicted_tags": predicted_tags,
             "llm_output": llm_response_json
         }
     }), 200
@@ -213,7 +216,6 @@ async def get_important_terms_from_url_service():
     }), 200
 
 async def generate_classes_and_properties_service():
-    global start_process_time, after_db_fetch_time, after_prompt_time
     start_process_time = time.time()
     prompt = ""
     try:
@@ -223,22 +225,18 @@ async def generate_classes_and_properties_service():
         scope = data["scope"]
         
         db_response = get_important_terms_by_id(terms_id)
+        after_db_fetch_time = time.time()
         if db_response is None: 
             return response_template({
                 "message": "There is no important terms with such ID",
                 "status_code": 404, 
                 "data": None
             }), 404
-
         prompt = {
             "domain": domain,
             "scope": scope,
             "important_terms": db_response["terms"] 
         }
-
-        after_db_fetch_time = time.time()
-
-        logger.info(f"Prompt: {prompt}")
 
         x = LLMChain(
             llm=llm,
@@ -266,6 +264,6 @@ async def generate_classes_and_properties_service():
 
     logger.info(f"Total time: {round(after_prompt_time - start_process_time, 2)}s")
     logger.info(f"DB fetch time: {round(after_db_fetch_time - start_process_time, 2)}s")
-    logger.info(f"Prompt time: {round(after_prompt_time - after_db_fetch_time, 2)}s")
+    print_time_for_each_process()
 
     return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
