@@ -144,8 +144,9 @@ async def get_important_terms_from_url_service():
         db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None: 
-            domain = data["domain"]
-            scope = data["scope"]
+            # domain = data["domain"]
+            # scope = data["scope"]
+            raise ValueError("No conversation found with such id")
         else: 
             domain = db_response["domain"]
             scope = db_response["scope"]
@@ -215,7 +216,7 @@ async def get_important_terms_from_url_service():
         }
     }), 200
 
-async def generate_classes_and_properties_service():
+async def get_classes_and_properties_service():
     start_process_time = time.time()
     prompt = ""
     try:
@@ -267,3 +268,91 @@ async def generate_classes_and_properties_service():
     print_time_for_each_process()
 
     return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
+
+
+async def get_facets_of_properties_service():
+    start_process_time = time.time()
+    prompt = ""
+    try:
+        # Development only, not final implementation. 
+        data = request.get_json() 
+        properties = data["properties"]
+        user_id = session.get('user_id')
+        conversation_id = data["conversation_id"]
+
+        # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
+        db_response = get_conversation_detail_by_id(conversation_id)
+
+        if db_response is None: 
+            # domain = data["domain"]
+            # scope = data["scope"]
+            raise ValueError("No conversation found with such id")
+        else: 
+            domain = db_response["domain"]
+            scope = db_response["scope"]
+
+        prompt = {
+            "domain": domain, 
+            "scope": scope,
+            "properties": properties,
+        }
+
+        llm_response = await prompt_chatai(prompt, input_variables=["domain", "scope", "properties"], template=FACETS_DEFINITION_SYSTEM_MESSAGE)
+        llm_response_json = reformat_response(llm_response)
+        end_time = time.time()
+
+        # TODO: add global time counter for this function 
+        logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
+
+    except Exception as e:
+        logger.info(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(
+            chat_agent_response_template(
+                {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": prompt, "output": None})
+        ), 500
+
+    return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": llm_response_json}))
+
+
+async def get_instances_of_classes_service():
+    start_process_time = time.time()
+    prompt = ""
+    try:
+        # Development only, not final implementation.
+        data = request.get_json()
+        classes = data["classes"]
+        user_id = session.get('user_id')
+        conversation_id = data["conversation_id"]
+
+        # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
+        db_response = get_conversation_detail_by_id(conversation_id)
+
+        if db_response is None: 
+            # domain = data["domain"]
+            # scope = data["scope"]
+            raise ValueError("No conversation found with such id")
+        else: 
+            domain = db_response["domain"]
+            scope = db_response["scope"]
+
+        prompt = {
+            "domain": domain, 
+            "scope": scope,
+            "classes": classes,
+        }
+
+        llm_response = await prompt_chatai(prompt, input_variables=["domain", "scope", "classes"], template=INSTANCES_CREATION_SYSTEM_MESSAGE)
+        llm_response_json = reformat_response(llm_response)
+        end_time = time.time()
+
+        # TODO: add global time counter for this function 
+        logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
+
+    except Exception as e:
+        logger.info(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(
+            chat_agent_response_template(
+                {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": prompt, "output": None})
+        ), 500
+
+    return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": llm_response_json}))

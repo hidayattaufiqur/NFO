@@ -154,14 +154,14 @@ def extract_terms(content):
     logger.info(f"Term extraction completed in {end_time - start_time:,.2f} seconds")
     return terms
 
-async def prompt_chatai(prompt):
+async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_terms"], template=CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE):
     global prompt_time
     start_time = time.time()
     x = LLMChain(
         llm=llm,
         prompt=PromptTemplate(
-            input_variables=["domain", "scope", "important_terms"],
-            template=CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
+            input_variables=input_variables,
+            template=template,
             template_format="jinja2"
         ),
         verbose=True
