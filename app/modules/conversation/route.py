@@ -3,7 +3,7 @@ from app.utils import require_authorization
 
 from .service import *
 
-bp = Blueprint('conversation', __name__, url_prefix='/conversations')
+bp = Blueprint('conversations', __name__, url_prefix='/conversations')
 
 @bp.route('', methods=['POST'])
 @bp.route('/<conversation_id>', methods=['POST'])
