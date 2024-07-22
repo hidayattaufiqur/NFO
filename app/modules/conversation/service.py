@@ -98,8 +98,8 @@ def get_detail_conversation_service(conversation_id):
         db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None:
-            logger.info(f"an error occurred at route {request.path}")
-            return jsonify(response_template({"message": f"an error occurred at route {request.path}", "status_code": 500, "data": None})), 500
+            logger.info(f"an error occurred at route {request.path}: conversation not found")
+            return jsonify(response_template({"message": f"an error occurred at route {request.path}: conversation not found", "status_code": 404, "data": None})), 404
 
         conversation_id = db_response["conversation_id"]
         domain = db_response["domain"]
