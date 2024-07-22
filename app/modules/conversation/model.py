@@ -92,8 +92,7 @@ def delete_conversation(conversation_id):
         with conn.cursor() as cur:
             cur.execute('''
                 UPDATE conversations 
-                SET deleted_at = CURRENT_TIMESTAMP
-                SET is_active = FALSE
+                SET deleted_at = CURRENT_TIMESTAMP, is_active = FALSE
                 WHERE conversation_id = %s; 
             ''', (conversation_id,))
             conn.commit()
@@ -118,6 +117,26 @@ def create_competency_question(cq_id, user_id, convo_id, question):
             return cq
     except Exception as e:
         logger.error(f"Error creating competency question: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def update_competency_question(cq_id, question):
+    conn = get_pool_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE competency_questions
+                SET question = %s, is_valid = %s, updated_at = CURRENT_TIMESTAMP
+                WHERE cq_id = %s
+                RETURNING *;
+            ''', (question, True, cq_id)) # it's instantly validated because user only saves valid CQ
+            cq = cur.fetchone()
+            conn.commit()
+            return cq
+    except Exception as e:
+        logger.error(f"Error updating competency question: {e}")
         return None
     finally:
         close_pool_connection(conn)

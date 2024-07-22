@@ -96,5 +96,5 @@ Navigate to `http://localhost:5000` and you should see a message `hello, world!`
   This sends a POST request to the `/chat/` endpoint with a JSON body containing the user's message. The backend processes this input to generate and return the requested CQs.
 
 ## TODO
-List any pending tasks or features that are planned for future development: 
+List any pending tasks or features that are planned for future development: \
 [TODO](./TODO.md)

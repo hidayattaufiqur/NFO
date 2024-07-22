@@ -4,6 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import  LLMChain
 from flair.models import SequenceTagger
+from partial_json_parser import loads, Allow, STR, OBJ
 
 from spacy import load
 
@@ -21,7 +22,7 @@ logger = logging.getLogger(__name__)
 llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0) # TODO: try different temp
 start_time = time.time()
 # tagger = Classifier.load("ner-fast") # load flair NER model 
-tagger_flair = SequenceTagger.load("ner-fast") # load flair NER model 
+# tagger_flair = SequenceTagger.load("ner-fast") # load flair NER model 
 tagger_spacy = load("en_core_web_sm")
 logger.info(f"NER loaded in {round(time.time() - start_time, 3)}S")
  
@@ -65,10 +66,10 @@ def extract_text_from_pdf(pdf_file_path):
         doc = pdf_reader.read_pdf(pdf_file_path)
         doc_json = doc.json
 
-        extracted_text = []
+        extracted_text = ""
         for value in doc_json:
             if "sentences" in value:
-                extracted_text.append(value["sentences"][0])
+                extracted_text += (value["sentences"][0])
 
         logger.info(f"pdf file read and text extracted successfully in {time.time() - start_time:,.2f} seconds")
 
@@ -154,14 +155,14 @@ def extract_terms(content):
     logger.info(f"Term extraction completed in {end_time - start_time:,.2f} seconds")
     return terms
 
-async def prompt_chatai(prompt):
+async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_terms"], template=TERMS_CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE):
     global prompt_time
     start_time = time.time()
     x = LLMChain(
         llm=llm,
         prompt=PromptTemplate(
-            input_variables=["domain", "scope", "important_terms"],
-            template=CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
+            input_variables=input_variables,
+            template=template,
             template_format="jinja2"
         ),
         verbose=True
@@ -256,7 +257,7 @@ def reformat_response(llm_response):
         if isinstance(llm_response, dict):
             try:
                 raw_data = json.dumps(llm_response)
-                parsed_data = json.loads(raw_data)
+                parsed_data = loads(raw_data)
                 parsed_data = parsed_data['text']
 
                 if isinstance(parsed_data, str):
@@ -282,7 +283,6 @@ def reformat_response(llm_response):
                 logger.error(f"JSON decoding failed: {e}")
                 raise ValueError(f"Failed to decode JSON. Error: {e}")
 
-        logger.info(f"Response reformatting completed in {end_time - start_time:,.2f} seconds")
         return llm_response_json
 
     except json.JSONDecodeError as e:

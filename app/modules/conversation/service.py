@@ -98,8 +98,8 @@ def get_detail_conversation_service(conversation_id):
         db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None:
-            logger.info(f"an error occurred at route {request.path}")
-            return jsonify(response_template({"message": f"an error occurred at route {request.path}", "status_code": 500, "data": None})), 500
+            logger.info(f"an error occurred at route {request.path}: conversation not found")
+            return jsonify(response_template({"message": f"an error occurred at route {request.path}: conversation not found", "status_code": 404, "data": None})), 404
 
         conversation_id = db_response["conversation_id"]
         domain = db_response["domain"]
@@ -170,18 +170,28 @@ def delete_conversation_service(conversation_id):
 
 def save_competency_questions_service(conversation_id):
     try:
-        data = request.json
         cq_id = uuid.uuid4()
+        data = request.json
         user_id = session.get('user_id')
+        competency_questions_list = []
+
+        competency_questions_in_db = get_all_competency_questions_by_convo_id(
+            conversation_id)
 
         if type(data["competency_question"]) != str:
-            print(len(data["competency_question"]))
             for i in range(len(data["competency_question"])):
-                create_competency_question(
-                    cq_id, user_id, conversation_id, data["competency_question"][i])
+                competency_questions_list.append(data["competency_question"][i])
         else:
+            competency_questions_list.append(data["competency_question"])
+
+        if len(competency_questions_in_db) > 0:
+            cq_id = competency_questions_in_db[0]["cq_id"]
+            update_competency_question(
+                cq_id, data["competency_question"])
+        else: 
             create_competency_question(
-                cq_id, user_id, conversation_id, data["competency_question"])
+                cq_id, user_id, conversation_id, competency_questions_list)
+
 
     except Exception as e:
         logger.info(
