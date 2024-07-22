@@ -29,7 +29,7 @@ using flair or something else to get the important terms
 - [ ] create class and properties data junctions DB command and query
 - [ ] add API documentations for saving class and data properties endpoints
 - [ ] handle text chunking for AwanLLM request to be optional if the text lenght is more than a certain threshold
-= [ ] implement OWL file generation for the ontology system
+- [ ] implement OWL file generation for the ontology system
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video
