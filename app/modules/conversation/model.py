@@ -92,7 +92,7 @@ def delete_conversation(conversation_id):
         with conn.cursor() as cur:
             cur.execute('''
                 UPDATE conversations 
-                SET deleted_at = CURRENT_TIMESTAMP
+                SET deleted_at = CURRENT_TIMESTAMP,
                 SET is_active = FALSE
                 WHERE conversation_id = %s; 
             ''', (conversation_id,))
