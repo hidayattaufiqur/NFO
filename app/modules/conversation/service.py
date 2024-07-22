@@ -174,6 +174,7 @@ def save_competency_questions_service(conversation_id):
         cq_id = uuid.uuid4()
         user_id = session.get('user_id')
 
+        # FIXME: this only saves the first competency question
         if type(data["competency_question"]) != str:
             print(len(data["competency_question"]))
             for i in range(len(data["competency_question"])):
