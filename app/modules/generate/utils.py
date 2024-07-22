@@ -4,6 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import  LLMChain
 from flair.models import SequenceTagger
+from partial_json_parser import loads, Allow, STR, OBJ
 
 from spacy import load
 
@@ -154,7 +155,7 @@ def extract_terms(content):
     logger.info(f"Term extraction completed in {end_time - start_time:,.2f} seconds")
     return terms
 
-async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_terms"], template=CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE):
+async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_terms"], template=TERMS_CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE):
     global prompt_time
     start_time = time.time()
     x = LLMChain(
@@ -256,7 +257,7 @@ def reformat_response(llm_response):
         if isinstance(llm_response, dict):
             try:
                 raw_data = json.dumps(llm_response)
-                parsed_data = json.loads(raw_data)
+                parsed_data = loads(raw_data)
                 parsed_data = parsed_data['text']
 
                 if isinstance(parsed_data, str):
