@@ -243,7 +243,7 @@ async def get_classes_and_properties_service():
             llm=llm,
             prompt=PromptTemplate(
                 input_variables=["domain", "scope", "important_terms"],
-                template=CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
+                template=TERMS_CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
                 template_format="jinja2"
             ),
             verbose=True

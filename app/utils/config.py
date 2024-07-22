@@ -31,7 +31,7 @@ Do not make things up and follow my instruction obediently. I will be fired by m
 Previous conversation history:
 {history}
 """
-CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE = """
+TERMS_CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE = """
 You are an ontology assistant. Your task is to generate a list of classes, along with their respective object properties and data properties, based on the user's input of domain, scope, and a set of important terms. You should also identify any ambiguities in the terms provided.
 
 User will provide an input that contains the following information:
@@ -39,11 +39,11 @@ User will provide an input that contains the following information:
 - Scope: {{ scope }}
 - important_terms: {{ important_terms }}
 
-Your output must be formatted in a key-value dictionary as follows:
+Your output must be formatted in a JSON format as follows:
 {
  "domain": "{{ domain }}",
  "scope": "{{ scope }}",
- "important_terms": {{ important_terms }},
+ "important_terms": ["important_term_1", "important_term_2", ...],
  "classes": [
    {
      "name": "class_name_1",
