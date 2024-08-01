@@ -98,7 +98,6 @@ def predict_with_flair(sentences):
         for sent in splitted_sentences:
             logger.info("extracting NER tags")
             for entity in sent.get_spans("ner"):
-                logger.debug(f"entity: {entity.to_dict()}")
                 tagged_sentences.append({
                     "text": entity.text,
                     "tag": entity.tag,
@@ -119,7 +118,6 @@ def predict_with_spacy(sentences):
     logger.info("predicting NER tags")
     doc = tagger_spacy(sentences)
     for entity in doc.ents:
-        logger.debug(f"entity: {entity}")
         tagged_sentences.append({
             "text": entity.text,
             "tag": entity.label_,
@@ -133,10 +131,8 @@ def predict_with_spacy(sentences):
 
 def chunk_list(lst, chunk_size=100):
     start_time = time.time()
-    logger.info(f"tagged_sentences length: {len(lst)}")
     for i in range(0, len(lst), chunk_size):
         chunk = lst[i:i + chunk_size]
-        logger.info(f"Processing chunk: {chunk}")
         yield [item['text'] for item in chunk]
     end_time = time.time()
     logger.info(f"List chunking completed in {end_time - start_time:,.2f} seconds")
@@ -170,7 +166,6 @@ async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_t
 
     logger.info(f"Invoking prompt to OpenAI")
     llm_response = await x.ainvoke(prompt)
-    logger.info(f"type: ({type(llm_response)}, ChatOpenAI response {llm_response})")
 
     end_time = time.time()
     prompt_time = end_time - start_time
@@ -236,12 +231,10 @@ def prompt_awan_llm_chunked(tagged_sentences, domain, scope):
 
     for chunk in chunks:
         response = prompt_awan_llm(chunk, domain, scope)
-        logger.info(f"response in chunk {response}")
         if "statusCode" in response:
             logger.error(f"Error invoking awan llm with error: {response['message']}")
             return response
         content = response["choices"][0]["message"]["content"]
-        logger.info(f"Raw response content: {content}")
 
         terms = extract_terms(content)
         combined_response.extend(terms)
@@ -249,7 +242,6 @@ def prompt_awan_llm_chunked(tagged_sentences, domain, scope):
     combined_response = list(set(combined_response))
     end_time = time.time()
     logger.info(f"prompt_awan_llm_chunked completed in {end_time - start_time:,.2f} seconds")
-    logger.info(f"combined_response {combined_response}")
     return {"choices": [{"message": {"content": combined_response}}]}
 
 def reformat_response(llm_response):
