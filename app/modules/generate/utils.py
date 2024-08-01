@@ -59,7 +59,7 @@ def extract_text_from_pdf(pdf_file_path):
     try:
         logger.info("offloading pdf reading to llmsherpa api")
         start_time = time.time()
-        llmsherpa_api_url = "http://100.82.243.101:5010/api/parseDocument?renderFormat=all" # use self hosted llmsherpa api since the one on the internet is not working
+        llmsherpa_api_url = "http://localhost:5010/api/parseDocument?renderFormat=all" # use self hosted llmsherpa api since the one on the internet is not working
         pdf_reader = LayoutPDFReader(llmsherpa_api_url)
         text_extraction_time = time.time() - start_time
 
