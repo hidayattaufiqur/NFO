@@ -3,7 +3,8 @@ from werkzeug.utils import secure_filename
 
 from app.modules.conversation import get_conversation_detail_by_id
 from app.database import *
-from app.utils import * 
+from app.utils import *
+from app.utils.config import TERMS_CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE 
 from .model import *
 from .utils import *
 
@@ -15,7 +16,60 @@ import time
 
 logger = logging.getLogger(__name__)
 
-async def get_important_terms_from_pdf_service():
+async def get_important_terms_service(conversation_id):
+    try:
+        db_response = get_important_terms_by_conversation_id(conversation_id)
+        if db_response is None: 
+            return jsonify(response_template({
+                "message": "There is no important terms in conversation with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": db_response
+    })), 200
+
+async def save_important_terms_service(conversation_id):
+    try:
+        data = request.json
+        terms = data["terms"]
+        user_id = session.get('user_id')
+
+        db_response = get_important_terms_by_conversation_id(conversation_id)
+
+        if db_response is None:
+            important_terms_id = uuid.uuid4()
+            data = create_important_terms(important_terms_id, user_id, conversation_id, terms)
+        else:
+            important_terms_id = db_response[0].get("important_terms_id")
+            data = update_important_terms(important_terms_id, terms)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": data
+    })), 200
+
+
+async def generate_important_terms_from_pdf_service():
     start_process_time = time.time()
     filename = ""
     filepath = ""
@@ -129,7 +183,7 @@ async def get_important_terms_from_pdf_service():
         }
     }), 200
 
-async def get_important_terms_from_url_service(): 
+async def generate_important_terms_from_url_service(): 
     start_process_time = time.time()
 
     try:
@@ -216,7 +270,7 @@ async def get_important_terms_from_url_service():
         }
     }), 200
 
-async def get_classes_and_properties_service():
+async def generate_classes_and_properties_service():
     start_process_time = time.time()
     prompt = ""
     try:
@@ -270,7 +324,7 @@ async def get_classes_and_properties_service():
     return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": response_json})) 
 
 
-async def get_facets_of_properties_service():
+async def generate_facets_of_properties_service():
     start_process_time = time.time()
     prompt = ""
     try:
@@ -314,7 +368,7 @@ async def get_facets_of_properties_service():
     return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": llm_response_json}))
 
 
-async def get_instances_of_classes_service():
+async def generate_instances_of_classes_service():
     start_process_time = time.time()
     prompt = ""
     try:

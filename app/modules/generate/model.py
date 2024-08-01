@@ -19,6 +19,24 @@ def create_important_terms(important_terms_id, user_id, convo_id, terms):
     finally:
         close_pool_connection(conn)
 
+def update_important_terms(important_terms_id, terms):
+    conn = get_pool_connection()
+    try:
+        logger.info("updating important terms")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE important_terms SET terms = %s, updated_at = CURRENT_TIMESTAMP WHERE important_terms_id = %s
+                RETURNING *;
+            ''', (terms, important_terms_id))
+            terms = cur.fetchone()
+            conn.commit()
+            return terms
+    except Exception as e:
+        logger.error(f"Error updating important terms: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
 
 def get_important_terms_by_id(important_terms_id):
     conn = get_pool_connection()
