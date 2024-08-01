@@ -145,7 +145,6 @@ async def generate_important_terms_from_pdf_service():
         important_terms_id = uuid.uuid4()
         terms = awan_llm_response["choices"][0]["message"]["content"]
 
-        # TODO: check is saving important terms here is necessary or should it be done later term by term
         logger.info("saving important terms to database")
         create_important_terms(important_terms_id, user_id, conversation_id, terms)
 
@@ -157,6 +156,7 @@ async def generate_important_terms_from_pdf_service():
 
         llm_response = await prompt_chatai(prompt)
         llm_response_json = reformat_response(llm_response)
+        save_classes_and_properties_service(llm_response_json, conversation_id)
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -410,3 +410,52 @@ async def generate_instances_of_classes_service():
         ), 500
 
     return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": llm_response_json}))
+
+
+def save_classes_and_properties_service(llm_response_json, conversation_id):
+    try:
+        for cls in llm_response_json["classes"]:
+            class_id = uuid.uuid4()
+            class_name = cls["name"]
+            created_class = create_class(class_id, conversation_id, class_name)
+            
+            if created_class:
+                # Handle data properties
+                for data_prop in cls["data_properties"]:
+                    data_property_id = uuid.uuid4()
+                    data_property_name = data_prop["name"]
+                    data_property_type = data_prop["recommended_data_type"]
+                    created_data_property = create_data_property(data_property_id, class_id, data_property_name, data_property_type)
+                    
+                    if created_data_property:
+                        # Create junction between class and data property
+                        create_classes_data_junction(class_id, data_property_id)
+                
+                # Handle object properties
+                for obj_prop in cls["object_properties"]:
+                    object_property_id = uuid.uuid4()
+                    object_property_name = obj_prop["name"]
+                    created_obj_property = create_object_property(object_property_id, class_id, object_property_name)
+                    
+                    if created_obj_property:
+                        # Create junction between class and object property
+                        create_classes_object_junction(class_id, object_property_id)
+                        
+                        # Handle domains and ranges
+                        for domain_name in obj_prop["recommended_domain"]:
+                            domain_id = uuid.uuid4()
+                            created_domain = create_domain(domain_id, object_property_id, domain_name)
+                            
+                            if created_domain:
+                                for range_name in obj_prop["recommended_range"]:
+                                    range_id = uuid.uuid4()
+                                    created_range = create_range(range_id, object_property_id, range_name)
+                                    
+                                    if created_range:
+                                        # Create junction between domain and range
+                                        create_domains_ranges_junction(object_property_id, domain_id, range_id)
+        
+        return {"message": "Saving Classes and Properties Has Been Successful", "status_code": 200, "data": None}
+    except Exception as e:
+        logger.error(f"An error occurred while saving classes and properties: {e}")
+        return {"message": f"An error occurred: {str(e)}", "status_code": 500, "data": None}

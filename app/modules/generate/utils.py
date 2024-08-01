@@ -254,13 +254,11 @@ def reformat_response(llm_response):
                     return parsed_data
                 
                 llm_response_json = {
-                    "llm_output": {
-                        "domain": parsed_data.get("domain"),
-                        "scope": parsed_data.get("scope"),
-                        "important_terms": parsed_data.get("important_terms"),
-                        "classes": parsed_data.get("classes"),
-                        "ambiguous_terms": parsed_data.get("ambiguous_terms"),
-                    },
+                    "domain": parsed_data.get("domain"),
+                    "scope": parsed_data.get("scope"),
+                    "important_terms": parsed_data.get("important_terms"),
+                    "classes": parsed_data.get("classes"),
+                    "ambiguous_terms": parsed_data.get("ambiguous_terms"),
                 }
 
             except json.JSONDecodeError as e:
