@@ -1,0 +1,19 @@
+meta {
+  name: Upload url 2
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{dev}}/terms_extractor/url
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "conversation_id": "acf1d10b-bd36-43b4-8415-9214eb16fa96",
+    // "url": "https://revou.co/panduan-teknis/web-scraping-python"
+    "url": "https://scrapfly.io/blog/web-scraping-with-python/"
+  }
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Get Important Terms By Conversation ID
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{dev}}/generation/terms/:conversation_id
+  body: none
+  auth: none
+}
+
+params:path {
+  conversation_id: fe0927ac-b38b-4071-9d4a-37ad3a893972
+}
