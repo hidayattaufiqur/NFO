@@ -1,0 +1,23 @@
+meta {
+  name: Upload pdf
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{dev}}/terms_extractor/pdf
+  body: multipartForm
+  auth: none
+}
+
+body:json {
+  {
+    "conversation_id": "d4dc0b41-4524-4273-a72e-1146b78d84eb",
+    "url": "https://revou.co/panduan-teknis/web-scraping-python"
+  }
+}
+
+body:multipart-form {
+  file: @file(/home/nixos-box/Documents/Project/Ontology/Testing/Tutorial Web Scraping dengan Python bagi Pemula 2024 _ RevoU.pdf)
+  conversation_id: 2b432375-dda2-4f75-b789-87e42c7629b2
+}

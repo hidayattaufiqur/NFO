@@ -1,0 +1,18 @@
+meta {
+  name: Generate facets of properties
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{dev}}/generate/facets_of_properties
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "conversation_id": "acf1d10b-bd36-43b4-8415-9214eb16fa96",
+    "properties": "{\n \"domain\": \"Web Scraping\",\n \"scope\": \"Python\",\n \"important_terms\": ['Request Methods', 'GET', 'DELETE', 'XPath', 'Web Scraping', 'Scapy', 'PUT', 'ScrapflyMiddleware', 'ScrapflyClient', 'Safari', 'Chrome', 'HTTP Request', 'ScrapFly API', 'Set-Cookie', 'Tutorial', 'Metadata', 'Response Status Code', 'Cookies', 'Firefox', 'XPATH Selectors', 'JSON', 'CSS', 'Python', 'ScrapFly', 'ScrapflySpider', 'POST', 'Header', 'ScrapflyScrapyRequest', 'HTML', 'Post', 'parsel', 'ScrapeConfig', 'httpx', 'BeautifulSoup', 'HTTP'],\n \"classes\": [\n   {\n     \"name\": \"WebScrapingTool\",\n     \"object_properties\": [\"supports\", \"requires\"],\n     \"data_properties\": [\"name\", \"version\", \"description\"]\n   },\n   {\n     \"name\": \"HTTPRequest\",\n     \"object_properties\": [\"hasHeader\", \"hasBody\"],\n     \"data_properties\": [\"method\", \"url\", \"headers\", \"body\"]\n   },\n   {\n     \"name\": \"Response\",\n     \"object_properties\": [\"hasStatusCode\", \"hasHeader\", \"hasBody\"],\n     \"data_properties\": [\"status_code\", \"headers\", \"body\"]\n   },\n   {\n     \"name\": \"XPathSelector\",\n     \"object_properties\": [\"selects\"],\n     \"data_properties\": [\"expression\"]\n   },\n   {\n     \"name\": \"ScrapingFramework\",\n     \"object_properties\": [\"uses\", \"supports\"],\n     \"data_properties\": [\"name\", \"version\", \"description\"]\n   },\n   {\n     \"name\": \"Browser\",\n     \"object_properties\": [\"supports\"],\n     \"data_properties\": [\"name\", \"version\"]\n   },\n   {\n     \"name\": \"API\",\n     \"object_properties\": [\"provides\"],\n     \"data_properties\": [\"name\", \"version\", \"description\"]\n   },\n   {\n     \"name\": \"Cookie\",\n     \"object_properties\": [\"belongsTo\"],\n     \"data_properties\": [\"name\", \"value\", \"domain\", \"path\", \"expires\"]\n   },\n   {\n     \"name\": \"Tutorial\",\n     \"object_properties\": [\"hasPart\"],\n     \"data_properties\": [\"title\", \"description\", \"author\", \"publish_date\"]\n   },\n   {\n     \"name\": \"Metadata\",\n     \"object_properties\": [\"hasField\"],\n     \"data_properties\": [\"name\", \"value\"]\n   },\n   {\n     \"name\": \"Selector\",\n     \"object_properties\": [\"selects\"],\n     \"data_properties\": [\"type\", \"expression\"]\n   },\n   {\n     \"name\": \"JSON\",\n     \"object_properties\": [\"hasKey\"],\n     \"data_properties\": [\"key\", \"value\"]\n   },\n   {\n     \"name\": \"CSS\",\n     \"object_properties\": [\"hasSelector\"],\n     \"data_properties\": [\"selector\"]\n   },\n   {\n     \"name\": \"ScrapyRequest\",\n     \"object_properties\": [\"hasHeader\", \"hasBody\"],\n     \"data_properties\": [\"method\", \"url\", \"headers\", \"body\"]\n   },\n   {\n     \"name\": \"HTML\",\n     \"object_properties\": [\"hasElement\"],\n     \"data_properties\": [\"tag\", \"attributes\", \"text\"]\n   },\n   {\n     \"name\": \"ScrapeConfig\",\n     \"object_properties\": [\"hasTarget\", \"hasSelector\"],\n     \"data_properties\": [\"name\", \"target_url\", \"selector\"]\n   },\n   {\n     \"name\": \"HTTPClient\",\n     \"object_properties\": [\"sendsRequest\"],\n     \"data_properties\": [\"name\", \"version\"]\n   }\n ],\n \"ambiguous_terms\": [\"HTTP\"]\n}"
+  }
+}

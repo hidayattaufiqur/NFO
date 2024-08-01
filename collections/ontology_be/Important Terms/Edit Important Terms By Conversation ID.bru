@@ -1,0 +1,21 @@
+meta {
+  name: Edit Important Terms By Conversation ID
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{dev}}/generation/terms/:conversation_id
+  body: json
+  auth: none
+}
+
+params:path {
+  conversation_id: fe0927ac-b38b-4071-9d4a-37ad3a893972
+}
+
+body:json {
+  {
+    "terms": "hello"
+  }
+}
