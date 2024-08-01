@@ -248,9 +248,7 @@ def reformat_response(llm_response):
     try:
         if isinstance(llm_response, dict):
             try:
-                raw_data = json.dumps(llm_response)
-                parsed_data = loads(raw_data)
-                parsed_data = parsed_data['text']
+                parsed_data = loads(llm_response['text'])
 
                 if isinstance(parsed_data, str):
                     return parsed_data
