@@ -32,7 +32,7 @@ def delete_conversation(conversation_id):
 
 @bp.route('/competency-questions/<conversation_id>', methods=['POST'])
 @require_authorization
-def save_competency_questions(conversation_id):
+def save_competency_questions(conversation_id): # will update instead if there's already a CQ with the same ID
     return save_competency_questions_service(conversation_id)
 
 
