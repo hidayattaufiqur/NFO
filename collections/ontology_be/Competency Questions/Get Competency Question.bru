@@ -5,7 +5,11 @@ meta {
 }
 
 get {
-  url: {{dev}}/conversation/competency_questions/123
+  url: {{dev}}/conversation/competency_questions/:id
   body: none
   auth: none
+}
+
+params:path {
+  id: 
 }

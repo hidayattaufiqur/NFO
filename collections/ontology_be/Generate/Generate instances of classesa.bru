@@ -1,0 +1,17 @@
+meta {
+  name: Generate instances of classesa
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{dev}}/generation/instances-of-classes
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "conversation_id": "acf1d10b-bd36-43b4-8415-9214eb16fa96"
+  }
+}

@@ -1,0 +1,15 @@
+meta {
+  name: Get Classes Instances
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{dev}}/generation/classes/:class_id/instance
+  body: none
+  auth: none
+}
+
+params:path {
+  class_id: 53b84556-d21f-4039-9973-41013a85ce93
+}

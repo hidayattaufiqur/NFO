@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{dev}}/terms_extractor/pdf
+  url: {{dev}}/generation/terms/pdf
   body: multipartForm
   auth: none
 }
@@ -18,6 +18,6 @@ body:json {
 }
 
 body:multipart-form {
-  file: @file(/home/nixos-box/Documents/Project/Ontology/Testing/Tutorial Web Scraping dengan Python bagi Pemula 2024 _ RevoU.pdf)
-  conversation_id: 2b432375-dda2-4f75-b789-87e42c7629b2
+  file: @file(/home/nixos-box/Documents/hidayattaufiqur resume.pdf)
+  conversation_id: acf1d10b-bd36-43b4-8415-9214eb16fa96
 }
