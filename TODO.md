@@ -24,11 +24,13 @@ using flair or something else to get the important terms
 
 - [x] implement PUT and GET methods for important terms
 - [x] implement PUT method for CQs 
+- [x] update generate module endpoints in API docs
+- [x] fix issue of the PDF handler not working (file not uploaded) on production
+- [x] saves object and data properties to DB
+- [x] create class and properties data junctions DB command and query
+- [x] implement feature for classes instances generation
 
-- [ ] update generate module endpoints in API docs
-- [ ] fix issue of the PDF handler not working (file not uploaded) on production
-- [ ] saves object and data properties to DB
-- [ ] create class and properties data junctions DB command and query
+- [ ] add API documentations for saving class and data properties endpoints
 - [ ] implement OWL file generation for the ontology system
 
 # mid priority
@@ -43,8 +45,7 @@ using flair or something else to get the important terms
 - [ ] update README
 - [ ] add explanation in README to install Spacy model beforehand with this command `python -m spacy download en_core_web_sm`
 - [ ] handle text chunking for AwanLLM request to be optional if the text lenght is more than a certain threshold
-- [ ] add API documentations for saving class and data properties endpoints
-- [ ] fix issue with LLM output format
+- [x] fix issue with LLM output format
 
 # low priority
 - [x] use poetry
