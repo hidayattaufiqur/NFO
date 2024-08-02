@@ -155,6 +155,29 @@ def init_db(app):
             ''')
 
             cur.execute('''
+                CREATE TABLE IF NOT EXISTS instances (
+                    id SERIAL PRIMARY KEY,
+                    instance_id UUID NOT NULL UNIQUE,
+                    class_id UUID REFERENCES classes(class_id) ON DELETE SET NULL,
+                    name VARCHAR(100),
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    deleted_at TIMESTAMP
+                );
+            ''')
+
+            cur.execute('''
+                CREATE TABLE IF NOT EXISTS classes_instances_junction (
+                    id SERIAL PRIMARY KEY,
+                    class_id UUID REFERENCES classes(class_id),
+                    instance_id UUID REFERENCES instances(instance_id),
+                    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                    updated_at TIMESTAMP,
+                    deleted_at TIMESTAMP
+                );
+            ''')
+
+            cur.execute('''
                 CREATE TABLE IF NOT EXISTS classes_data_junction (
                     id SERIAL PRIMARY KEY,
                     class_id UUID REFERENCES classes(class_id),

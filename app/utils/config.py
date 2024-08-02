@@ -143,7 +143,8 @@ Your output must be formatted in a key-value dictionary as follows:
 {
  "classes": [
    {
-     "name": "class_name_1",
+     "class_name": "class_name_1",
+     "class_id": "class_id_1",
      "instances": ["instance_1", "instance_2", ...]
    },
    ...
