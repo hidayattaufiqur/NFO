@@ -5,17 +5,17 @@ from langchain_core.prompts import PromptTemplate
 from langchain.chains import  LLMChain
 from flair.models import SequenceTagger
 from partial_json_parser import loads, Allow, STR, OBJ
-
 from spacy import load
-
 from llmsherpa.readers import LayoutPDFReader
 
 import time
 import json
 import logging
 import requests
+import uuid
 
 from app.utils import * 
+from .model import create_class, create_data_property, create_object_property, create_classes_data_junction, create_classes_object_junction, create_domain, create_range, create_domains_ranges_junction, create_instance, create_classes_instances_junction
 
 logger = logging.getLogger(__name__)
 
@@ -98,7 +98,6 @@ def predict_with_flair(sentences):
         for sent in splitted_sentences:
             logger.info("extracting NER tags")
             for entity in sent.get_spans("ner"):
-                logger.debug(f"entity: {entity.to_dict()}")
                 tagged_sentences.append({
                     "text": entity.text,
                     "tag": entity.tag,
@@ -119,7 +118,6 @@ def predict_with_spacy(sentences):
     logger.info("predicting NER tags")
     doc = tagger_spacy(sentences)
     for entity in doc.ents:
-        logger.debug(f"entity: {entity}")
         tagged_sentences.append({
             "text": entity.text,
             "tag": entity.label_,
@@ -133,10 +131,8 @@ def predict_with_spacy(sentences):
 
 def chunk_list(lst, chunk_size=100):
     start_time = time.time()
-    logger.info(f"tagged_sentences length: {len(lst)}")
     for i in range(0, len(lst), chunk_size):
         chunk = lst[i:i + chunk_size]
-        logger.info(f"Processing chunk: {chunk}")
         yield [item['text'] for item in chunk]
     end_time = time.time()
     logger.info(f"List chunking completed in {end_time - start_time:,.2f} seconds")
@@ -170,7 +166,6 @@ async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_t
 
     logger.info(f"Invoking prompt to OpenAI")
     llm_response = await x.ainvoke(prompt)
-    logger.info(f"type: ({type(llm_response)}, ChatOpenAI response {llm_response})")
 
     end_time = time.time()
     prompt_time = end_time - start_time
@@ -236,12 +231,10 @@ def prompt_awan_llm_chunked(tagged_sentences, domain, scope):
 
     for chunk in chunks:
         response = prompt_awan_llm(chunk, domain, scope)
-        logger.info(f"response in chunk {response}")
         if "statusCode" in response:
             logger.error(f"Error invoking awan llm with error: {response['message']}")
             return response
         content = response["choices"][0]["message"]["content"]
-        logger.info(f"Raw response content: {content}")
 
         terms = extract_terms(content)
         combined_response.extend(terms)
@@ -249,28 +242,23 @@ def prompt_awan_llm_chunked(tagged_sentences, domain, scope):
     combined_response = list(set(combined_response))
     end_time = time.time()
     logger.info(f"prompt_awan_llm_chunked completed in {end_time - start_time:,.2f} seconds")
-    logger.info(f"combined_response {combined_response}")
     return {"choices": [{"message": {"content": combined_response}}]}
 
 def reformat_response(llm_response):
     try:
         if isinstance(llm_response, dict):
             try:
-                raw_data = json.dumps(llm_response)
-                parsed_data = loads(raw_data)
-                parsed_data = parsed_data['text']
+                parsed_data = loads(llm_response['text'])
 
                 if isinstance(parsed_data, str):
                     return parsed_data
                 
                 llm_response_json = {
-                    "llm_output": {
-                        "domain": parsed_data.get("domain"),
-                        "scope": parsed_data.get("scope"),
-                        "important_terms": parsed_data.get("important_terms"),
-                        "classes": parsed_data.get("classes"),
-                        "ambiguous_terms": parsed_data.get("ambiguous_terms"),
-                    },
+                    "domain": parsed_data.get("domain"),
+                    "scope": parsed_data.get("scope"),
+                    "important_terms": parsed_data.get("important_terms"),
+                    "classes": parsed_data.get("classes"),
+                    "ambiguous_terms": parsed_data.get("ambiguous_terms"),
                 }
 
             except json.JSONDecodeError as e:
@@ -288,3 +276,73 @@ def reformat_response(llm_response):
     except json.JSONDecodeError as e:
         logger.error(f"JSON decoding failed: {e}")
         raise ValueError(f"Failed to decode JSON. Error: {e}")
+
+
+def save_classes_and_properties_service(llm_response_json, conversation_id):
+    try:
+        for cls in llm_response_json["classes"]:
+            class_id = uuid.uuid4()
+            class_name = cls["name"]
+            created_class = create_class(class_id, conversation_id, class_name)
+            
+            if created_class:
+                # Handle data properties
+                for data_prop in cls["data_properties"]:
+                    data_property_id = uuid.uuid4()
+                    data_property_name = data_prop["name"]
+                    data_property_type = data_prop["recommended_data_type"]
+                    created_data_property = create_data_property(data_property_id, class_id, data_property_name, data_property_type)
+                    
+                    if created_data_property:
+                        # Create junction between class and data property
+                        create_classes_data_junction(class_id, data_property_id)
+                
+                # Handle object properties
+                for obj_prop in cls["object_properties"]:
+                    object_property_id = uuid.uuid4()
+                    object_property_name = obj_prop["name"]
+                    created_obj_property = create_object_property(object_property_id, class_id, object_property_name)
+                    
+                    if created_obj_property:
+                        # Create junction between class and object property
+                        create_classes_object_junction(class_id, object_property_id)
+                        
+                        # Handle domains and ranges
+                        for domain_name in obj_prop["recommended_domain"]:
+                            domain_id = uuid.uuid4()
+                            created_domain = create_domain(domain_id, object_property_id, domain_name)
+                            
+                            if created_domain:
+                                for range_name in obj_prop["recommended_range"]:
+                                    range_id = uuid.uuid4()
+                                    created_range = create_range(range_id, object_property_id, range_name)
+                                    
+                                    if created_range:
+                                        # Create junction between domain and range
+                                        create_domains_ranges_junction(object_property_id, domain_id, range_id)
+        
+        return {"message": "Saving Classes and Properties Has Been Successful", "status_code": 200, "data": None}
+    except Exception as e:
+        logger.error(f"An error occurred while saving classes and properties: {e}")
+        return {"message": f"An error occurred: {str(e)}", "status_code": 500, "data": None}
+
+def save_instances_service(llm_response_json, conversation_id):
+    try:
+        for cls in llm_response_json["classes"]:
+            class_id = cls.get("class_id")
+            class_name = cls.get("class_name")
+
+            for instance in cls.get("instances"):
+                instance_id = uuid.uuid4()
+                instance_name = instance
+                created_instance = create_instance(instance_id, class_id, instance_name)
+
+                if created_instance:
+                    # Create junction between class and instance
+                    create_classes_instances_junction(class_id, instance_id)
+
+        return {"message": "Saving Instances Has Been Successful", "status_code": 200, "data": None}
+
+    except Exception as e:
+        logger.error(f"Error saving instances: {e}")
+        return {"message": f"Error saving instances: {str(e)}", "status_code": 500, "data": None}

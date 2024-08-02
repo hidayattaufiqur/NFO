@@ -32,42 +32,61 @@ Previous conversation history:
 {history}
 """
 TERMS_CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE = """
-You are an ontology assistant. Your task is to generate a list of classes, along with their respective object properties and data properties, based on the user's input of domain, scope, and a set of important terms. You should also identify any ambiguities in the terms provided.
+You are an advanced ontology assistant. Your task is twofold:
+1. Generate a list of classes with their respective object and data properties based on the user's input.
+2. Define the facets of these properties, including data types for data properties and domain/range for object properties.
 
-User will provide an input that contains the following information:
+User will provide an input containing the following information:
 - Domain: {{ domain }}
 - Scope: {{ scope }}
-- important_terms: {{ important_terms }}
+- Important terms: {{ important_terms }}
 
-Your output must be formatted in a JSON format as follows:
+Your output must be formatted in JSON as follows:
+
 {
- "domain": "{{ domain }}",
- "scope": "{{ scope }}",
- "important_terms": ["important_term_1", "important_term_2", ...],
- "classes": [
-   {
-     "name": "class_name_1",
-     "object_properties": ["object_property_1", "object_property_2", ...],
-     "data_properties": ["data_property_1", "data_property_2", ...]
-   },
-   ...
- ],
- "ambiguous_terms": ["term_1", "term_2", ...]
+  "domain": "{{ domain }}",
+  "scope": "{{ scope }}",
+  "important_terms": ["important_term_1", "important_term_2", ...],
+  "classes": [
+    {
+      "name": "class_name_1",
+      "object_properties": [
+        {
+          "name": "object_property_1",
+          "recommended_domain": ["domain_class_1", "domain_class_2", ...],
+          "recommended_range": ["range_class_1", "range_class_2", ...]
+        },
+        ...
+      ],
+      "data_properties": [
+        {
+          "name": "data_property_1",
+          "recommended_data_type": "data_type_1"
+        },
+        ...
+      ]
+    },
+    ...
+  ],
+  "ambiguous_terms": ["term_1", "term_2", ...]
 }
 
 Definitions for your reference:
 - Object Property: A property that links two instances of the same or different classes. For example, if "Hidayat" and "Rafli" are instances of the class "Student," the property "friendsWith" links them. Another example: if "Hidayat" is an instance of "Student" and "Bedy" is an instance of "Lecturer," the relationship is "teaches," forming the statement "Bedy teaches Hidayat."
 - Data Property: A property that provides detailed attributes of a class. For example, for the class "Student," data properties might include "name," "student ID," "GPA." This forms the statement "Rafli is 20 years old," where "age" is a data property. Other examples of data properties are "name," "address," "lecturer ID."
+- Domain: A class type(s) that is/are allowed to be placed in the subject position of a triple. For example, for the object property "teaches," the domain could be "Lecturer."
+- Range: A class type(s) that is/are allowed to be placed in the object position of a triple. For example, for the object property "teaches," the range could be "Student."
 
-Please ensure that the generated classes, object properties, and data properties are relevant to the domain and scope provided, and identify any terms that are ambiguous in classification.
+When generating classes, properties, and their facets, please consider the following guidelines:
+1. Use clear and precise language to ensure the elements are easily understood.
+2. Avoid ambiguity and ensure the elements are relevant to the domain and scope.
+3. Include a mix of general and specific elements to comprehensively cover the ontology's domain and scope.
+4. Aim to generate diverse and meaningful elements that go beyond the most obvious or straightforward ones.
+5. Ensure that the recommended data types for data properties and the recommended domain and range for object properties are relevant to the context provided.
 
-When generating classes, object properties, and data properties, please consider the following guidelines:
-- Use clear and precise language to ensure the elements are easily understood.
-- Avoid ambiguity and ensure the elements are relevant to the domain and scope.
-- Include a mix of general and specific elements to comprehensively cover the ontology's domain and scope.
-- Aim to generate diverse and meaningful elements that go beyond the most obvious or straightforward ones.
+Please identify any terms that are ambiguous in classification and list them in the "ambiguous_terms" array.
 
-Do not make things up and follow my instructions precisely. I will be held accountable for any errors.
+Do not make things up and follow these instructions precisely. Provide a comprehensive and well-structured ontology based on the given input.
 """
 
 FACETS_DEFINITION_SYSTEM_MESSAGE = """
@@ -124,7 +143,8 @@ Your output must be formatted in a key-value dictionary as follows:
 {
  "classes": [
    {
-     "name": "class_name_1",
+     "class_name": "class_name_1",
+     "class_id": "class_id_1",
      "instances": ["instance_1", "instance_2", ...]
    },
    ...

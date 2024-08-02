@@ -1,0 +1,25 @@
+meta {
+  name: Update Range
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{dev}}/generation/object-properties/range/:range_id
+  body: json
+  auth: none
+}
+
+params:path {
+  range_id: 30fcb937-2fb1-46a8-a947-8b29e3757ec2
+}
+
+body:json {
+  {
+    "name": "mobileApplication"
+  }
+}
+
+body:form-urlencoded {
+  name: mobileApplication
+}

@@ -1,0 +1,19 @@
+meta {
+  name: Get Domains
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{dev}}/generation/object-properties/:object_property_id/domain
+  body: formUrlEncoded
+  auth: none
+}
+
+params:path {
+  object_property_id: ccd336fd-b278-45d0-a5e4-0ebc3704810b
+}
+
+body:form-urlencoded {
+  name: MobileApplication
+}

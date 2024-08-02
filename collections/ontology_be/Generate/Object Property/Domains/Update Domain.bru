@@ -1,0 +1,25 @@
+meta {
+  name: Update Domain
+  type: http
+  seq: 2
+}
+
+put {
+  url: {{dev}}/generation/object-properties/domain/:domain_id
+  body: json
+  auth: none
+}
+
+params:path {
+  domain_id: c172bf52-7318-46ec-8f2c-e528a1d73ef1
+}
+
+body:json {
+  {
+    "name": "server"
+  }
+}
+
+body:form-urlencoded {
+  name: mobileApplication
+}
