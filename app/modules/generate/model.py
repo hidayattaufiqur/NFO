@@ -71,6 +71,46 @@ def get_important_terms_by_conversation_id(convo_id):
 
 
 """classes"""
+def create_classes_data_junction(class_id, data_property_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("inserting classes data junction into database")
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO classes_data_junction (class_id, data_property_id)
+                VALUES (%s, %s)
+                RETURNING *;
+            ''', (class_id, data_property_id))
+            junction = cur.fetchone()
+            conn.commit()
+            return junction
+    except Exception as e:
+        logger.error(f"Error inserting classes data junction: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def create_classes_object_junction(class_id, object_property_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("inserting classes object junction into database")
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO classes_object_junction (class_id, object_property_id)
+                VALUES (%s, %s)
+                RETURNING *;
+            ''', (class_id, object_property_id))
+            junction = cur.fetchone()
+            conn.commit()
+            return junction
+    except Exception as e:
+        logger.error(f"Error inserting classes object junction: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
 def create_class(class_id, convo_id, name, desc=""):
     conn = get_pool_connection()
     try:
@@ -86,6 +126,25 @@ def create_class(class_id, convo_id, name, desc=""):
             return classes
     except Exception as e:
         logger.error(f"Error inserting a class: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+        
+
+def update_class(class_id, name):
+    conn = get_pool_connection()
+    try:
+        logger.info("updating class")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE classes SET name = %s, updated_at = CURRENT_TIMESTAMP WHERE class_id = %s
+                RETURNING *;
+            ''', (name, class_id))
+            classes = cur.fetchone()
+            conn.commit()
+            return classes
+    except Exception as e:
+        logger.error(f"Error updating class: {e}")
         return None
     finally:
         close_pool_connection(conn)
@@ -160,10 +219,27 @@ def create_data_property(data_property_id, class_id, name, data_type):
         close_pool_connection(conn)
 
 
+def update_data_property(data_property_id, name, data_type):
+    conn = get_pool_connection()
+    try:
+        logger.info("updating data property")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE data_properties SET name = %s, data_type = %s, updated_at = CURRENT_TIMESTAMP WHERE data_property_id = %s
+                RETURNING *;
+            ''', (name, data_type, data_property_id))
+            data_property = cur.fetchone()
+            conn.commit()
+            return data_property
+    except Exception as e:
+        logger.error(f"Error updating data property: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
 def get_data_property_by_id(data_property_id):
     conn = get_pool_connection()
     try:
-        logger.info("fetching data property by id")
         with conn.cursor() as cur:
             cur.execute(
                 'SELECT * FROM data_properties WHERE data_property_id = %s AND deleted_at IS NULL', (data_property_id,))
@@ -175,34 +251,21 @@ def get_data_property_by_id(data_property_id):
     finally:
         close_pool_connection(conn)
 
-
-def get_data_property_by_name(name):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching data property by name")
-        with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM data_properties WHERE name = %s AND deleted_at IS NULL', (name,))
-            data_property = cur.fetchone()
-            return data_property
-    except Exception as e:
-        logger.error(f"Error fetching data property by name: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
 def get_all_data_properties_by_class_id(class_id):
     conn = get_pool_connection()
     try:
-        logger.info("fetching data properties by class id")
         with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM data_properties WHERE class_id = %s AND deleted_at IS NULL', (class_id,))
+            cur.execute('''
+                SELECT dp.data_property_id, dp.name, dp.data_type, c.name as class_name, dp.created_at
+                FROM data_properties dp
+                JOIN classes_data_junction cdj ON dp.data_property_id = cdj.data_property_id
+                JOIN classes c ON cdj.class_id = c.class_id
+                WHERE c.class_id = %s AND dp.deleted_at IS NULL
+            ''', (class_id,))
             data_properties = cur.fetchall()
             return data_properties
     except Exception as e:
-        logger.error(f"Error fetching data properties by class id: {e}")
+        logger.error(f"Error fetching data properties by conversation id: {e}")
         return None
     finally:
         close_pool_connection(conn)
@@ -228,6 +291,23 @@ def create_object_property(object_property_id, class_id, name):
     finally:
         close_pool_connection(conn)
 
+def update_object_property(object_property_id, name):
+    conn = get_pool_connection()
+    try:
+        logger.info("updating object property")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE object_properties SET name = %s, updated_at = CURRENT_TIMESTAMP WHERE object_property_id = %s
+                RETURNING *;
+            ''', (name, object_property_id))
+            object_property = cur.fetchone()
+            conn.commit()
+            return object_property
+    except Exception as e:
+        logger.error(f"Error updating object property: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
 
 def get_object_property_by_id(object_property_id):
     conn = get_pool_connection()
@@ -245,151 +325,37 @@ def get_object_property_by_id(object_property_id):
         close_pool_connection(conn)
 
 
-def get_object_property_by_name(name):
+def get_all_object_properties_by_class_id(class_id):
     conn = get_pool_connection()
     try:
-        logger.info("fetching object property by name")
         with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM object_properties WHERE name = %s AND deleted_at IS NULL', (name,))
-            object_property = cur.fetchone()
-            return object_property
-    except Exception as e:
-        logger.error(f"Error fetching object property by name: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-def get_all_object_properties_by_domain_id(domain_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching object properties by domain id")
-        with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM object_properties WHERE domain_id = %s AND deleted_at IS NULL', (domain_id,))
+            cur.execute('''
+                SELECT
+                    c.name as class_name,
+                    op.object_property_id,
+                    op.name AS object_property,
+                    op.created_at,
+                    json_agg(DISTINCT jsonb_build_object(
+                        'domain_id', d.domain_id,
+                        'domain_name', d.name
+                    )) AS domains,
+                    json_agg(DISTINCT jsonb_build_object(
+                        'range_id', r.range_id,
+                        'range_name', r.name
+                    )) AS ranges
+                FROM object_properties op
+                JOIN classes_object_junction coj ON op.object_property_id = coj.object_property_id
+                JOIN classes c ON coj.class_id = c.class_id
+                LEFT JOIN domains_ranges_junction drj ON op.object_property_id = drj.object_property_id
+                LEFT JOIN domains d ON drj.domain_id = d.domain_id
+                LEFT JOIN ranges r ON drj.range_id = r.range_id
+                WHERE c.class_id = %s AND op.deleted_at IS NULL
+                GROUP BY op.object_property_id, op.created_at, op.name, c.name
+            ''', (class_id,))
             object_properties = cur.fetchall()
             return object_properties
     except Exception as e:
-        logger.error(f"Error fetching object properties by domain id: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-"""classes data junction"""
-def create_classes_data_junction(class_id, data_property_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("inserting classes data junction into database")
-
-        # logger.info("checking if class exists")
-        # data = get_class_by_name(name)
-        # if data:
-        #     class_id = _class['class_id']
-        # else:
-        #     _class = create_class(class_id, convo_id, name, desc)
-        #     class_id = _class['class_id']
-
-        with conn.cursor() as cur:
-            cur.execute('''
-                INSERT INTO classes_data_junction (class_id, data_property_id)
-                VALUES (%s, %s)
-                RETURNING *;
-            ''', (class_id, data_property_id))
-            classes_data_junction = cur.fetchone()
-            conn.commit()
-            return classes_data_junction
-    except Exception as e:
-        logger.error(f"Error inserting classes data junction: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-def get_classes_data_junction_by_class_id(class_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching classes data junction by class id")
-        with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM classes_data_junction WHERE class_id = %s AND deleted_at IS NULL', (class_id,))
-            classes_data_junction = cur.fetchall()
-            return classes_data_junction
-    except Exception as e:
-        logger.error(f"Error fetching classes data junction by class id: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-def get_classes_data_junction_by_data_property_id(data_property_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching classes data junction by data property id")
-        with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM classes_data_junction WHERE data_property_id = %s AND deleted_at IS NULL', (data_property_id,))
-            classes_data_junction = cur.fetchall()
-            return classes_data_junction
-    except Exception as e:
-        logger.error(
-            f"Error fetching classes data junction by data property id: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-"""classes object junction"""
-def create_classes_object_junction(class_id, object_property_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("inserting classes object junction into database")
-        with conn.cursor() as cur:
-            cur.execute('''
-                INSERT INTO classes_object_junction (class_id, object_property_id)
-                VALUES (%s, %s)
-                RETURNING *;
-            ''', (class_id, object_property_id))
-            classes_object_junction = cur.fetchone()
-            conn.commit()
-            return classes_object_junction
-    except Exception as e:
-        logger.error(f"Error inserting classes object junction: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-def get_classes_object_junction_by_class_id(class_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching classes object junction by class id")
-        with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM classes_object_junction WHERE class_id = %s AND deleted_at IS NULL', (class_id,))
-            classes_object_junction = cur.fetchall()
-            return classes_object_junction
-    except Exception as e:
-        logger.error(
-            f"Error fetching classes object junction by class id: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-def get_classes_object_junction_by_object_property_id(object_property_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching classes object junction by object property id")
-        with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM classes_object_junction WHERE object_property_id = %s AND deleted_at IS NULL', (object_property_id,))
-            classes_object_junction = cur.fetchall()
-            return classes_object_junction
-    except Exception as e:
-        logger.error(
-            f"Error fetching classes object junction by object property id: {e}")
+        logger.error(f"Error fetching object properties by conversation id: {e}")
         return None
     finally:
         close_pool_connection(conn)
@@ -415,7 +381,25 @@ def create_domain(domain_id, object_property_id, name):
     finally:
         close_pool_connection(conn)
 
+def update_domain(domain_id, name):
+    conn = get_pool_connection()
+    try:
+        logger.info("updating domain")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE domains SET name = %s, updated_at = CURRENT_TIMESTAMP WHERE domain_id = %s
+                RETURNING *;
+            ''', (name, domain_id))
+            domain = cur.fetchone()
+            conn.commit()
+            return domain
+    except Exception as e:
+        logger.error(f"Error updating domain: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
 
+        
 def get_domain_by_id(domain_id):
     conn = get_pool_connection()
     try:
@@ -432,29 +416,26 @@ def get_domain_by_id(domain_id):
         close_pool_connection(conn)
 
 
-def get_domain_by_name(name):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching domain by name")
-        with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM domains WHERE name = %s AND deleted_at IS NULL', (name,))
-            domain = cur.fetchone()
-            return domain
-    except Exception as e:
-        logger.error(f"Error fetching domain by name: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
 def get_all_domains_by_object_property_id(object_property_id):
     conn = get_pool_connection()
     try:
         logger.info("fetching domains by object property id")
         with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM domains WHERE object_property_id = %s AND deleted_at IS NULL', (object_property_id,))
+            cur.execute('''
+                SELECT
+                    op.object_property_id,
+                    op.name AS object_property,
+                    json_agg(DISTINCT jsonb_build_object(
+                        'domain_id', d.domain_id,
+                        'domain_name', d.name,
+                        'created_at', d.created_at
+                    )) AS domains
+                FROM domains d
+                JOIN domains_ranges_junction drj ON d.domain_id = drj.domain_id
+                JOIN object_properties op ON drj.object_property_id = op.object_property_id
+                WHERE op.object_property_id = %s AND op.deleted_at IS NULL
+                GROUP BY op.object_property_id, op.name
+            ''', (object_property_id,))
             domains = cur.fetchall()
             return domains
     except Exception as e:
@@ -505,6 +486,25 @@ def create_range(range_id, object_property_id, name):
         close_pool_connection(conn)
 
 
+def update_range(range_id, name):
+    conn = get_pool_connection()
+    try:
+        logger.info("updating range")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE ranges SET name = %s, updated_at = CURRENT_TIMESTAMP WHERE range_id = %s
+                RETURNING *;
+            ''', (name, range_id))
+            range = cur.fetchone()
+            conn.commit()
+            return range
+    except Exception as e:
+        logger.error(f"Error updating range: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
 def get_range_by_id(range_id):
     conn = get_pool_connection()
     try:
@@ -521,31 +521,46 @@ def get_range_by_id(range_id):
         close_pool_connection(conn)
 
 
-def get_range_by_name(name):
-    conn = get_pool_connection()
-    try:
-        logger.info("fetching range by name")
-        with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM ranges WHERE name = %s AND deleted_at IS NULL', (name,))
-            range = cur.fetchone()
-            return range
-    except Exception as e:
-        logger.error(f"Error fetching range by name: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
 def get_all_ranges_by_object_property_id(object_property_id):
     conn = get_pool_connection()
     try:
         logger.info("fetching ranges by object property id")
         with conn.cursor() as cur:
-            cur.execute(
-                'SELECT * FROM ranges WHERE object_property_id = %s AND deleted_at IS NULL', (object_property_id,))
+            cur.execute('''
+                SELECT
+                    op.object_property_id,
+                    op.name AS object_property,
+                    json_agg(DISTINCT jsonb_build_object(
+                        'range_id', r.range_id,
+                        'range_name', r.name,
+                        'created_at', r.created_at
+                    )) AS ranges
+                FROM ranges r
+                JOIN domains_ranges_junction drj ON r.range_id = drj.range_id
+                JOIN object_properties op ON drj.object_property_id = op.object_property_id
+                WHERE op.object_property_id = %s AND op.deleted_at IS NULL
+                GROUP BY op.object_property_id, op.name
+            ''', (object_property_id,))
             ranges = cur.fetchall()
             return ranges
     except Exception as e:
         logger.error(f"Error fetching ranges by object property id: {e}")
         return None
+
+def update_object_property_range(range_id, range_name):
+    conn = get_pool_connection()
+    try:
+        logger.info("updating object property range")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE ranges SET name = %s, updated_at = CURRENT_TIMESTAMP WHERE range_id = %s
+                RETURNING *;
+            ''', (range_name, range_id))
+            range = cur.fetchone()
+            conn.commit()
+            return range
+    except Exception as e:
+        logger.error(f"Error updating object property range: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)

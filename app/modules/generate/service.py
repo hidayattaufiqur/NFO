@@ -235,7 +235,6 @@ async def generate_important_terms_from_url_service():
         important_terms_id = uuid.uuid4()
         terms = awan_llm_response["choices"][0]["message"]["content"]
 
-        # TODO: check is saving important terms here is necessary or should it be done later term by term
         logger.info("saving important terms to database")
         create_important_terms(important_terms_id, user_id, conversation_id, terms)
 
@@ -459,3 +458,282 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
     except Exception as e:
         logger.error(f"An error occurred while saving classes and properties: {e}")
         return {"message": f"An error occurred: {str(e)}", "status_code": 500, "data": None}
+
+
+async def get_classes_service(conversation_id):
+    try:
+        db_response = get_all_classes_by_conversation_id(conversation_id)
+        if db_response is None: 
+            return jsonify(response_template({
+                "message": "There is no classes in conversation with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": db_response
+    })), 200
+
+
+async def update_class_service(class_id):
+    try:
+        data = request.json
+        class_name = data["class"]
+
+        logger.info("updating class")   
+        db_response = get_class_by_id(class_id)
+
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no class with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+        else:
+            class_id = db_response.get("class_id")
+            data = update_class(class_id, class_name)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": data
+    })), 200
+
+
+async def get_data_properties_service(class_id):
+    try:
+        db_response = get_all_data_properties_by_class_id(class_id)
+        if db_response is None: 
+            return jsonify(response_template({
+                "message": "There is no data properties in conversation with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": db_response
+    })), 200
+
+
+async def update_data_property_service(data_property_id):
+    try:
+        data = request.json
+        data_property_name = data["name"]
+        data_property_type = data["data_type"]
+
+        db_response = get_data_property_by_id(data_property_id)
+
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no data property with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+        else:
+            data_property_id = db_response.get("data_property_id")
+            data = update_data_property(data_property_id, data_property_name, data_property_type)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": data
+    })), 200
+
+
+async def get_object_properties_service(class_id):
+    try:
+        db_response = get_all_object_properties_by_class_id(class_id)
+        if db_response is None: 
+            return jsonify(response_template({
+                "message": "There is no object properties in conversation with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": db_response
+    })), 200
+
+
+async def update_object_property_service(object_property_id):
+    try:
+        data = request.json
+        object_property = data["object_property"]
+
+        db_response = get_object_property_by_id(object_property_id)
+
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no object property with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+        else:
+            object_property_id = db_response.get("object_property_id")
+            data = update_object_property(object_property_id, object_property)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": data
+    })), 200
+
+async def get_object_property_range_service(object_property_id):
+    try:
+        db_response = get_all_ranges_by_object_property_id(object_property_id)
+        if db_response is None: 
+            return jsonify(response_template({
+                "message": "There is no object property range with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": db_response
+    })), 200
+
+
+async def update_object_property_range_service(range_id):
+    try:
+        data = request.json
+        range_name = data["name"]
+
+        db_response = get_range_by_id(range_id)
+
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no range with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+        else:
+            data = update_object_property_range(range_id, range_name)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": data
+    })), 200
+
+
+async def get_object_property_domain_service(object_property_id):
+    try:
+        db_response = get_all_domains_by_object_property_id(object_property_id)
+        if db_response is None: 
+            return jsonify(response_template({
+                "message": "There is no object property domain with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": db_response
+    })), 200
+
+
+async def update_object_property_domain_service(domain_id):
+    try:
+        data = request.json
+        domain_name = data["name"]
+
+        db_response = get_domain_by_id(domain_id)
+
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no domain with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+        else:
+            data = update_domain(domain_id, domain_name)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500, 
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": data
+    })), 200

@@ -36,12 +36,78 @@ async def generate_classes_and_properties():
 
 
 @bp.route('/facets-of-propeties', methods=['POST'])
-@require_authorization  
+# @require_authorization  
 async def generate_facets_of_properties():
     return await generate_facets_of_properties_service()
 
 
 @bp.route('/instances-of-classes', methods=['POST'])
-@require_authorization 
+# @require_authorization 
 async def generate_instances_of_classes():
     return await generate_instances_of_classes_service()
+
+
+@bp.route('/classes/<conversation_id>', methods=['GET'])
+# @require_authorization
+async def get_classes(conversation_id):
+    return await get_classes_service(conversation_id)
+
+
+@bp.route('/classes/<class_id>', methods=['PUT'])
+@require_authorization
+async def update_class(class_id):
+    return await update_class_service(class_id)
+
+
+@bp.route('/object-properties/<class_id>', methods=['GET'])
+@require_authorization
+async def get_object_properties(class_id):
+    return await get_object_properties_service(class_id)
+
+
+@bp.route('/object-properties/<object_property_id>', methods=['PUT'])
+@require_authorization
+async def update_object_property(object_property_id):
+    return await update_object_property_service(object_property_id)
+
+
+@bp.route('/data-properties/<class_id>', methods=['GET'])
+@require_authorization
+async def get_data_properties(class_id):
+    return await get_data_properties_service(class_id)
+
+
+@bp.route('/data-properties/<data_property_id>', methods=['PUT'])
+@require_authorization
+async def update_data_property(data_property_id):
+    return await update_data_property_service(data_property_id)
+
+
+@bp.route('/object-properties/<object_property_id>/range', methods=['GET'])
+@require_authorization
+async def get_object_property_range(object_property_id):
+    return await get_object_property_range_service(object_property_id)
+
+
+@bp.route('/object-properties/range/<range_id>', methods=['PUT'])
+@require_authorization
+async def update_object_property_range(range_id):
+    return await update_object_property_range_service(range_id)
+
+
+@bp.route('/object-properties/<object_property_id>/domain', methods=['GET'])
+@require_authorization
+async def get_object_property_domain(object_property_id):
+    return await get_object_property_domain_service(object_property_id)
+
+
+@bp.route('/object-properties/domain/<domain_id>', methods=['PUT'])
+@require_authorization
+async def update_object_property_domain(domain_id):
+    return await update_object_property_domain_service(domain_id)
+    
+
+# @bp.route('/ontology/<conversation_id>', methods=['GET'])
+# @require_authorization
+# async def generate_owl_file(conversation_id):
+#     return await generate_owl_file_service(conversation_id)
