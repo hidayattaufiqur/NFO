@@ -188,7 +188,7 @@ def get_all_classes_by_conversation_id(convo_id):
         logger.info("fetching classes by conversation id")
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM classes WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
+                'SELECT class_id, conversation_id, name, description, created_at FROM classes WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
             classes = cur.fetchall()
             return classes
     except Exception as e:
