@@ -71,46 +71,6 @@ def get_important_terms_by_conversation_id(convo_id):
 
 
 """classes"""
-def create_classes_data_junction(class_id, data_property_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("inserting classes data junction into database")
-        with conn.cursor() as cur:
-            cur.execute('''
-                INSERT INTO classes_data_junction (class_id, data_property_id)
-                VALUES (%s, %s)
-                RETURNING *;
-            ''', (class_id, data_property_id))
-            junction = cur.fetchone()
-            conn.commit()
-            return junction
-    except Exception as e:
-        logger.error(f"Error inserting classes data junction: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
-def create_classes_object_junction(class_id, object_property_id):
-    conn = get_pool_connection()
-    try:
-        logger.info("inserting classes object junction into database")
-        with conn.cursor() as cur:
-            cur.execute('''
-                INSERT INTO classes_object_junction (class_id, object_property_id)
-                VALUES (%s, %s)
-                RETURNING *;
-            ''', (class_id, object_property_id))
-            junction = cur.fetchone()
-            conn.commit()
-            return junction
-    except Exception as e:
-        logger.error(f"Error inserting classes object junction: {e}")
-        return None
-    finally:
-        close_pool_connection(conn)
-
-
 def create_class(class_id, convo_id, name, desc=""):
     conn = get_pool_connection()
     try:
@@ -199,6 +159,26 @@ def get_all_classes_by_conversation_id(convo_id):
 
 
 """data properties"""
+def create_classes_data_junction(class_id, data_property_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("inserting classes data junction into database")
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO classes_data_junction (class_id, data_property_id)
+                VALUES (%s, %s)
+                RETURNING *;
+            ''', (class_id, data_property_id))
+            junction = cur.fetchone()
+            conn.commit()
+            return junction
+    except Exception as e:
+        logger.error(f"Error inserting classes data junction: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
 def create_data_property(data_property_id, class_id, name, data_type):
     conn = get_pool_connection()
     try:
@@ -256,7 +236,7 @@ def get_all_data_properties_by_class_id(class_id):
     try:
         with conn.cursor() as cur:
             cur.execute('''
-                SELECT dp.data_property_id, dp.name, dp.data_type, c.name as class_name, dp.created_at
+                SELECT dp.data_property_id, dp.name as data_property_name, dp.data_type as data_property_type, dp.created_at
                 FROM data_properties dp
                 JOIN classes_data_junction cdj ON dp.data_property_id = cdj.data_property_id
                 JOIN classes c ON cdj.class_id = c.class_id
@@ -272,6 +252,26 @@ def get_all_data_properties_by_class_id(class_id):
 
 
 """object properties"""
+def create_classes_object_junction(class_id, object_property_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("inserting classes object junction into database")
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO classes_object_junction (class_id, object_property_id)
+                VALUES (%s, %s)
+                RETURNING *;
+            ''', (class_id, object_property_id))
+            junction = cur.fetchone()
+            conn.commit()
+            return junction
+    except Exception as e:
+        logger.error(f"Error inserting classes object junction: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
 def create_object_property(object_property_id, class_id, name):
     conn = get_pool_connection()
     try:
@@ -331,9 +331,8 @@ def get_all_object_properties_by_class_id(class_id):
         with conn.cursor() as cur:
             cur.execute('''
                 SELECT
-                    c.name as class_name,
+                    op.name as object_property_name,
                     op.object_property_id,
-                    op.name AS object_property,
                     op.created_at,
                     json_agg(DISTINCT jsonb_build_object(
                         'domain_id', d.domain_id,
@@ -564,3 +563,100 @@ def update_object_property_range(range_id, range_name):
         return None
     finally:
         close_pool_connection(conn)
+
+
+"""instances"""
+def create_classes_instances_junction(class_id, instance_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("inserting classes instances junction into database")
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO classes_instances_junction (class_id, instance_id)
+                VALUES (%s, %s)
+                RETURNING *;
+            ''', (class_id, instance_id))
+            junction = cur.fetchone()
+            conn.commit()
+            return junction
+    except Exception as e:
+        logger.error(f"Error inserting classes instances junction: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def create_instance(instance_id, class_id, name):
+    conn = get_pool_connection()
+    try:
+        logger.info("inserting instance into database")
+        with conn.cursor() as cur:
+            cur.execute('''
+                INSERT INTO instances (instance_id, class_id, name)
+                VALUES (%s, %s, %s)
+                RETURNING *;
+            ''', (instance_id, class_id, name))
+            instance = cur.fetchone()
+            conn.commit()
+            return instance
+    except Exception as e:
+        logger.error(f"Error inserting an instance: {e}")
+        return None
+    finally:
+        close_pool_connection(conn) 
+
+def update_instance(instance_id, name):
+    conn = get_pool_connection()
+    try:
+        logger.info("updating instance")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE instances SET name = %s, updated_at = CURRENT_TIMESTAMP WHERE instance_id = %s
+                RETURNING *;
+            ''', (name, instance_id))
+            instance = cur.fetchone()
+            conn.commit()
+            return instance
+    except Exception as e:
+        logger.error(f"Error updating instance: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def get_instance_by_id(instance_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("fetching instance by id")
+        with conn.cursor() as cur:
+            cur.execute(
+                'SELECT * FROM instances WHERE instance_id = %s AND deleted_at IS NULL', (instance_id,))
+            instance = cur.fetchone()
+            return instance
+    except Exception as e:
+        logger.error(f"Error fetching instance by id: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def get_all_instances_by_class_id(class_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("fetching instances by class id")
+        with conn.cursor() as cur:
+            cur.execute('''
+                SELECT i.instance_id, i.name as instance_name, i.created_at
+                FROM instances i
+                JOIN classes_instances_junction cij ON i.instance_id = cij.instance_id
+                JOIN classes c ON cij.class_id = c.class_id
+                WHERE c.class_id = %s AND i.deleted_at IS NULL
+            ''', (class_id,))
+            instances = cur.fetchall()
+            return instances
+    except Exception as e:
+        logger.error(f"Error fetching instances by class id: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+

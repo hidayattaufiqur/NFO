@@ -157,6 +157,7 @@ async def generate_important_terms_from_pdf_service():
         llm_response = await prompt_chatai(prompt)
         llm_response_json = reformat_response(llm_response)
         save_classes_and_properties_service(llm_response_json, conversation_id)
+        end_time = time.time()
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -170,7 +171,6 @@ async def generate_important_terms_from_pdf_service():
     logger.info("deleting file from server")
     os.remove(filepath)
 
-    end_time = time.time()
     logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
     print_time_for_each_process()
 
@@ -246,6 +246,7 @@ async def generate_important_terms_from_url_service():
 
         llm_response = await prompt_chatai(prompt)
         llm_response_json = reformat_response(llm_response)
+        save_classes_and_properties_service(llm_response_json, conversation_id)
         logger.info(f"texts have been extracted in {time.time()-start_time:,.2f} ")
 
         end_time = time.time()
@@ -371,18 +372,13 @@ async def generate_instances_of_classes_service():
     start_process_time = time.time()
     prompt = ""
     try:
-        # Development only, not final implementation.
         data = request.get_json()
-        classes = data["classes"]
-        user_id = session.get('user_id')
         conversation_id = data["conversation_id"]
 
-        # TODO: need to know whether domain and scope from a saved conversation is prioritized over body request or not
         db_response = get_conversation_detail_by_id(conversation_id)
+        classes = get_all_classes_by_conversation_id(conversation_id)
 
         if db_response is None: 
-            # domain = data["domain"]
-            # scope = data["scope"]
             raise ValueError("No conversation found with such id")
         else: 
             domain = db_response["domain"]
@@ -396,68 +392,19 @@ async def generate_instances_of_classes_service():
 
         llm_response = await prompt_chatai(prompt, input_variables=["domain", "scope", "classes"], template=INSTANCES_CREATION_SYSTEM_MESSAGE)
         llm_response_json = reformat_response(llm_response)
+        save_instances_service(llm_response_json, conversation_id)
         end_time = time.time()
 
-        # TODO: add global time counter for this function 
         logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
 
     except Exception as e:
         logger.info(f"an error occurred at route {request.path} with error: {e}")
         return jsonify(
             chat_agent_response_template(
-                {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": prompt, "output": None})
+                {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": "", "output": None})
         ), 500
 
-    return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": prompt, "output": llm_response_json}))
-
-
-def save_classes_and_properties_service(llm_response_json, conversation_id):
-    try:
-        for cls in llm_response_json["classes"]:
-            class_id = uuid.uuid4()
-            class_name = cls["name"]
-            created_class = create_class(class_id, conversation_id, class_name)
-            
-            if created_class:
-                # Handle data properties
-                for data_prop in cls["data_properties"]:
-                    data_property_id = uuid.uuid4()
-                    data_property_name = data_prop["name"]
-                    data_property_type = data_prop["recommended_data_type"]
-                    created_data_property = create_data_property(data_property_id, class_id, data_property_name, data_property_type)
-                    
-                    if created_data_property:
-                        # Create junction between class and data property
-                        create_classes_data_junction(class_id, data_property_id)
-                
-                # Handle object properties
-                for obj_prop in cls["object_properties"]:
-                    object_property_id = uuid.uuid4()
-                    object_property_name = obj_prop["name"]
-                    created_obj_property = create_object_property(object_property_id, class_id, object_property_name)
-                    
-                    if created_obj_property:
-                        # Create junction between class and object property
-                        create_classes_object_junction(class_id, object_property_id)
-                        
-                        # Handle domains and ranges
-                        for domain_name in obj_prop["recommended_domain"]:
-                            domain_id = uuid.uuid4()
-                            created_domain = create_domain(domain_id, object_property_id, domain_name)
-                            
-                            if created_domain:
-                                for range_name in obj_prop["recommended_range"]:
-                                    range_id = uuid.uuid4()
-                                    created_range = create_range(range_id, object_property_id, range_name)
-                                    
-                                    if created_range:
-                                        # Create junction between domain and range
-                                        create_domains_ranges_junction(object_property_id, domain_id, range_id)
-        
-        return {"message": "Saving Classes and Properties Has Been Successful", "status_code": 200, "data": None}
-    except Exception as e:
-        logger.error(f"An error occurred while saving classes and properties: {e}")
-        return {"message": f"An error occurred: {str(e)}", "status_code": 500, "data": None}
+    return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": "", "output": llm_response_json}))
 
 
 async def get_classes_service(conversation_id):
@@ -729,6 +676,62 @@ async def update_object_property_domain_service(domain_id):
         return jsonify(response_template({
             "message": f"an error occurred at route {request.path} with error: {e}",
             "status_code": 500, 
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": data
+    })), 200
+
+
+async def get_instances_service(class_id):
+    try:
+        db_response = get_all_instances_by_class_id(class_id)
+        if db_response is None: 
+            return jsonify(response_template({
+                "message": "There is no instances in conversation with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": db_response
+    })), 200
+
+
+async def update_instances_service(instance_id):
+    try:
+        data = request.json
+        instance_name = data["name"]
+
+        db_response = get_instance_by_id(instance_id)
+
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no instance with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+        else:
+            instance_id = db_response.get("instance_id")
+            data = update_instance(instance_id, instance_name)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
             "data": None
         })), 500
 
