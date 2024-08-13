@@ -546,6 +546,7 @@ def get_all_ranges_by_object_property_id(object_property_id):
         logger.error(f"Error fetching ranges by object property id: {e}")
         return None
 
+
 def update_object_property_range(range_id, range_name):
     conn = get_pool_connection()
     try:

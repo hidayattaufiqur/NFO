@@ -55,6 +55,7 @@ async def update_class(class_id):
     return await update_class_service(class_id)
 
 
+"""object properties"""
 @bp.route('/object-properties/<class_id>', methods=['GET'])
 # @require_authorization
 async def get_object_properties(class_id):
@@ -67,17 +68,13 @@ async def update_object_property(object_property_id):
     return await update_object_property_service(object_property_id)
 
 
-@bp.route('/data-properties/<class_id>', methods=['GET'])
+@bp.route('/object-properties/<class_id>', methods=['POST'])
 # @require_authorization
-async def get_data_properties(class_id):
-    return await get_data_properties_service(class_id)
+async def create_object_property(class_id):
+    return await create_object_property_service(class_id)
 
 
-@bp.route('/data-properties/<data_property_id>', methods=['PUT'])
-@require_authorization
-async def update_data_property(data_property_id):
-    return await update_data_property_service(data_property_id)
-
+"""object property ranges"""
 
 @bp.route('/object-properties/<object_property_id>/range', methods=['GET'])
 # @require_authorization
@@ -91,6 +88,7 @@ async def update_object_property_range(range_id):
     return await update_object_property_range_service(range_id)
 
 
+"""object property domains"""
 @bp.route('/object-properties/<object_property_id>/domain', methods=['GET'])
 # @require_authorization
 async def get_object_property_domain(object_property_id):
@@ -101,7 +99,21 @@ async def get_object_property_domain(object_property_id):
 @require_authorization
 async def update_object_property_domain(domain_id):
     return await update_object_property_domain_service(domain_id)
-    
+
+
+"""data properties"""
+@bp.route('/data-properties/<class_id>', methods=['GET'])
+# @require_authorization
+async def get_data_properties(class_id):
+    return await get_data_properties_service(class_id)
+
+
+@bp.route('/data-properties/<data_property_id>', methods=['PUT'])
+@require_authorization
+async def update_data_property(data_property_id):
+    return await update_data_property_service(data_property_id)
+
+   
 """instances"""
 @bp.route('/instances-of-classes', methods=['POST'])
 @require_authorization 

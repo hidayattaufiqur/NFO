@@ -622,6 +622,62 @@ async def get_object_properties_service(class_id):
     })), 200
 
 
+async def create_object_property_service(class_id):
+    try:
+        data = request.json
+        object_property_name = data["object_property_name"]
+        range_name = data["range_name"]
+        domain_name = data["domain_name"]
+
+        db_response = get_class_by_id(class_id)
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no class with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+
+        object_property_id = uuid.uuid4()
+        create_object_property(object_property_id, class_id, object_property_name)
+
+        # link object property to class
+        create_classes_object_junction(class_id, object_property_id)
+
+        # if range_name is a list, create multiple ranges
+        if type(range_name) != str and type(domain_name) != str:
+            for name in range_name: 
+                range_id = uuid.uuid4()
+                create_range(range_id, object_property_id, name)
+
+                for name in domain_name: 
+                    domain_id = uuid.uuid4()
+
+                    create_domain(domain_id, object_property_id, name)
+                    create_domains_ranges_junction(object_property_id, domain_id, range_id)
+        else: 
+            range_id = uuid.uuid4()
+            domain_id = uuid.uuid4()
+
+            create_domain(domain_id, object_property_id, domain_name)
+            create_range(range_id, object_property_id, range_name)
+
+            create_domains_ranges_junction(object_property_id, domain_id, range_id)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": data
+    })), 200
+
+
 async def update_object_property_service(object_property_id):
     try:
         data = request.json
@@ -652,6 +708,7 @@ async def update_object_property_service(object_property_id):
         "status_code": 200,
         "data": data
     })), 200
+
 
 async def get_object_property_range_service(object_property_id):
     try:
