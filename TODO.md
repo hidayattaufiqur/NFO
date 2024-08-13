@@ -31,9 +31,9 @@ using flair or something else to get the important terms
 - [x] add logout endpoint
 - [x] add create classes, object properties, and data properties endpoints
 - [x] add API documentations for saving class and data properties endpoints
+- [x] implement OWL file generation for the ontology system
 
 - [ ] implement add range and domain endpoint
-- [ ] implement OWL file generation for the ontology system
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video
