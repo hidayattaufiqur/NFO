@@ -1,4 +1,4 @@
-from flask import jsonify, request, session
+from flask import jsonify, request, session, send_file
 from werkzeug.utils import secure_filename
 
 from app.modules.conversation import get_conversation_detail_by_id
@@ -7,7 +7,9 @@ from app.utils import *
 from app.utils.config import CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS 
 from .model import *
 from .utils import *
+from owlready2 import *
 
+import tempfile
 import logging 
 import os
 import json
@@ -971,3 +973,78 @@ async def update_instances_service(instance_id):
         "status_code": 200,
         "data": data
     })), 200
+
+
+async def generate_owl_file_service(conversation_id):
+    try:
+        # Create a new ontology
+        onto = get_ontology(f"http://example.org/ontology_{conversation_id}.owl")
+        with onto:
+            # Fetch classes from the database
+            classes = get_all_classes_by_conversation_id(conversation_id)
+            
+            # First pass: Create all classes
+            for cls in classes:
+                types.new_class(cls["name"], (Thing,))
+            
+            # Second pass: Add properties and handle domains/ranges
+            for cls in classes:
+                CurrentClass = onto[cls["name"]]
+                
+                # Fetch and add data properties
+                data_properties = get_all_data_properties_by_class_id(cls["class_id"])
+                for dp in data_properties:
+                    new_data_property = types.new_class(dp["data_property_name"], (DataProperty,))
+                    new_data_property.domain.append(CurrentClass)
+                    # Map data_type to OWL datatypes (you may need to expand this mapping)
+                    if dp["data_property_type"].lower() == "string":
+                        new_data_property.range.append(str)
+                    elif dp["data_property_type"].lower() in ["integer", "int"]:
+                        new_data_property.range.append(int)
+                    # Add more mappings as needed
+
+                # Fetch and add object properties
+                object_properties = get_all_object_properties_by_class_id(cls["class_id"])
+                for op in object_properties:
+                    new_object_property = types.new_class(op["object_property_name"], (ObjectProperty,))
+                    new_object_property.domain.append(CurrentClass)
+                    
+                    # Fetch and add domains for object properties
+                    domains = get_all_domains_by_object_property_id(op["object_property_id"])
+                    logger.info(f"domains: {domains}")
+                    for d in domains:
+                        domain_class = onto[d["domains"][0]["domain_name"]]
+                        if domain_class:
+                            new_object_property.domain.append(domain_class)
+                    
+                    # Fetch and add ranges for object properties
+                    ranges = get_all_ranges_by_object_property_id(op["object_property_id"])
+                    logger.info(f"ranges: {ranges}")
+                    for r in ranges:
+                        range_class = onto[r["ranges"][0]["range_name"]]
+                        if range_class:
+                            new_object_property.range.append(range_class)
+
+                # Fetch and add instances
+                instances = get_all_instances_by_class_id(cls["class_id"])
+                for instance in instances:
+                    CurrentClass(instance["instance_name"])
+
+        logger.debug(f"Ontology: {onto}")
+        # Save the ontology to a temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".owl") as temp_file:
+            onto.save(file=temp_file.name, format="rdfxml")
+            temp_file_path = temp_file.name
+
+        # Return the file as an attachment
+        return send_file(temp_file_path, as_attachment=True, 
+                         download_name=f"ontology_{conversation_id}.owl", 
+                         mimetype="application/rdf+xml")
+
+    except Exception as e:
+        logger.error(f"An error occurred while generating OWL file: {str(e)}", exc_info=True)
+        return jsonify(response_template({
+            "message": f"An error occurred while generating OWL file: {str(e)}",
+            "status_code": 500,
+            "data": None
+        })), 500

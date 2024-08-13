@@ -31,6 +31,7 @@ gunicorn = "^22.0.0"
 flask-cors = "^4.0.1"
 spacy = "^3.7.5"
 partial-json-parser = "^0.2.1.1.post4"
+owlready2 = "^0.46"
 
 
 [build-system]
