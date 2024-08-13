@@ -5,7 +5,7 @@ import uuid
 import re
 
 from flask import url_for, session, Blueprint, jsonify, request
-from flask_login import LoginManager, UserMixin, login_user, current_user
+from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user
 from google_auth_oauthlib.flow import Flow
 from google.auth.transport.requests import Request
 
@@ -176,4 +176,18 @@ def profile_service():
     except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
         return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
-    
+
+
+def logout_service():
+    try:
+        auth_response = is_authorized()
+
+        if auth_response:
+            return jsonify(auth_response), 401
+
+        logout_user()
+        session.clear()
+        return jsonify(response_template({"message": "User logged out successfully", "status_code": 200, "data": None}))
+    except Exception as e:
+        logger.error(f"an error occurred at route {request.path} {e}")
+        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))

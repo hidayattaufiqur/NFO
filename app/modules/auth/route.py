@@ -17,3 +17,8 @@ def callback():
 @bp.route('/profile')
 def profile():
     return profile_service()
+
+
+@bp.route('/logout', methods=['POST'])
+def logout():
+    return logout_service()
