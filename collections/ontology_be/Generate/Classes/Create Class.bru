@@ -1,0 +1,21 @@
+meta {
+  name: Create Class
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{dev}}/generation/classes/:conversation_id
+  body: json
+  auth: none
+}
+
+params:path {
+  conversation_id: d4dc0b41-4524-4273-a72e-1146b78d84eb
+}
+
+body:json {
+  {
+    "class_name": "WebDevelopment"
+  }
+}

@@ -1,0 +1,23 @@
+meta {
+  name: Create Object Property
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{dev}}/generation/object-properties/:class_id
+  body: json
+  auth: none
+}
+
+params:path {
+  class_id: 2fd08b5f-f4c9-4fc5-aef7-db11c3f3055e
+}
+
+body:json {
+  {
+    "object_property_name": "hasFunction",
+    "domain_name": ["test", "test1"],
+    "range_name": ["test juga"]
+  }
+}
