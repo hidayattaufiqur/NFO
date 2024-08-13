@@ -1023,7 +1023,7 @@ async def generate_owl_file_service(conversation_id):
 
         logger.debug(f"Ontology: {onto}")
         # Save the ontology to a temporary file
-        with tempfile.NamedTemporaryFile(delete=True, suffix=".owl") as temp_file:
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".owl") as temp_file:
             onto.save(file=temp_file.name, format="rdfxml")
             temp_file_path = temp_file.name
 
@@ -1039,3 +1039,6 @@ async def generate_owl_file_service(conversation_id):
             "status_code": 500,
             "data": None
         })), 500
+
+    finally: 
+        os.remove(temp_file_path)
