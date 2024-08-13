@@ -35,6 +35,12 @@ async def save_important_terms(conversation_id):
 """classes and properties"""
 
 
+@bp.route('/classes-and-properties/<conversation_id>', methods=['GET'])
+@require_authorization
+async def get_classes_and_properties(conversation_id):
+    return await get_classes_and_properties_service(conversation_id)
+
+
 @bp.route('/classes-and-properties', methods=['POST'])
 @require_authorization
 async def generate_classes_and_properties():
@@ -153,6 +159,6 @@ async def update_instances(instance_id):
 
 
 # @bp.route('/ontology/<conversation_id>', methods=['GET'])
-@require_authorization
+# @require_authorization
 # async def generate_owl_file(conversation_id):
 #     return await generate_owl_file_service(conversation_id)

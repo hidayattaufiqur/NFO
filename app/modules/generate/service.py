@@ -270,6 +270,69 @@ async def generate_important_terms_from_url_service():
         }
     }), 200
 
+async def get_classes_and_properties_service(conversation_id):
+    try:
+        classes = get_all_classes_by_conversation_id(conversation_id)
+        response = []
+
+        if classes is None: 
+            return jsonify(response_template({
+                "message": "There is no conversation with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+
+        for cls in classes:
+            class_id = cls.get("class_id")
+
+            data_properties = get_all_data_properties_by_class_id(class_id)
+            if data_properties is None:
+                return jsonify(response_template({
+                    "message": "There is no data properties in conversation with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+
+            object_properties = get_all_object_properties_by_class_id(class_id)
+            if object_properties is None:
+                return jsonify(response_template({
+                    "message": "There is no object properties in conversation with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+
+            for obj_prop in object_properties:
+                object_property_id = obj_prop.get("object_property_id")
+                ranges = get_all_ranges_by_object_property_id(object_property_id)
+                if ranges is None:
+                    return jsonify(response_template({
+                        "message": "There is no ranges in conversation with such ID",
+                        "status_code": 404, 
+                        "data": None
+                    })), 404
+
+                response.append({
+                    "class_id": class_id,
+                    "class_name": cls.get("name"),
+                    "data_properties": data_properties,
+                    "object_properties": object_properties,
+                })
+
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data":  response
+    })), 200
+
 async def generate_classes_and_properties_service():
     start_process_time = time.time()
     prompt = ""
