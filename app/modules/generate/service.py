@@ -4,7 +4,7 @@ from werkzeug.utils import secure_filename
 from app.modules.conversation import get_conversation_detail_by_id
 from app.database import *
 from app.utils import *
-from app.utils.config import TERMS_CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE 
+from app.utils.config import CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS 
 from .model import *
 from .utils import *
 
@@ -297,7 +297,7 @@ async def generate_classes_and_properties_service():
             llm=llm,
             prompt=PromptTemplate(
                 input_variables=["domain", "scope", "important_terms"],
-                template=TERMS_CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE,
+                template=CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS,
                 template_format="jinja2"
             ),
             verbose=True
@@ -428,6 +428,83 @@ async def get_classes_service(conversation_id):
         "message": "Success",
         "status_code": 200,
         "data": db_response
+    })), 200
+
+
+async def create_class_service(conversation_id):
+    try:
+        data = request.json
+        class_name = data["class_name"]
+        class_id = uuid.uuid4()
+
+        db_response = get_conversation_detail_by_id(conversation_id)
+
+        if db_response is None:
+            raise ValueError("No conversation found with such id")
+        else:
+            domain = db_response["domain"]
+            scope = db_response["scope"]
+
+        prompt = {
+            "domain": domain,
+            "scope": scope,
+            "class_name": class_name,
+        }
+
+        llm_response = await prompt_chatai(prompt=prompt, input_variables=["domain", "scope", "class_name"], template=PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_CLASS_NAME)
+        llm_response_json = reformat_response(llm_response)
+
+        logger.info("creating class")   
+        db_response = create_class(class_id, conversation_id, class_name, "")
+
+        cls = llm_response_json
+
+        for data_prop in cls["data_properties"]:
+            data_property_id = uuid.uuid4()
+            data_property_name = data_prop["name"]
+            data_property_type = data_prop["recommended_data_type"]
+            created_data_property = create_data_property(data_property_id, class_id, data_property_name, data_property_type)
+            
+            if created_data_property:
+                # Create junction between class and data property
+                create_classes_data_junction(class_id, data_property_id)
+            
+            # Handle object properties
+            for obj_prop in cls["object_properties"]:
+                object_property_id = uuid.uuid4()
+                object_property_name = obj_prop["name"]
+                created_obj_property = create_object_property(object_property_id, class_id, object_property_name)
+                
+                if created_obj_property:
+                    # Create junction between class and object property
+                    create_classes_object_junction(class_id, object_property_id)
+                    
+                    # Handle domains and ranges
+                    for domain_name in obj_prop["recommended_domain"]:
+                        domain_id = uuid.uuid4()
+                        created_domain = create_domain(domain_id, object_property_id, domain_name)
+                        
+                        if created_domain:
+                            for range_name in obj_prop["recommended_range"]:
+                                range_id = uuid.uuid4()
+                                created_range = create_range(range_id, object_property_id, range_name)
+                                
+                                if created_range:
+                                    # Create junction between domain and range
+                                    create_domains_ranges_junction(object_property_id, domain_id, range_id)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": llm_response_json
     })), 200
 
 

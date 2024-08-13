@@ -7,7 +7,7 @@ bp = Blueprint('generation', __name__, url_prefix='/generation')
 
 """important terms"""
 @bp.route('/terms/pdf', methods=['POST'])
-@require_authorization
+# @require_authorization
 async def generate_important_terms_from_pdf():
     return await generate_important_terms_from_pdf_service()
 
@@ -32,7 +32,7 @@ async def save_important_terms(conversation_id):
 
 """classes and properties"""
 @bp.route('/classes-and-properties', methods=['POST'])
-@require_authorization
+# @require_authorization
 async def generate_classes_and_properties():
     return await generate_classes_and_properties_service()
 
@@ -43,6 +43,12 @@ async def get_classes(conversation_id):
     return await get_classes_service(conversation_id)
 
 
+@bp.route('/classes/<conversation_id>', methods=['POST'])
+# @require_authorization
+async def create_class(conversation_id):
+    return await create_class_service(conversation_id)
+
+
 @bp.route('/classes/<class_id>', methods=['PUT'])
 @require_authorization
 async def update_class(class_id):
@@ -50,7 +56,7 @@ async def update_class(class_id):
 
 
 @bp.route('/object-properties/<class_id>', methods=['GET'])
-@require_authorization
+# @require_authorization
 async def get_object_properties(class_id):
     return await get_object_properties_service(class_id)
 
@@ -62,7 +68,7 @@ async def update_object_property(object_property_id):
 
 
 @bp.route('/data-properties/<class_id>', methods=['GET'])
-@require_authorization
+# @require_authorization
 async def get_data_properties(class_id):
     return await get_data_properties_service(class_id)
 
@@ -74,7 +80,7 @@ async def update_data_property(data_property_id):
 
 
 @bp.route('/object-properties/<object_property_id>/range', methods=['GET'])
-@require_authorization
+# @require_authorization
 async def get_object_property_range(object_property_id):
     return await get_object_property_range_service(object_property_id)
 
@@ -86,7 +92,7 @@ async def update_object_property_range(range_id):
 
 
 @bp.route('/object-properties/<object_property_id>/domain', methods=['GET'])
-@require_authorization
+# @require_authorization
 async def get_object_property_domain(object_property_id):
     return await get_object_property_domain_service(object_property_id)
 
