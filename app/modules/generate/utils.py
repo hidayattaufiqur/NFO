@@ -329,6 +329,7 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
         logger.error(f"An error occurred while saving classes and properties: {e}")
         return {"message": f"An error occurred: {str(e)}", "status_code": 500, "data": None}
 
+
 def save_instances_service(llm_response_json, conversation_id):
     try:
         for cls in llm_response_json["classes"]:

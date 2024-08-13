@@ -541,6 +541,40 @@ async def update_class_service(class_id):
     })), 200
 
 
+async def create_data_property_service(class_id):
+    try:
+        data = request.json 
+        data_property_name = data["name"]
+        data_property_type = data["type"]
+
+        db_response = get_class_by_id(class_id)
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no class with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+
+        data_property_id = uuid.uuid4()
+        create_data_property(data_property_id, class_id, data_property_name, data_property_type)
+
+        create_classes_data_junction(class_id, data_property_id)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": data
+    })), 200
+
+
 async def get_data_properties_service(class_id):
     try:
         db_response = get_all_data_properties_by_class_id(class_id)
