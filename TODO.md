@@ -28,9 +28,9 @@ using flair or something else to get the important terms
 - [x] fix issue of the PDF handler not working (file not uploaded) on production
 - [x] saves object and data properties to DB
 - [x] create class and properties data junctions DB command and query
-- [x] implement feature for classes instances generation
+- [x] add logout endpoint
 
-- [ ] add logout endpoint
+- [ ] add create classes, object properties, and data properties endpoints
 - [ ] add API documentations for saving class and data properties endpoints
 - [ ] implement OWL file generation for the ontology system
 
