@@ -1,0 +1,15 @@
+meta {
+  name: generate OWL
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{dev}}/generation/ontology/:conversation_id
+  body: none
+  auth: none
+}
+
+params:path {
+  conversation_id: acf1d10b-bd36-43b4-8415-9214eb16fa96
+}
