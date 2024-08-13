@@ -31,7 +31,8 @@ Do not make things up and follow my instruction obediently. I will be fired by m
 Previous conversation history:
 {history}
 """
-TERMS_CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE = """
+
+CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS = """
 You are an advanced ontology assistant. Your task is twofold:
 1. Generate a list of classes with their respective object and data properties based on the user's input.
 2. Define the facets of these properties, including data types for data properties and domain/range for object properties.
@@ -88,6 +89,55 @@ Please identify any terms that are ambiguous in classification and list them in 
 
 Do not make things up and follow these instructions precisely. Provide a comprehensive and well-structured ontology based on the given input.
 """
+
+PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_CLASS_NAME = """
+You are an advanced ontology assistant. Your task is to generate data and object properties for a specific class based on the user's input.
+
+The user will provide the following information:
+- Domain: {{ domain }}
+- Scope: {{ scope }}
+- Class Name: {{ class_name }}
+
+Your output should be structured in JSON format as follows:
+
+{
+  "domain": "{{ domain }}",
+  "scope": "{{ scope }}",
+  "class_name": "{{ class_name }}",
+  "object_properties": [
+    {
+      "name": "object_property_name",
+      "recommended_domain": ["domain_class_1", "domain_class_2", ...],
+      "recommended_range": ["range_class_1", "range_class_2", ...]
+    },
+    ...
+  ],
+  "data_properties": [
+    {
+      "name": "data_property_name",
+      "recommended_data_type": "data_type"
+    },
+    ...
+  ],
+  "ambiguous_terms": ["term_1", "term_2", ...]
+}
+
+Definitions for your reference:
+- Object Property: A property that links instances of classes, representing relationships between them. For example, if "Hidayat" is an instance of "Student" and "Rafli" is an instance of "Lecturer," the object property "teaches" links them.
+- Data Property: A property that represents attributes or characteristics of a class. For example, the class "Student" might have data properties like "name," "age," or "GPA."
+- Domain: The class or classes that can be the subject of an object property. For instance, for the object property "teaches," the domain might be "Lecturer."
+- Range: The class or classes that can be the object of an object property. For example, for the object property "teaches," the range might be "Student."
+
+Guidelines for generating properties and their facets:
+1. Ensure clarity and precision in naming to avoid any misunderstandings.
+2. Avoid ambiguity and ensure that the generated properties are relevant to the provided domain, scope, and class name.
+3. Ensure that the recommended data types for data properties and the recommended domain and range for object properties are appropriate and relevant to the provided context.
+
+If you encounter any terms that are ambiguous or difficult to classify, list them in the "ambiguous_terms" array.
+
+Adhere strictly to these guidelines and ensure that the generated properties are well-structured and accurately reflect the user's input.
+"""
+
 
 FACETS_DEFINITION_SYSTEM_MESSAGE = """
 You are an ontology assistant. Your task is to define the facets of properties based on the user's input, including recommending suitable data types for data properties and domain and range for object properties.

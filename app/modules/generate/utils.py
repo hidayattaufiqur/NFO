@@ -151,7 +151,7 @@ def extract_terms(content):
     logger.info(f"Term extraction completed in {end_time - start_time:,.2f} seconds")
     return terms
 
-async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_terms"], template=TERMS_CLASSES_PROPERTIES_GENERATION_SYSTEM_MESSAGE):
+async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_terms"], template=CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS):
     global prompt_time
     start_time = time.time()
     x = LLMChain(
@@ -257,8 +257,11 @@ def reformat_response(llm_response):
                     "domain": parsed_data.get("domain"),
                     "scope": parsed_data.get("scope"),
                     "important_terms": parsed_data.get("important_terms"),
-                    "classes": parsed_data.get("classes"),
                     "ambiguous_terms": parsed_data.get("ambiguous_terms"),
+                    "classes": parsed_data.get("classes"),
+                    "object_properties": parsed_data.get("object_properties"),
+                    "data_properties": parsed_data.get("data_properties"),
+                    "class_name": parsed_data.get("class_name"),
                 }
 
             except json.JSONDecodeError as e:
