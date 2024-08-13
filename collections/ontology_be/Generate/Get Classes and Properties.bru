@@ -1,0 +1,29 @@
+meta {
+  name: Get Classes and Properties
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{dev}}/generation/classes-and-properties/:conversation_id
+  body: json
+  auth: none
+}
+
+params:path {
+  conversation_id: d4dc0b41-4524-4273-a72e-1146b78d84eb
+}
+
+body:json {
+  {
+    "domain": "Web Scraping",
+    "scope": "Web Scraping menggunakan Python",
+    "important_terms_id": "1d0864c8-31cd-4142-aaa5-39aa2570e5eb" 
+  }
+}
+
+body:multipart-form {
+  domain: Ransomware
+  scope: Ransomware detection on Bitcoin
+  important_terms_id: 1f7d5b8c-3d07-4389-9c1c-4bda2850ada4
+}
