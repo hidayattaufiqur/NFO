@@ -30,9 +30,9 @@ using flair or something else to get the important terms
 - [x] create class and properties data junctions DB command and query
 - [x] add logout endpoint
 - [x] add create classes, object properties, and data properties endpoints
+- [x] add API documentations for saving class and data properties endpoints
 
 - [ ] implement add range and domain endpoint
-- [ ] add API documentations for saving class and data properties endpoints
 - [ ] implement OWL file generation for the ontology system
 
 # mid priority
