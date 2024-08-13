@@ -1,5 +1,6 @@
 from .config import ALLOWED_EXTENSIONS
 
+
 def chat_agent_response_template(data):
     chat_agent_response = {
         "message": data["message"],
@@ -10,6 +11,7 @@ def chat_agent_response_template(data):
 
     return chat_agent_response
 
+
 def response_template(data):
     response = {
         "message": data["message"],
@@ -19,8 +21,10 @@ def response_template(data):
 
     return response
 
+
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
+
 
 def clean_text(text):
     filters = ["!", "#", "$", "%", "&", "(", ")", "/", "*", ".", ":", ";", "<", "=", ">", "?", "@", "[",
@@ -29,5 +33,5 @@ def clean_text(text):
     for i in text:
         if i in filters:
             text = text.replace(i, " " + i)
-            
+
     return text

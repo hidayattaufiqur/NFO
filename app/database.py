@@ -255,6 +255,8 @@ def init_db(app):
 
 
 """db connections"""
+
+
 def get_chat_message_history_connection(table_name, session_id):
     logger.info("establishing SQLChatMessageHistory connection")
     history = SQLChatMessageHistory(

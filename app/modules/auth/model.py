@@ -26,7 +26,8 @@ def get_user_by_email(email):
     try:
         logger.info("fetching user by email")
         with conn.cursor() as cur:
-            cur.execute('SELECT user_id, name, email, profile_pic_url, created_at FROM users WHERE email = %s AND deleted_at IS NULL', (email,))
+            cur.execute(
+                'SELECT user_id, name, email, profile_pic_url, created_at FROM users WHERE email = %s AND deleted_at IS NULL', (email,))
             user = cur.fetchone()
             return user
     except Exception as e:
@@ -41,7 +42,8 @@ def get_user_by_id(user_id):
     try:
         logger.info("fetching user by email")
         with conn.cursor() as cur:
-            cur.execute('SELECT user_id, name, email, profile_pic_url, created_at FROM users WHERE user_id = %s AND deleted_at IS NULL', (user_id,))
+            cur.execute(
+                'SELECT user_id, name, email, profile_pic_url, created_at FROM users WHERE user_id = %s AND deleted_at IS NULL', (user_id,))
             user = cur.fetchone()
             return user
     except Exception as e:

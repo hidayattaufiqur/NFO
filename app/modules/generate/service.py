@@ -544,8 +544,8 @@ async def update_class_service(class_id):
 async def create_data_property_service(class_id):
     try:
         data = request.json 
-        data_property_name = data["name"]
-        data_property_type = data["type"]
+        data_property_name = data["data_name"]
+        data_property_type = data["data_type"]
 
         db_response = get_class_by_id(class_id)
         if db_response is None:

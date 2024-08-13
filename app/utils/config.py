@@ -223,7 +223,7 @@ Please ensure that the generated instances are:
 Do not make things up and follow my instructions precisely. I will be held accountable for any errors.
 """
 UPLOAD_FOLDER = "app/static/uploads/"
-MAX_CONTENT_LENGTH = 16 * 1024 * 1024 # max pdf file size is 16MB
+MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # max pdf file size is 16MB
 ALLOWED_EXTENSIONS = {"pdf"}
 # os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # !!! Only for testing, remove for production !!!
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", default=False)

@@ -5,6 +5,7 @@ from .service import *
 
 bp = Blueprint('conversations', __name__, url_prefix='/conversations')
 
+
 @bp.route('', methods=['POST'])
 @bp.route('/<conversation_id>', methods=['POST'])
 @require_authorization
@@ -32,7 +33,8 @@ def delete_conversation(conversation_id):
 
 @bp.route('/competency-questions/<conversation_id>', methods=['POST'])
 @require_authorization
-def save_competency_questions(conversation_id): # will update instead if there's already a CQ with the same ID
+# will update instead if there's already a CQ with the same ID
+def save_competency_questions(conversation_id):
     return save_competency_questions_service(conversation_id)
 
 

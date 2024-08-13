@@ -1,4 +1,4 @@
-from .route import bp 
+from .route import bp
 from .model import get_conversation_detail_by_id
 
 __all__ = [

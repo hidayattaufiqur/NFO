@@ -4,6 +4,7 @@ from .service import *
 
 bp = Blueprint('auth', __name__)
 
+
 @bp.route('/login', methods=['POST'])
 def login():
     return login_service()

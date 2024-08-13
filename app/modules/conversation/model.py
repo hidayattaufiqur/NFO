@@ -111,7 +111,7 @@ def create_competency_question(cq_id, user_id, convo_id, question):
                 INSERT INTO competency_questions (cq_id, user_id, conversation_id, question, is_valid)
                 VALUES (%s, %s, %s, %s, %s)
                 RETURNING *;
-            ''', (cq_id, user_id, convo_id, question, True)) # it's instantly validated because user only saves valid CQ
+            ''', (cq_id, user_id, convo_id, question, True))  # it's instantly validated because user only saves valid CQ
             cq = cur.fetchone()
             conn.commit()
             return cq
@@ -131,7 +131,7 @@ def update_competency_question(cq_id, question):
                 SET question = %s, is_valid = %s, updated_at = CURRENT_TIMESTAMP
                 WHERE cq_id = %s
                 RETURNING *;
-            ''', (question, True, cq_id)) # it's instantly validated because user only saves valid CQ
+            ''', (question, True, cq_id))  # it's instantly validated because user only saves valid CQ
             cq = cur.fetchone()
             conn.commit()
             return cq

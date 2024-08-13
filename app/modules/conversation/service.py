@@ -98,7 +98,8 @@ def get_detail_conversation_service(conversation_id):
         db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None:
-            logger.info(f"an error occurred at route {request.path}: conversation not found")
+            logger.info(
+                f"an error occurred at route {request.path}: conversation not found")
             return jsonify(response_template({"message": f"an error occurred at route {request.path}: conversation not found", "status_code": 404, "data": None})), 404
 
         conversation_id = db_response["conversation_id"]
@@ -180,7 +181,8 @@ def save_competency_questions_service(conversation_id):
 
         if type(data["competency_question"]) != str:
             for i in range(len(data["competency_question"])):
-                competency_questions_list.append(data["competency_question"][i])
+                competency_questions_list.append(
+                    data["competency_question"][i])
         else:
             competency_questions_list.append(data["competency_question"])
 
@@ -188,10 +190,9 @@ def save_competency_questions_service(conversation_id):
             cq_id = competency_questions_in_db[0]["cq_id"]
             update_competency_question(
                 cq_id, data["competency_question"])
-        else: 
+        else:
             create_competency_question(
                 cq_id, user_id, conversation_id, competency_questions_list)
-
 
     except Exception as e:
         logger.info(

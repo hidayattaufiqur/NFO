@@ -15,7 +15,8 @@ from app.utils import *
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 bp = Blueprint('auth', __name__)
-login_manager = LoginManager() 
+login_manager = LoginManager()
+
 
 class User(UserMixin):
     def __init__(self, user_id, name, email, profile_pic):
@@ -34,13 +35,15 @@ class User(UserMixin):
             return User(user_id=user_info['user_id'], name=user_info['name'], email=user_info['email'], profile_pic=user_info['profile_pic_url'])
         return None
 
+
 @login_manager.user_loader
 def load_user(user_id):
     logger.info("loading user from email")
-    user_info = User.get(user_id) 
+    user_info = User.get(user_id)
     if user_info:
         return user_info
     return None
+
 
 def create_flow():
     logger.info("initializing flow")
@@ -50,10 +53,11 @@ def create_flow():
             'https://www.googleapis.com/auth/userinfo.profile',
             'openid',
             'https://www.googleapis.com/auth/userinfo.email'
-            ],
+        ],
         redirect_uri=url_for('auth.callback', _external=True)
     )
     return flow
+
 
 def get_user_info_token_from_access_token(access_token):
     url = 'https://www.googleapis.com/oauth2/v3/userinfo'
@@ -63,11 +67,13 @@ def get_user_info_token_from_access_token(access_token):
     }
 
     response = requests.get(url, headers=headers)
-    
+
     if response.status_code == 200:
         return response.json()
     else:
-        raise ValueError(f"Failed to retrieve user info. Status code: {response.status_code}, Response: {response.text}")
+        raise ValueError(
+            f"Failed to retrieve user info. Status code: {response.status_code}, Response: {response.text}")
+
 
 def login_service():
     try:
@@ -85,28 +91,31 @@ def login_service():
         else:
             logger.info("creating a new user in database")
             user_id = uuid.uuid4()
-            user_info = create_user(user_id, id_info['name'], id_info['email'], id_info['picture'])
+            user_info = create_user(
+                user_id, id_info['name'], id_info['email'], id_info['picture'])
 
         session['user_info'] = id_info
         session['user_id'] = user_id
         session.permanent = True
 
-        user = User(user_id=user_id, name=id_info['name'], email=id_info['email'], profile_pic=id_info['picture'])
+        user = User(user_id=user_id, name=id_info['name'],
+                    email=id_info['email'], profile_pic=id_info['picture'])
         _ = login_user(user)
 
         logger.info(f"user: {id_info['name']} logged in successfully")
         # flow = create_flow()
         # authorization_url, state = flow.authorization_url()
-        # session['state'] = state 
+        # session['state'] = state
         # logging.info("redirecting to authorization_url")
         # return redirect(authorization_url)
 
-        return jsonify(response_template({"message": "User logged in successfully", "status_code": 200, "data": { "user_id": user_id,"name": id_info['name'], "profile_pic_url": id_info['picture']}}))
+        return jsonify(response_template({"message": "User logged in successfully", "status_code": 200, "data": {"user_id": user_id, "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
 
     except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
         return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
-    
+
+
 def callback_service():
     try:
         flow = create_flow()
@@ -121,7 +130,8 @@ def callback_service():
 
         flow.fetch_token(authorization_response=new_authorization_response)
 
-        if not session['state'] == request.args['state']: abort(500)
+        if not session['state'] == request.args['state']:
+            abort(500)
 
         credentials = flow.credentials
         request_session = requests.session()
@@ -137,22 +147,25 @@ def callback_service():
         else:
             logger.info("creating user in database")
             user_id = uuid.uuid4()
-            user_info = create_user(user_id, id_info['name'], id_info['email'], id_info['picture'])
+            user_info = create_user(
+                user_id, id_info['name'], id_info['email'], id_info['picture'])
 
         session['user_info'] = id_info
         session['user_id'] = user_id
         session.permanent = True
 
-        user = User(user_id=user_id, name=id_info['name'], email=id_info['email'], profile_pic=id_info['picture'])
+        user = User(user_id=user_id, name=id_info['name'],
+                    email=id_info['email'], profile_pic=id_info['picture'])
         _ = login_user(user)
 
         logger.info(f"user: {id_info['name']} logged in successfully")
 
-        return jsonify(response_template({"message": "User logged in successfully", "status_code": 200, "data": { "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
+        return jsonify(response_template({"message": "User logged in successfully", "status_code": 200, "data": {"name": id_info['name'], "profile_pic_url": id_info['picture']}}))
 
     except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
         return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+
 
 def profile_service():
     try:

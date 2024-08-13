@@ -1,5 +1,6 @@
 from app.database import close_pool_connection, get_pool_connection, logger
 
+
 def create_important_terms(important_terms_id, user_id, convo_id, terms):
     conn = get_pool_connection()
     try:
@@ -18,6 +19,7 @@ def create_important_terms(important_terms_id, user_id, convo_id, terms):
         return None
     finally:
         close_pool_connection(conn)
+
 
 def update_important_terms(important_terms_id, terms):
     conn = get_pool_connection()
@@ -71,6 +73,8 @@ def get_important_terms_by_conversation_id(convo_id):
 
 
 """classes"""
+
+
 def create_class(class_id, convo_id, name, desc=""):
     conn = get_pool_connection()
     try:
@@ -89,7 +93,7 @@ def create_class(class_id, convo_id, name, desc=""):
         return None
     finally:
         close_pool_connection(conn)
-        
+
 
 def update_class(class_id, name):
     conn = get_pool_connection()
@@ -159,6 +163,8 @@ def get_all_classes_by_conversation_id(convo_id):
 
 
 """data properties"""
+
+
 def create_classes_data_junction(class_id, data_property_id):
     conn = get_pool_connection()
     try:
@@ -217,6 +223,7 @@ def update_data_property(data_property_id, name, data_type):
     finally:
         close_pool_connection(conn)
 
+
 def get_data_property_by_id(data_property_id):
     conn = get_pool_connection()
     try:
@@ -230,6 +237,7 @@ def get_data_property_by_id(data_property_id):
         return None
     finally:
         close_pool_connection(conn)
+
 
 def get_all_data_properties_by_class_id(class_id):
     conn = get_pool_connection()
@@ -252,6 +260,8 @@ def get_all_data_properties_by_class_id(class_id):
 
 
 """object properties"""
+
+
 def create_classes_object_junction(class_id, object_property_id):
     conn = get_pool_connection()
     try:
@@ -291,6 +301,7 @@ def create_object_property(object_property_id, class_id, name):
     finally:
         close_pool_connection(conn)
 
+
 def update_object_property(object_property_id, name):
     conn = get_pool_connection()
     try:
@@ -308,6 +319,7 @@ def update_object_property(object_property_id, name):
         return None
     finally:
         close_pool_connection(conn)
+
 
 def get_object_property_by_id(object_property_id):
     conn = get_pool_connection()
@@ -354,13 +366,16 @@ def get_all_object_properties_by_class_id(class_id):
             object_properties = cur.fetchall()
             return object_properties
     except Exception as e:
-        logger.error(f"Error fetching object properties by conversation id: {e}")
+        logger.error(
+            f"Error fetching object properties by conversation id: {e}")
         return None
     finally:
         close_pool_connection(conn)
 
 
 """domains"""
+
+
 def create_domain(domain_id, object_property_id, name):
     conn = get_pool_connection()
     try:
@@ -380,6 +395,7 @@ def create_domain(domain_id, object_property_id, name):
     finally:
         close_pool_connection(conn)
 
+
 def update_domain(domain_id, name):
     conn = get_pool_connection()
     try:
@@ -398,7 +414,7 @@ def update_domain(domain_id, name):
     finally:
         close_pool_connection(conn)
 
-        
+
 def get_domain_by_id(domain_id):
     conn = get_pool_connection()
     try:
@@ -445,6 +461,8 @@ def get_all_domains_by_object_property_id(object_property_id):
 
 
 """ranges"""
+
+
 def create_domains_ranges_junction(object_property_id, domain_id, range_id):
     conn = get_pool_connection()
     try:
@@ -567,6 +585,8 @@ def update_object_property_range(range_id, range_name):
 
 
 """instances"""
+
+
 def create_classes_instances_junction(class_id, instance_id):
     conn = get_pool_connection()
     try:
@@ -604,7 +624,8 @@ def create_instance(instance_id, class_id, name):
         logger.error(f"Error inserting an instance: {e}")
         return None
     finally:
-        close_pool_connection(conn) 
+        close_pool_connection(conn)
+
 
 def update_instance(instance_id, name):
     conn = get_pool_connection()
@@ -660,4 +681,3 @@ def get_all_instances_by_class_id(class_id):
         return None
     finally:
         close_pool_connection(conn)
-
