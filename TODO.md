@@ -30,6 +30,7 @@ using flair or something else to get the important terms
 - [x] create class and properties data junctions DB command and query
 - [x] implement feature for classes instances generation
 
+- [ ] add logout endpoint
 - [ ] add API documentations for saving class and data properties endpoints
 - [ ] implement OWL file generation for the ontology system
 
