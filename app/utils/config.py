@@ -203,7 +203,7 @@ Your output must be formatted in a key-value dictionary as follows:
 
 Definitions for your reference:
 - Class: A group of objects with similar properties and behaviors. For example, "Student," "Lecturer," "Course."
-- Instance: A specific object belonging to a class. For example, "John Doe" is an instance of the class "Student."
+- Instance: A specific object belonging to a class. For example, "JohnDoe" is an instance of the class "Student."
 
 When creating instances for each class, please follow these steps:
 1. Display the list of classes provided by the user.

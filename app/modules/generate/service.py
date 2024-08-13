@@ -978,38 +978,31 @@ async def update_instances_service(instance_id):
 async def generate_owl_file_service(conversation_id):
     try:
         # Create a new ontology
-        onto = get_ontology(f"http://example.org/ontology_{conversation_id}.owl")
+        onto = get_ontology(f"https://llm-nfo-frontend.vercel.app/ontology_{conversation_id}.owl")
         with onto:
-            # Fetch classes from the database
             classes = get_all_classes_by_conversation_id(conversation_id)
             
-            # First pass: Create all classes
             for cls in classes:
                 types.new_class(cls["name"], (Thing,))
             
-            # Second pass: Add properties and handle domains/ranges
             for cls in classes:
                 CurrentClass = onto[cls["name"]]
                 
-                # Fetch and add data properties
                 data_properties = get_all_data_properties_by_class_id(cls["class_id"])
                 for dp in data_properties:
                     new_data_property = types.new_class(dp["data_property_name"], (DataProperty,))
                     new_data_property.domain.append(CurrentClass)
-                    # Map data_type to OWL datatypes (you may need to expand this mapping)
+                    # TODO: this mapping might need expanding
                     if dp["data_property_type"].lower() == "string":
                         new_data_property.range.append(str)
                     elif dp["data_property_type"].lower() in ["integer", "int"]:
                         new_data_property.range.append(int)
-                    # Add more mappings as needed
 
-                # Fetch and add object properties
                 object_properties = get_all_object_properties_by_class_id(cls["class_id"])
                 for op in object_properties:
                     new_object_property = types.new_class(op["object_property_name"], (ObjectProperty,))
                     new_object_property.domain.append(CurrentClass)
                     
-                    # Fetch and add domains for object properties
                     domains = get_all_domains_by_object_property_id(op["object_property_id"])
                     logger.info(f"domains: {domains}")
                     for d in domains:
@@ -1017,7 +1010,6 @@ async def generate_owl_file_service(conversation_id):
                         if domain_class:
                             new_object_property.domain.append(domain_class)
                     
-                    # Fetch and add ranges for object properties
                     ranges = get_all_ranges_by_object_property_id(op["object_property_id"])
                     logger.info(f"ranges: {ranges}")
                     for r in ranges:
@@ -1025,14 +1017,13 @@ async def generate_owl_file_service(conversation_id):
                         if range_class:
                             new_object_property.range.append(range_class)
 
-                # Fetch and add instances
                 instances = get_all_instances_by_class_id(cls["class_id"])
                 for instance in instances:
                     CurrentClass(instance["instance_name"])
 
         logger.debug(f"Ontology: {onto}")
         # Save the ontology to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".owl") as temp_file:
+        with tempfile.NamedTemporaryFile(delete=True, suffix=".owl") as temp_file:
             onto.save(file=temp_file.name, format="rdfxml")
             temp_file_path = temp_file.name
 

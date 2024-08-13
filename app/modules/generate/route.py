@@ -36,7 +36,7 @@ async def save_important_terms(conversation_id):
 
 
 @bp.route('/classes-and-properties/<conversation_id>', methods=['GET'])
-# @require_authorization
+@require_authorization
 async def get_classes_and_properties(conversation_id):
     return await get_classes_and_properties_service(conversation_id)
 
@@ -69,7 +69,7 @@ async def update_class(class_id):
 
 
 @bp.route('/object-properties/<class_id>', methods=['GET'])
-# @require_authorization
+@require_authorization
 async def get_object_properties(class_id):
     return await get_object_properties_service(class_id)
 
@@ -90,7 +90,7 @@ async def create_object_property(class_id):
 
 
 @bp.route('/object-properties/<object_property_id>/range', methods=['GET'])
-# @require_authorization
+@require_authorization
 async def get_object_property_range(object_property_id):
     return await get_object_property_range_service(object_property_id)
 
@@ -105,7 +105,7 @@ async def update_object_property_range(range_id):
 
 
 @bp.route('/object-properties/<object_property_id>/domain', methods=['GET'])
-# @require_authorization
+@require_authorization
 async def get_object_property_domain(object_property_id):
     return await get_object_property_domain_service(object_property_id)
 
@@ -126,7 +126,7 @@ async def create_data_property(class_id):
 
 
 @bp.route('/data-properties/<class_id>', methods=['GET'])
-# @require_authorization
+@require_authorization
 async def get_data_properties(class_id):
     return await get_data_properties_service(class_id)
 
@@ -147,7 +147,7 @@ async def generate_instances_of_classes():
 
 
 @bp.route('/classes/<class_id>/instance', methods=['GET'])
-# @require_authorization
+@require_authorization
 async def get_instances(class_id):
     return await get_instances_service(class_id)
 
@@ -162,6 +162,6 @@ async def update_instances(instance_id):
 
 
 @bp.route('/ontology/<conversation_id>', methods=['GET'])
-# @require_authorization
+@require_authorization
 async def generate_owl_file(conversation_id):
     return await generate_owl_file_service(conversation_id)
