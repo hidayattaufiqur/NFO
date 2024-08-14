@@ -313,12 +313,12 @@ async def get_classes_and_properties_service(conversation_id):
                         "data": None
                     })), 404
 
-                response.append({
-                    "class_id": class_id,
-                    "class_name": cls.get("name"),
-                    "data_properties": data_properties,
-                    "object_properties": object_properties,
-                })
+            response.append({
+                "class_id": class_id,
+                "class_name": cls.get("name"),
+                "data_properties": data_properties,
+                "object_properties": object_properties,
+            })
 
 
     except Exception as e: 
