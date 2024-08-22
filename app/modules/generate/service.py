@@ -499,8 +499,8 @@ async def get_classes_service(conversation_id):
 async def create_class_service(conversation_id):
     try:
         data = request.json
-        class_name = data["class_name"]
-        class_id = uuid.uuid4()
+        class_names = data["classes"]
+        responses = []
 
         db_response = get_conversation_detail_by_id(conversation_id)
 
@@ -510,53 +510,57 @@ async def create_class_service(conversation_id):
             domain = db_response["domain"]
             scope = db_response["scope"]
 
-        prompt = {
-            "domain": domain,
-            "scope": scope,
-            "class_name": class_name,
-        }
+        for class_name in class_names:
+            logger.info("creating class")   
 
-        llm_response = await prompt_chatai(prompt=prompt, input_variables=["domain", "scope", "class_name"], template=PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_CLASS_NAME)
-        llm_response_json = reformat_response(llm_response)
+            class_id = uuid.uuid4()
+            create_class(class_id, conversation_id, class_name, "")
 
-        logger.info("creating class")   
-        db_response = create_class(class_id, conversation_id, class_name, "")
+            prompt = {
+                "domain": domain,
+                "scope": scope,
+                "class_name": class_name,
+            }
 
-        cls = llm_response_json
+            llm_response = await prompt_chatai(prompt=prompt, input_variables=["domain", "scope", "class_name"], template=PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_CLASS_NAME)
+            llm_response_json = reformat_response(llm_response)
+            responses.append(llm_response_json)
 
-        for data_prop in cls["data_properties"]:
-            data_property_id = uuid.uuid4()
-            data_property_name = data_prop["name"]
-            data_property_type = data_prop["recommended_data_type"]
-            created_data_property = create_data_property(data_property_id, class_id, data_property_name, data_property_type)
-            
-            if created_data_property:
-                # Create junction between class and data property
-                create_classes_data_junction(class_id, data_property_id)
-            
-            # Handle object properties
-            for obj_prop in cls["object_properties"]:
-                object_property_id = uuid.uuid4()
-                object_property_name = obj_prop["name"]
-                created_obj_property = create_object_property(object_property_id, class_id, object_property_name)
+            cls = llm_response_json
+
+            for data_prop in cls["data_properties"]:
+                data_property_id = uuid.uuid4()
+                data_property_name = data_prop["name"]
+                data_property_type = data_prop["recommended_data_type"]
+                created_data_property = create_data_property(data_property_id, class_id, data_property_name, data_property_type)
                 
-                if created_obj_property:
-                    # Create junction between class and object property
-                    create_classes_object_junction(class_id, object_property_id)
+                if created_data_property:
+                    # Create junction between class and data property
+                    create_classes_data_junction(class_id, data_property_id)
+                
+                # Handle object properties
+                for obj_prop in cls["object_properties"]:
+                    object_property_id = uuid.uuid4()
+                    object_property_name = obj_prop["name"]
+                    created_obj_property = create_object_property(object_property_id, class_id, object_property_name)
                     
-                    # Handle domains and ranges
-                    for domain_name in obj_prop["recommended_domain"]:
-                        domain_id = uuid.uuid4()
-                        created_domain = create_domain(domain_id, object_property_id, domain_name)
+                    if created_obj_property:
+                        # Create junction between class and object property
+                        create_classes_object_junction(class_id, object_property_id)
                         
-                        if created_domain:
-                            for range_name in obj_prop["recommended_range"]:
-                                range_id = uuid.uuid4()
-                                created_range = create_range(range_id, object_property_id, range_name)
-                                
-                                if created_range:
-                                    # Create junction between domain and range
-                                    create_domains_ranges_junction(object_property_id, domain_id, range_id)
+                        # Handle domains and ranges
+                        for domain_name in obj_prop["recommended_domain"]:
+                            domain_id = uuid.uuid4()
+                            created_domain = create_domain(domain_id, object_property_id, domain_name)
+                            
+                            if created_domain:
+                                for range_name in obj_prop["recommended_range"]:
+                                    range_id = uuid.uuid4()
+                                    created_range = create_range(range_id, object_property_id, range_name)
+                                    
+                                    if created_range:
+                                        # Create junction between domain and range
+                                        create_domains_ranges_junction(object_property_id, domain_id, range_id)
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -569,7 +573,7 @@ async def create_class_service(conversation_id):
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
-        "data": llm_response_json
+        "data": responses
     })), 200
 
 
@@ -624,12 +628,12 @@ async def create_data_property_service(class_id):
 
             if data.get("data_property_id"): 
                 data_property_id = data.get("data_property_id")
-                update_data_property(data_property_id, data_property_name, data_property_type)
+                update_data_property(data_property_id, data_property_name, data_property_type) 
+                # expected behavior when updating data, the junctions is already existing
             else:
                 data_property_id = uuid.uuid4()
                 create_data_property(data_property_id, class_id, data_property_name, data_property_type)
-
-            create_classes_data_junction(class_id, data_property_id)
+                create_classes_data_junction(class_id, data_property_id)
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -745,9 +749,11 @@ async def create_object_property_service(class_id):
             if data.get("object_property_id"): 
                 object_property_id = data.get("object_property_id")
                 update_object_property(object_property_id, object_property_name)
+                # expected behavior when updating object property, the class-object_prop junction is already existing
             else:
                 object_property_id = uuid.uuid4()
                 create_object_property(object_property_id, class_id, object_property_name)
+                create_classes_object_junction(class_id, object_property_id)
 
             domains = data.get("domains")
 
@@ -774,8 +780,10 @@ async def create_object_property_service(class_id):
                     if range_id is None:
                         range_id = uuid.uuid4()
                         create_range(range_id, object_property_id, rg.get("range_name"))
+                        create_domains_ranges_junction(object_property_id, domain_id, range_id)
                     else:
                         res = get_range_by_id(range_id)
+                        # expected behavior when updating range, the domain-range junction is already existing
                         if res: update_range(range_id, rg.get("range_name"))
                         else: return jsonify(response_template({
                             "message": "There is no range with such ID",
@@ -783,9 +791,7 @@ async def create_object_property_service(class_id):
                             "data": None
                         })), 404
 
-                    create_domains_ranges_junction(object_property_id, domain_id, range_id)
 
-                create_classes_object_junction(class_id, object_property_id)
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -798,7 +804,7 @@ async def create_object_property_service(class_id):
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
-        "data": data
+        "data": None 
     })), 200
 
 
@@ -963,11 +969,14 @@ async def create_object_property_domain_range_service(object_property_id):
         domains = data.get("domains")
 
         for domain in domains: 
+            new_domain, new_range = False, False # used to check whether to create new junction or update existing one
+
             domain_id = domain.get("domain_id")
             logger.debug(f"domain_id: {domain_id}")
             if domain_id is None:
                 domain_id = uuid.uuid4()
                 create_domain(domain_id, object_property_id, domain.get("domain_name"))
+                new_domain = True
             else:
                 res = get_domain_by_id(domain_id)
                 if res: update_domain(domain_id, domain.get("domain_name"))
@@ -985,6 +994,7 @@ async def create_object_property_domain_range_service(object_property_id):
                 if range_id is None:
                     range_id = uuid.uuid4()
                     create_range(range_id, object_property_id, rg.get("range_name"))
+                    new_range = True
                 else:
                     res = get_range_by_id(range_id)
                     if res: update_range(range_id, rg.get("range_name"))
@@ -994,7 +1004,10 @@ async def create_object_property_domain_range_service(object_property_id):
                         "data": None
                     })), 404
 
-                create_domains_ranges_junction(object_property_id, domain_id, range_id)
+                # create junction only if there's a new domain and/or range 
+                if new_domain or new_range:
+                    create_domains_ranges_junction(object_property_id, domain_id, range_id)
+
 
     except Exception as e:  
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -1007,7 +1020,7 @@ async def create_object_property_domain_range_service(object_property_id):
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
-        "data": data
+        "data": None
     })), 200
 
 
@@ -1042,9 +1055,10 @@ async def update_object_property_domain_service(domain_id):
     })), 200
 
 
-async def get_instances_service(class_id):
+async def get_instances_service(conversation_id):
     try:
-        db_response = get_all_instances_by_class_id(class_id)
+        # db_response = get_all_instances_by_class_id(class_id)
+        db_response = get_all_instances_by_conversation_id(conversation_id)
         if db_response is None: 
             return jsonify(response_template({
                 "message": "There is no instances in conversation with such ID",

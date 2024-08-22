@@ -745,3 +745,43 @@ def get_all_instances_by_class_id(class_id):
         return None
     finally:
         close_pool_connection(conn)
+
+
+def get_all_instances_by_conversation_id(conversation_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("fetching instances by conversation id")
+        with conn.cursor() as cur:
+            cur.execute('''
+                SELECT 
+                    c.class_id, 
+                    c.name AS class_name,
+                    json_agg(
+                        DISTINCT jsonb_build_object(
+                            'instance_id', i.instance_id,
+                            'instance_name', i.name
+                        )
+                    ) AS instances
+                FROM 
+                    conversations cv
+                JOIN 
+                    classes c ON c.conversation_id = cv.conversation_id
+                LEFT JOIN 
+                    classes_instances_junction cij ON cij.class_id = c.class_id
+                LEFT JOIN 
+                    instances i ON i.instance_id = cij.instance_id
+                WHERE 
+                    cv.conversation_id = %s 
+                    AND cv.deleted_at IS NULL
+                    AND c.deleted_at IS NULL
+                    AND i.deleted_at IS NULL
+                GROUP BY 
+                    c.class_id, c.name;
+            ''', (conversation_id,))
+            instances = cur.fetchall()
+            return instances
+    except Exception as e:
+        logger.error(f"Error fetching instances by conversation id: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)

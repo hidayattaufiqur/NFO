@@ -158,10 +158,10 @@ async def generate_instances_of_classes():
     return await generate_instances_of_classes_service()
 
 
-@bp.route('/classes/<class_id>/instance', methods=['GET'])
+@bp.route('/classes/<conversation_id>/instance', methods=['GET'])
 #@require_authorization
-async def get_instances(class_id):
-    return await get_instances_service(class_id)
+async def get_instances(conversation_id):
+    return await get_instances_service(conversation_id)
 
 
 @bp.route('/classes/instance/<instance_id>', methods=['PUT'])

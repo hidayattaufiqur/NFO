@@ -11,13 +11,44 @@ post {
 }
 
 params:path {
-  class_id: 2fd08b5f-f4c9-4fc5-aef7-db11c3f3055e
+  class_id: 53b84556-d21f-4039-9973-41013a85ce93
 }
 
 body:json {
   {
-    "object_property_name": "hasFunction",
-    "domain_name": ["test", "test1"],
-    "range_name": ["test juga"]
+    "object_properties": [
+      {
+        "object_property_id": "a56973ca-c367-46ff-be65-05beaf0b7689", // optional
+        "object_property_name": "scrapesWhat?",
+        "domains": [
+          {
+            //"domain_id": "724dc703-82b3-4ef8-9f93-411aa85ea655", // optional
+            "domain_name": "C++",
+            "ranges": [
+              {
+                // "range_id": "5e11da1c-b610-4c01-8180-1d91d359c700", // optional if want to edit data instead
+                "range_name": "pdf"
+              },
+              {
+                "range_name": "webpage"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "object_property_name": "scrapesWho",
+        "domains": [
+          {
+            "domain_name": "Python",
+            "ranges": [
+              {
+                "range_name": "Google"
+              }
+            ]
+          }
+        ]
+      }
+    ]
   }
 }
