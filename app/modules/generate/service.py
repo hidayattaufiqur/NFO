@@ -1179,3 +1179,39 @@ async def generate_owl_file_service(conversation_id):
 
     finally: 
         os.remove(temp_file_path)
+
+
+async def get_existing_ontologies_service(conversation_id):
+    try:
+        data = request.get_json()
+        prompt = data.get("prompt")
+        db_response = get_conversation_detail_by_id(conversation_id)
+        if db_response is None: 
+            return jsonify(response_template({
+                "message": "There is no conversation with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+
+        prompt = {
+            "domain": db_response["domain"],
+            "scope": db_response["scope"],
+            "prompt": prompt,
+        }
+
+        llm_response = await prompt_chatai(prompt, input_variables=["domain", "scope", "prompt"], template=EXISTING_ONTOLOGIES_GENERATION_SYSTEM_MESSAGE)
+        llm_response_json = reformat_response_existing_ontology(llm_response)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": llm_response_json
+    })), 200

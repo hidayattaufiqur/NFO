@@ -177,3 +177,9 @@ async def update_instances(instance_id):
 # #@require_authorization
 async def generate_owl_file(conversation_id):
     return await generate_owl_file_service(conversation_id)
+
+
+@bp.route('/ontology/<conversation_id>/existing-ontologies', methods=['POST'])
+# #@require_authorization
+async def get_existing_ontologies(conversation_id):
+    return await get_existing_ontologies_service(conversation_id)

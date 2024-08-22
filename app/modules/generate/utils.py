@@ -20,7 +20,8 @@ from .model import create_class, create_data_property, create_object_property, c
 logger = logging.getLogger(__name__)
 
 # TODO: try different temp
-llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
+# llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 start_time = time.time()
 # tagger = Classifier.load("ner-fast") # load flair NER model
 # tagger_flair = SequenceTagger.load("ner-fast") # load flair NER model
@@ -306,6 +307,34 @@ def reformat_response(llm_response):
 
     except json.JSONDecodeError as e:
         logger.error(f"JSON decoding failed: {e}")
+        raise ValueError(f"Failed to decode JSON. Error: {e}")
+
+
+def reformat_response_existing_ontology(llm_response):
+    try:
+        if isinstance(llm_response, dict):
+            parsed_data = loads(llm_response['text'])
+
+            reformatted_data = []
+            
+            for item in parsed_data['data']:
+                logger.info(f"item: {item}")
+                reformatted_item = {
+                    "domain": item.get("domain"),
+                    "scope": item.get("scope"),
+                    "class_name": item.get("class_name"),
+                    "description": item.get("description"),
+                    "class_labels": item.get("class_labels"),
+                    "link": item.get("link"),
+                    "data_properties": item.get("data_properties"),
+                    "object_properties": item.get("object_properties"),
+                }
+                reformatted_data.append(reformatted_item)
+            
+            return reformatted_data
+
+    except json.JSONDecodeError as e:
+        print(f"JSON decoding failed: {e}")
         raise ValueError(f"Failed to decode JSON. Error: {e}")
 
 
