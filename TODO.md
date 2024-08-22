@@ -32,8 +32,12 @@ using flair or something else to get the important terms
 - [x] add create classes, object properties, and data properties endpoints
 - [x] add API documentations for saving class and data properties endpoints
 - [x] implement OWL file generation for the ontology system
+- [x] implement add range and domain endpoints
+- [x] fix bug in llmsherpa daemon 
 
-- [ ] implement add range and domain endpoint
+- [ ] (optionally) add array of data properties, classes, instances to class endpoint
+- [ ] change implementation of step 2 
+- [ ] buat step 7 yg instances. get by conv_id sama post instances by conv_id yak
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video
