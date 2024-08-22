@@ -609,8 +609,6 @@ async def update_class_service(class_id):
 async def create_data_property_service(class_id):
     try:
         data = request.json 
-        data_property_name = data["data_name"]
-        data_property_type = data["data_type"]
 
         db_response = get_class_by_id(class_id)
         if db_response is None:
@@ -620,10 +618,18 @@ async def create_data_property_service(class_id):
                 "data": None
             })), 404
 
-        data_property_id = uuid.uuid4()
-        create_data_property(data_property_id, class_id, data_property_name, data_property_type)
+        for data in data.get("data_properties"):
+            data_property_name = data.get("data_property_name")
+            data_property_type = data.get("data_property_type")
 
-        create_classes_data_junction(class_id, data_property_id)
+            if data.get("data_property_id"): 
+                data_property_id = data.get("data_property_id")
+                update_data_property(data_property_id, data_property_name, data_property_type)
+            else:
+                data_property_id = uuid.uuid4()
+                create_data_property(data_property_id, class_id, data_property_name, data_property_type)
+
+            create_classes_data_junction(class_id, data_property_id)
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -636,7 +642,7 @@ async def create_data_property_service(class_id):
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
-        "data": data
+        "data": None
     })), 200
 
 
@@ -724,43 +730,62 @@ async def get_object_properties_service(class_id):
 async def create_object_property_service(class_id):
     try:
         data = request.json
-        object_property_name = data["object_property_name"]
-        range_name = data["range_name"]
-        domain_name = data["domain_name"]
 
-        db_response = get_class_by_id(class_id)
-        if db_response is None:
-            return jsonify(response_template({
-                "message": "There is no class with such ID",
-                "status_code": 404, 
-                "data": None
-            })), 404
+        for data in data.get("object_properties"):
+            object_property_name = data.get("object_property_name")
 
-        object_property_id = uuid.uuid4()
-        create_object_property(object_property_id, class_id, object_property_name)
+            db_response = get_class_by_id(class_id)
+            if db_response is None:
+                return jsonify(response_template({
+                    "message": "There is no class with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
 
-        # link object property to class
-        create_classes_object_junction(class_id, object_property_id)
+            if data.get("object_property_id"): 
+                object_property_id = data.get("object_property_id")
+                update_object_property(object_property_id, object_property_name)
+            else:
+                object_property_id = uuid.uuid4()
+                create_object_property(object_property_id, class_id, object_property_name)
 
-        # if range_name is a list, create multiple ranges
-        if type(range_name) != str and type(domain_name) != str:
-            for name in range_name: 
-                range_id = uuid.uuid4()
-                create_range(range_id, object_property_id, name)
+            domains = data.get("domains")
 
-                for name in domain_name: 
+            for domain in domains: 
+                domain_id = domain.get("domain_id")
+                logger.debug(f"domain_id: {domain_id}")
+                if domain_id is None:
                     domain_id = uuid.uuid4()
+                    create_domain(domain_id, object_property_id, domain.get("domain_name"))
+                else:
+                    res = get_domain_by_id(domain_id)
+                    if res: update_domain(domain_id, domain.get("domain_name"))
+                    else: return jsonify(response_template({
+                        "message": "There is no domain with such ID",
+                        "status_code": 404, 
+                        "data": None
+                    })), 404
 
-                    create_domain(domain_id, object_property_id, name)
+                ranges = domain.get("ranges")
+
+                for rg in ranges: 
+                    range_id = rg.get("range_id")
+
+                    if range_id is None:
+                        range_id = uuid.uuid4()
+                        create_range(range_id, object_property_id, rg.get("range_name"))
+                    else:
+                        res = get_range_by_id(range_id)
+                        if res: update_range(range_id, rg.get("range_name"))
+                        else: return jsonify(response_template({
+                            "message": "There is no range with such ID",
+                            "status_code": 404, 
+                            "data": None
+                        })), 404
+
                     create_domains_ranges_junction(object_property_id, domain_id, range_id)
-        else: 
-            range_id = uuid.uuid4()
-            domain_id = uuid.uuid4()
 
-            create_domain(domain_id, object_property_id, domain_name)
-            create_range(range_id, object_property_id, range_name)
-
-            create_domains_ranges_junction(object_property_id, domain_id, range_id)
+                create_classes_object_junction(class_id, object_property_id)
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -864,6 +889,39 @@ async def update_object_property_range_service(range_id):
     })), 200
 
 
+async def delete_object_property_range_service(object_property_id):
+    try:
+        data = request.json
+        range_ids = data.get("range_ids")
+
+        for rg_id in range_ids:
+            db_response = get_range_by_id(rg_id)
+
+            if db_response is None:
+                return jsonify(response_template({
+                    "message": "There is no range with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+            else:
+                delete_domains_ranges_junction(object_property_id, rg_id)
+                delete_range(rg_id)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": None 
+    })), 200
+
+
 async def get_object_property_domain_service(object_property_id):
     try:
         db_response = get_all_domains_by_object_property_id(object_property_id)
@@ -885,6 +943,71 @@ async def get_object_property_domain_service(object_property_id):
         "message": "Success",
         "status_code": 200,
         "data": db_response
+    })), 200
+
+
+async def create_object_property_domain_range_service(object_property_id):
+    try:
+        data = request.json
+
+        # expect an array of objects containing domain and array of range objects
+        db_response = get_object_property_by_id(object_property_id)
+
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no object property with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+
+        domains = data.get("domains")
+
+        for domain in domains: 
+            domain_id = domain.get("domain_id")
+            logger.debug(f"domain_id: {domain_id}")
+            if domain_id is None:
+                domain_id = uuid.uuid4()
+                create_domain(domain_id, object_property_id, domain.get("domain_name"))
+            else:
+                res = get_domain_by_id(domain_id)
+                if res: update_domain(domain_id, domain.get("domain_name"))
+                else: return jsonify(response_template({
+                    "message": "There is no domain with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+
+            ranges = domain.get("ranges")
+
+            for rg in ranges: 
+                range_id = rg.get("range_id")
+
+                if range_id is None:
+                    range_id = uuid.uuid4()
+                    create_range(range_id, object_property_id, rg.get("range_name"))
+                else:
+                    res = get_range_by_id(range_id)
+                    if res: update_range(range_id, rg.get("range_name"))
+                    else: return jsonify(response_template({
+                        "message": "There is no range with such ID",
+                        "status_code": 404, 
+                        "data": None
+                    })), 404
+
+                create_domains_ranges_junction(object_property_id, domain_id, range_id)
+
+    except Exception as e:  
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": data
     })), 200
 
 

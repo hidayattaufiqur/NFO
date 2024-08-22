@@ -244,10 +244,10 @@ def get_all_data_properties_by_class_id(class_id):
     try:
         with conn.cursor() as cur:
             cur.execute('''
-                SELECT dp.data_property_id, dp.name as data_property_name, dp.data_type as data_property_type, dp.created_at
+                SELECT c.name as class_name, dp.data_property_id, dp.name as data_property_name, dp.data_type as data_property_type
                 FROM data_properties dp
-                JOIN classes_data_junction cdj ON dp.data_property_id = cdj.data_property_id
-                JOIN classes c ON cdj.class_id = c.class_id
+                RIGHT JOIN classes_data_junction cdj ON dp.data_property_id = cdj.data_property_id
+                RIGHT JOIN classes c ON cdj.class_id = c.class_id
                 WHERE c.class_id = %s AND dp.deleted_at IS NULL
             ''', (class_id,))
             data_properties = cur.fetchall()
@@ -341,6 +341,28 @@ def get_all_object_properties_by_class_id(class_id):
     conn = get_pool_connection()
     try:
         with conn.cursor() as cur:
+            # cur.execute('''
+            #     SELECT
+            #         op.name as object_property_name,
+            #         op.object_property_id,
+            #         op.created_at,
+            #         json_agg(DISTINCT jsonb_build_object(
+            #             'domain_id', d.domain_id,
+            #             'domain_name', d.name
+            #         )) AS domains,
+            #         json_agg(DISTINCT jsonb_build_object(
+            #             'range_id', r.range_id,
+            #             'range_name', r.name
+            #         )) AS ranges
+            #     FROM object_properties op
+            #     JOIN classes_object_junction coj ON op.object_property_id = coj.object_property_id
+            #     JOIN classes c ON coj.class_id = c.class_id
+            #     LEFT JOIN domains_ranges_junction drj ON op.object_property_id = drj.object_property_id
+            #     LEFT JOIN domains d ON drj.domain_id = d.domain_id
+            #     LEFT JOIN ranges r ON drj.range_id = r.range_id
+            #     WHERE c.class_id = %s AND op.deleted_at IS NULL
+            #     GROUP BY op.object_property_id, op.created_at, op.name, c.name
+            # ''', (class_id,))
             cur.execute('''
                 SELECT
                     op.name as object_property_name,
@@ -348,20 +370,24 @@ def get_all_object_properties_by_class_id(class_id):
                     op.created_at,
                     json_agg(DISTINCT jsonb_build_object(
                         'domain_id', d.domain_id,
-                        'domain_name', d.name
-                    )) AS domains,
-                    json_agg(DISTINCT jsonb_build_object(
-                        'range_id', r.range_id,
-                        'range_name', r.name
-                    )) AS ranges
+                        'domain_name', d.name,
+                        'ranges', (
+                            SELECT json_agg(jsonb_build_object(
+                                'range_id', r.range_id,
+                                'range_name', r.name
+                            ))
+                            FROM ranges r
+                            JOIN domains_ranges_junction drj2 ON r.range_id = drj2.range_id
+                            WHERE drj2.domain_id = d.domain_id AND drj2.object_property_id = op.object_property_id AND drj2.deleted_at IS NULL AND r.deleted_at IS NULL
+                        )
+                    )) AS domains
                 FROM object_properties op
                 JOIN classes_object_junction coj ON op.object_property_id = coj.object_property_id
                 JOIN classes c ON coj.class_id = c.class_id
                 LEFT JOIN domains_ranges_junction drj ON op.object_property_id = drj.object_property_id
                 LEFT JOIN domains d ON drj.domain_id = d.domain_id
-                LEFT JOIN ranges r ON drj.range_id = r.range_id
                 WHERE c.class_id = %s AND op.deleted_at IS NULL
-                GROUP BY op.object_property_id, op.created_at, op.name, c.name
+                GROUP BY op.object_property_id, op.created_at, op.name
             ''', (class_id,))
             object_properties = cur.fetchall()
             return object_properties
@@ -483,6 +509,25 @@ def create_domains_ranges_junction(object_property_id, domain_id, range_id):
         close_pool_connection(conn)
 
 
+def delete_domains_ranges_junction(domain_id, object_property_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("deleting domains ranges junction")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE domains_ranges_junction SET deleted_at = CURRENT_TIMESTAMP WHERE domain_id = %s AND object_property_id = %s
+                RETURNING *;
+            ''', (domain_id, object_property_id))
+            junction = cur.fetchone()
+            conn.commit()
+            return junction
+    except Exception as e:
+        logger.error(f"Error deleting domains ranges junction: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
 def create_range(range_id, object_property_id, name):
     conn = get_pool_connection()
     try:
@@ -517,6 +562,25 @@ def update_range(range_id, name):
             return range
     except Exception as e:
         logger.error(f"Error updating range: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def delete_range(range_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("deleting range")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE ranges SET deleted_at = CURRENT_TIMESTAMP WHERE range_id = %s
+                RETURNING *;
+            ''', (range_id,))
+            range = cur.fetchone()
+            conn.commit()
+            return range
+    except Exception as e:
+        logger.error(f"Error deleting range: {e}")
         return None
     finally:
         close_pool_connection(conn)
