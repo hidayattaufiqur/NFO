@@ -156,7 +156,7 @@ async def generate_important_terms_from_pdf_service():
             "important_terms": terms
         }
 
-        llm_response = await prompt_chatai(prompt)
+        llm_response = await prompt_chatai(prompt, model="llmgpt3")
         llm_response_json = reformat_response(llm_response)
         save_classes_and_properties_service(llm_response_json, conversation_id)
         end_time = time.time()

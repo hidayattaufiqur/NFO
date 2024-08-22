@@ -20,8 +20,9 @@ from .model import create_class, create_data_property, create_object_property, c
 logger = logging.getLogger(__name__)
 
 # TODO: try different temp
-# llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+llmgpt3 = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
+
 start_time = time.time()
 # tagger = Classifier.load("ner-fast") # load flair NER model
 # tagger_flair = SequenceTagger.load("ner-fast") # load flair NER model
@@ -170,11 +171,11 @@ def extract_terms(content):
     return terms
 
 
-async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_terms"], template=CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS):
+async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_terms"], template=CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS, model="llm"):
     global prompt_time
     start_time = time.time()
     x = LLMChain(
-        llm=llm,
+        llm=llm if model == "llm" else llmgpt3,
         prompt=PromptTemplate(
             input_variables=input_variables,
             template=template,
