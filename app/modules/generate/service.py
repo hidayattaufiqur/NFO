@@ -624,7 +624,7 @@ async def create_data_property_service(class_id):
 
         for data in data.get("data_properties"):
             data_property_name = data.get("data_property_name")
-            data_property_type = data.get("data_property_type")
+            data_property_type = "" if data.get("data_property_type") is None else data.get("data_property_type")
 
             if data.get("data_property_id"): 
                 data_property_id = data.get("data_property_id")
