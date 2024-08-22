@@ -1,0 +1,36 @@
+meta {
+  name: Create Domain and Range for an Object Property
+  type: http
+  seq: 4
+}
+
+post {
+  url: {{dev}}/generation/object-properties/:object_property_id/domain-range
+  body: json
+  auth: none
+}
+
+params:path {
+  object_property_id: 5dc181f7-5c54-48a1-bdb2-645e7adda34d
+}
+
+body:json {
+  {
+    // old way
+    // "domain_name": ["Java", "Python"],
+    // "range_name": ["Date"]
+    
+    "domains": [
+      {
+        "domain_id": "724dc703-82b3-4ef8-9f93-411aa85ea655", // optional
+        "domain_name": "C++",
+        "ranges": [
+          {
+            // "range_id": "5e11da1c-b610-4c01-8180-1d91d359c700", // optional if want to edit data instead
+            "range_name": "Assembly"
+          }
+        ]
+      }
+    ]
+  }
+}

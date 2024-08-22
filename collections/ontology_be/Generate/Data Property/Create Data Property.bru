@@ -1,0 +1,31 @@
+meta {
+  name: Create Data Property
+  type: http
+  seq: 3
+}
+
+post {
+  url: {{dev}}/generation/data-properties/:class_Id
+  body: json
+  auth: none
+}
+
+params:path {
+  class_Id: 53b84556-d21f-4039-9973-41013a85ce93
+}
+
+body:json {
+  {
+    "data_properties": [
+      {
+        "data_property_id": "4fdc708b-da6e-402c-aa09-2801cf81fba4", 
+        "data_property_name": "hasDifficultyLevel",
+        "data_property_type": "boolean"
+      },
+      {
+        "data_property_name": "hasImages?",
+        "data_property_type": "boolean"
+      }
+    ]
+  }
+}
