@@ -1,0 +1,21 @@
+meta {
+  name: generate existing ontologies
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{dev}}/generation/ontology/:conversation_id/existing-ontologies
+  body: json
+  auth: none
+}
+
+params:path {
+  conversation_id: fe0927ac-b38b-4071-9d4a-37ad3a893972
+}
+
+body:json {
+  {
+    "prompt": "find for me an existing ontology relevant to Southeast Asian Food"
+  }
+}
