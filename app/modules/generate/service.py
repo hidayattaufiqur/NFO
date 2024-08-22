@@ -757,40 +757,46 @@ async def create_object_property_service(class_id):
 
             domains = data.get("domains")
 
-            for domain in domains: 
-                domain_id = domain.get("domain_id")
-                logger.debug(f"domain_id: {domain_id}")
-                if domain_id is None:
-                    domain_id = uuid.uuid4()
-                    create_domain(domain_id, object_property_id, domain.get("domain_name"))
-                else:
-                    res = get_domain_by_id(domain_id)
-                    if res: update_domain(domain_id, domain.get("domain_name"))
-                    else: return jsonify(response_template({
-                        "message": "There is no domain with such ID",
-                        "status_code": 404, 
-                        "data": None
-                    })), 404
-
-                ranges = domain.get("ranges")
-
-                for rg in ranges: 
-                    range_id = rg.get("range_id")
-
-                    if range_id is None:
-                        range_id = uuid.uuid4()
-                        create_range(range_id, object_property_id, rg.get("range_name"))
-                        create_domains_ranges_junction(object_property_id, domain_id, range_id)
+            if domains: 
+                for domain in domains: 
+                    domain_id = domain.get("domain_id")
+                    if domain_id is None:
+                        domain_id = uuid.uuid4()
+                        create_domain(domain_id, object_property_id, domain.get("domain_name"))
                     else:
-                        res = get_range_by_id(range_id)
-                        # expected behavior when updating range, the domain-range junction is already existing
-                        if res: update_range(range_id, rg.get("range_name"))
+                        res = get_domain_by_id(domain_id)
+                        if res: update_domain(domain_id, domain.get("domain_name"))
                         else: return jsonify(response_template({
-                            "message": "There is no range with such ID",
+                            "message": "There is no domain with such ID",
                             "status_code": 404, 
                             "data": None
                         })), 404
 
+                    ranges = domain.get("ranges")
+
+                    if ranges:
+                        for rg in ranges: 
+                            range_id = rg.get("range_id")
+
+                            if range_id is None:
+                                range_id = uuid.uuid4()
+                                create_range(range_id, object_property_id, rg.get("range_name"))
+                                create_domains_ranges_junction(object_property_id, domain_id, range_id)
+                            else:
+                                res = get_range_by_id(range_id)
+                                # expected behavior when updating range, the domain-range junction is already existing
+                                if res: update_range(range_id, rg.get("range_name"))
+                                else: return jsonify(response_template({
+                                    "message": "There is no range with such ID",
+                                    "status_code": 404, 
+                                    "data": None
+                                })), 404
+                    else:
+                        return jsonify(response_template({
+                            "message": "Domain should have at least one range",
+                            "status_code": 400,
+                            "data": None
+                        })), 400
 
 
     except Exception as e: 
