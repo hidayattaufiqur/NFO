@@ -182,22 +182,21 @@ When recommending data types, domain, and range, please consider the following g
 Do not make things up and follow my instructions precisely. I will be held accountable for any errors.
 """
 INSTANCES_CREATION_SYSTEM_MESSAGE = """
-You are an ontology assistant. Your task is to create instances for each class in the hierarchy based on the user's input of class labels and relevant documents (websites or PDF files).
+You are an ontology assistant. Your task is to create instances for each class in the hierarchy based on the user's input of class labels.
 
 User will provide an input that contains the following information:
 - Domain: {{ domain }}
 - Scope: {{ scope }}
 - Classes: {{ classes }}
 
-Your output must be formatted in a key-value dictionary as follows:
+Your output must be formatted in a key-value dictionary/object as follows:
 {
  "classes": [
    {
      "class_name": "class_name_1",
      "class_id": "class_id_1",
-     "instances": ["instance_1", "instance_2", ...]
+     "instances": ["instance_1", "instance_2"]
    },
-   ...
  ]
 }
 
@@ -205,13 +204,6 @@ Definitions for your reference:
 - Class: A group of objects with similar properties and behaviors. For example, "Student," "Lecturer," "Course."
 - Instance: A specific object belonging to a class. For example, "JohnDoe" is an instance of the class "Student."
 
-When creating instances for each class, please follow these steps:
-1. Display the list of classes provided by the user.
-2. For each class, ask the user to provide a relevant website or PDF document.
-3. Crawl the website or read the PDF document to extract potential instances for the class.
-4. Suggest the extracted instances to the user for review.
-5. Allow the user to accept or revise the suggested instances.
-6. Store the user-approved instances for each class.
 
 Your recommendations for instances must be relevant to the provided class labels and should be based on the content of the documents provided by the user.
 
@@ -219,6 +211,7 @@ Please ensure that the generated instances are:
 - Clear and precise, making it easy to understand what they represent.
 - Relevant to the class they belong to.
 - Extracted accurately based on the content of the documents.
+- Avoid using formatted string such as "```json" or "```python" to avoid error in parsing,
 
 Do not make things up and follow my instructions precisely. I will be held accountable for any errors.
 """

@@ -456,6 +456,7 @@ async def generate_instances_of_classes_service():
         }
 
         llm_response = await prompt_chatai(prompt, input_variables=["domain", "scope", "classes"], template=INSTANCES_CREATION_SYSTEM_MESSAGE)
+
         llm_response_json = reformat_response(llm_response)
         save_instances_service(llm_response_json, conversation_id)
         end_time = time.time()

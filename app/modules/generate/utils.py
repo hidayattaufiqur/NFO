@@ -7,6 +7,12 @@ from flair.models import SequenceTagger
 from partial_json_parser import loads, Allow, STR, OBJ
 from spacy import load
 from llmsherpa.readers import LayoutPDFReader
+from langchain.vectorstores import Chroma
+from langchain.embeddings import OpenAIEmbeddings
+from langchain.memory import ConversationSummaryBufferMemory
+from langchain.utilities import GoogleSearchAPIWrapper
+from langchain.retrievers.web_research import WebResearchRetriever
+from langchain.chains import RetrievalQAWithSourcesChain
 
 import time
 import json
@@ -23,6 +29,32 @@ logger = logging.getLogger(__name__)
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 llmgpt3 = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 
+
+# Load environment variables for API keys
+os.environ["OPENAI_API_KEY"] = "[INSERT YOUR OPENAI API KEY HERE]"
+os.environ["GOOGLE_CSE_ID"] = "[INSERT YOUR GOOGLE CSE ID HERE]"
+os.environ["GOOGLE_API_KEY"] = "[INSERT YOUR GOOGLE API KEY HERE]"
+
+
+# Initialize the LLM
+# llm_stream = ChatOpenAI(model="gpt-4o-mini", temperature=0, streaming=True)
+#
+# # Setup a Vector Store for embeddings using Chroma DB
+# vectorstore = Chroma(embedding_function=OpenAIEmbeddings(), persist_directory="./chroma_db_oai")
+#
+# # Initialize memory for the retriever
+# memory = ConversationSummaryBufferMemory(llm=llm, input_key='question', output_key='answer', return_messages=True)
+#
+# # Initialize Google Search API for Web Search
+# search = GoogleSearchAPIWrapper()
+#
+# # Setup a Retriever
+# web_research_retriever = WebResearchRetriever.from_llm(
+# vectorstore=vectorstore,
+# llm=llm_stream,
+# search=search,
+# )
+
 start_time = time.time()
 # tagger = Classifier.load("ner-fast") # load flair NER model
 # tagger_flair = SequenceTagger.load("ner-fast") # load flair NER model
@@ -30,7 +62,6 @@ tagger_spacy = load("en_core_web_sm")
 logger.info(f"NER loaded in {round(time.time() - start_time, 3)}S")
 
 global text_extraction_time, ner_prediction_time, terms_extraction_time, db_save_time, prompt_time, prompt_time_awan
-
 
 def print_time_for_each_process():
     global text_extraction_time, ner_prediction_time, terms_extraction_time, db_save_time, prompt_time, prompt_time_awan
@@ -299,7 +330,7 @@ def reformat_response(llm_response):
                 raise ValueError(f"Failed to decode JSON. Error: {e}")
         else:
             try:
-                llm_response_json = json.loads(llm_response['text'])
+                llm_response_json = json.loads(llm_response)
             except json.JSONDecodeError as e:
                 logger.error(f"JSON decoding failed: {e}")
                 raise ValueError(f"Failed to decode JSON. Error: {e}")
