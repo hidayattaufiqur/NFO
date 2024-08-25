@@ -164,10 +164,10 @@ async def get_instances(conversation_id):
     return await get_instances_service(conversation_id)
 
 
-@bp.route('/classes/instance/<instance_id>', methods=['PUT'])
+@bp.route('/classes/instance/<class_id>', methods=['POST'])
 #@require_authorization
-async def update_instances(instance_id):
-    return await update_instances_service(instance_id)
+async def update_instances(class_id):
+    return await update_instances_service(class_id)
 
 
 """ontology"""

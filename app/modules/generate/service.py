@@ -1086,22 +1086,30 @@ async def get_instances_service(conversation_id):
     })), 200
 
 
-async def update_instances_service(instance_id):
+async def update_instances_service(class_id):
     try:
         data = request.json
-        instance_name = data["name"]
+        instances = data["instances"]
 
-        db_response = get_instance_by_id(instance_id)
+        for instance in instances:
+            instance_name = instance.get("instance_name")
+            instance_id = instance.get("instance_id")
 
-        if db_response is None:
-            return jsonify(response_template({
-                "message": "There is no instance with such ID",
-                "status_code": 404, 
-                "data": None
-            })), 404
-        else:
-            instance_id = db_response.get("instance_id")
-            data = update_instance(instance_id, instance_name)
+            if instance_id is None:
+                instance_id = uuid.uuid4()
+                create_instance(instance_id, class_id, instance_name)
+                create_classes_instances_junction(class_id, instance_id)
+            else:
+                db_response = get_instance_by_id(instance_id)
+
+                if db_response is None:
+                    return jsonify(response_template({
+                        "message": "There is no instance with such ID",
+                        "status_code": 404, 
+                        "data": None
+                    })), 404
+
+                data = update_instance(instance_id, instance_name)
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
@@ -1114,7 +1122,7 @@ async def update_instances_service(instance_id):
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
-        "data": data
+        "data": None
     })), 200
 
 
