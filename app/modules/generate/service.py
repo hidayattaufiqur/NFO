@@ -505,62 +505,80 @@ async def create_class_service(conversation_id):
         db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None:
-            raise ValueError("No conversation found with such id")
-        else:
-            domain = db_response["domain"]
-            scope = db_response["scope"]
+            return jsonify(response_template({
+                "message": "No conversation found with such id",
+                "status_code": 404, 
+                "data": None
+            })), 404
+        # else:
+        #     domain = db_response["domain"]
+        #     scope = db_response["scope"]
 
-        for class_name in class_names:
+        for cls in class_names:
             logger.info("creating class")   
+            if cls.get("class_id"): 
+                class_id = cls.get("class_id")
+                db_response = get_class_by_id(class_id)
+                if db_response is None: 
+                    return jsonify(response_template({
+                        "message": "There is no class with such ID",
+                        "status_code": 404, 
+                        "data": None
+                    })), 404
 
-            class_id = uuid.uuid4()
-            create_class(class_id, conversation_id, class_name, "")
+                update_class(class_id, cls.get("class_name"))
+            else:
+                class_id = uuid.uuid4()
+                create_class(class_id, conversation_id, cls.get("class_name"), "")
 
-            prompt = {
-                "domain": domain,
-                "scope": scope,
-                "class_name": class_name,
-            }
+            response = {"class_id": class_id, "class_name": cls.get("class_name")}
+            responses.append(response)
 
-            llm_response = await prompt_chatai(prompt=prompt, input_variables=["domain", "scope", "class_name"], template=PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_CLASS_NAME)
-            llm_response_json = reformat_response(llm_response)
-            responses.append(llm_response_json)
+            # prompt = {
+            #     "domain": domain,
+            #     "scope": scope,
+            #     "class_name": class_name,
+            # }
+            #
+            # llm_response = await prompt_chatai(prompt=prompt, input_variables=["domain", "scope", "class_name"], template=PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_CLASS_NAME)
+            # llm_response_json = reformat_response(llm_response)
+            # responses.append(llm_response_json)
 
-            cls = llm_response_json
+            # cls = llm_response_json
 
-            for data_prop in cls["data_properties"]:
-                data_property_id = uuid.uuid4()
-                data_property_name = data_prop["name"]
-                data_property_type = data_prop["recommended_data_type"]
-                created_data_property = create_data_property(data_property_id, class_id, data_property_name, data_property_type)
-                
-                if created_data_property:
-                    # Create junction between class and data property
-                    create_classes_data_junction(class_id, data_property_id)
-                
-                # Handle object properties
-                for obj_prop in cls["object_properties"]:
-                    object_property_id = uuid.uuid4()
-                    object_property_name = obj_prop["name"]
-                    created_obj_property = create_object_property(object_property_id, class_id, object_property_name)
-                    
-                    if created_obj_property:
-                        # Create junction between class and object property
-                        create_classes_object_junction(class_id, object_property_id)
-                        
-                        # Handle domains and ranges
-                        for domain_name in obj_prop["recommended_domain"]:
-                            domain_id = uuid.uuid4()
-                            created_domain = create_domain(domain_id, object_property_id, domain_name)
-                            
-                            if created_domain:
-                                for range_name in obj_prop["recommended_range"]:
-                                    range_id = uuid.uuid4()
-                                    created_range = create_range(range_id, object_property_id, range_name)
-                                    
-                                    if created_range:
-                                        # Create junction between domain and range
-                                        create_domains_ranges_junction(object_property_id, domain_id, range_id)
+            # for data_prop in cls["data_properties"]:
+            #     data_property_id = uuid.uuid4()
+            #     data_property_name = data_prop["name"]
+            #     data_property_type = data_prop["recommended_data_type"]
+            #     created_data_property = create_data_property(data_property_id, class_id, data_property_name, data_property_type)
+            #     
+            #     if created_data_property:
+            #         # Create junction between class and data property
+            #         create_classes_data_junction(class_id, data_property_id)
+            #     
+            #     # Handle object properties
+            #     for obj_prop in cls["object_properties"]:
+            #         object_property_id = uuid.uuid4()
+            #         object_property_name = obj_prop["name"]
+            #         created_obj_property = create_object_property(object_property_id, class_id, object_property_name)
+            #         
+            #         if created_obj_property:
+            #             # Create junction between class and object property
+            #             create_classes_object_junction(class_id, object_property_id)
+            #             
+            #             # Handle domains and ranges
+            #             for domain_name in obj_prop["recommended_domain"]:
+            #                 domain_id = uuid.uuid4()
+            #                 created_domain = create_domain(domain_id, object_property_id, domain_name)
+            #                 
+            #                 if created_domain:
+            #                     for range_name in obj_prop["recommended_range"]:
+            #                         range_id = uuid.uuid4()
+            #                         created_range = create_range(range_id, object_property_id, range_name)
+            #                         
+            #                         if created_range:
+            #                             # Create junction between domain and range
+            #                             create_domains_ranges_junction(object_property_id, domain_id, range_id)
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")
