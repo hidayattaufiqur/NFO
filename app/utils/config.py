@@ -43,7 +43,6 @@ User will provide an input containing the following information:
 - Important terms: {{ important_terms }}
 
 Your output must be formatted in JSON as follows:
-
 {
   "domain": "{{ domain }}",
   "scope": "{{ scope }}",
@@ -51,6 +50,7 @@ Your output must be formatted in JSON as follows:
   "classes": [
     {
       "name": "class_name_1",
+      "instances": ["instance_1", "instance_2"],
       "object_properties": [
         {
           "name": "object_property_1",
@@ -77,13 +77,16 @@ Definitions for your reference:
 - Data Property: A property that provides detailed attributes of a class. For example, for the class "Student," data properties might include "name," "student ID," "GPA." This forms the statement "Rafli is 20 years old," where "age" is a data property. Other examples of data properties are "name," "address," "lecturer ID."
 - Domain: A class type(s) that is/are allowed to be placed in the subject position of a triple. For example, for the object property "teaches," the domain could be "Lecturer."
 - Range: A class type(s) that is/are allowed to be placed in the object position of a triple. For example, for the object property "teaches," the range could be "Student."
+- Instance: A specific object belonging to a class. For example, "JohnDoe" is an instance of the class "Student."
 
-When generating classes, properties, and their facets, please consider the following guidelines:
+When generating classes, instances of classes, properties, and their facets, please consider the following guidelines:
 1. Use clear and precise language to ensure the elements are easily understood.
 2. Avoid ambiguity and ensure the elements are relevant to the domain and scope.
 3. Include a mix of general and specific elements to comprehensively cover the ontology's domain and scope.
 4. Aim to generate diverse and meaningful elements that go beyond the most obvious or straightforward ones.
 5. Ensure that the recommended data types for data properties and the recommended domain and range for object properties are relevant to the context provided.
+6. Relevant to the class they belong to.
+7. Avoid using formatted string such as "```json" or "```python" to avoid error in parsing,
 
 Please identify any terms that are ambiguous in classification and list them in the "ambiguous_terms" array.
 

@@ -378,6 +378,17 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
             created_class = create_class(class_id, conversation_id, class_name)
 
             if created_class:
+                # Handle Instances
+                for instance in cls["instances"]:
+                    instance_id = uuid.uuid4()
+                    instance_name = instance
+                    created_instance = create_instance(
+                        instance_id, class_id, instance_name)
+
+                    if created_instance:
+                        # Create junction between class and instance
+                        create_classes_instances_junction(class_id, instance_id)
+
                 # Handle data properties
                 for data_prop in cls["data_properties"]:
                     data_property_id = uuid.uuid4()
