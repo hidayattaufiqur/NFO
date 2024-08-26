@@ -185,7 +185,7 @@ def init_db(app):
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP,
                     deleted_at TIMESTAMP
-                ); 
+                );
             ''')
 
             cur.execute('''
@@ -196,7 +196,7 @@ def init_db(app):
                     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
                     updated_at TIMESTAMP,
                     deleted_at TIMESTAMP
-                ); 
+                );
             ''')
 
             cur.execute('''
@@ -220,7 +220,7 @@ def init_db(app):
 
                 CREATE INDEX IF NOT EXISTS idx_competency_questions_cq_id ON competency_questions(cq_id);
                 CREATE INDEX IF NOT EXISTS idx_competency_questions_user_id ON competency_questions(user_id);
-                
+
                 CREATE INDEX IF NOT EXISTS idx_important_terms_important_terms_id ON important_terms(important_terms_id);
                 CREATE INDEX IF NOT EXISTS idx_important_terms_user_id ON important_terms(user_id);
                 CREATE INDEX IF NOT EXISTS idx_important_terms_conversation_id ON important_terms(user_id);
@@ -269,7 +269,8 @@ def get_chat_message_history_connection(table_name, session_id):
 
 def get_connection():
     logger.info("establishing psycopg connection")
-    # psycopg is needed for PostgresChatMessageHistory.create_tables() on chat_agent.py
+    # psycopg is needed for PostgresChatMessageHistory.create_tables() on
+    # chat_agent.py
     return psycopg.connect(connection_string)
 
 

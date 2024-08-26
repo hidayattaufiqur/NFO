@@ -46,7 +46,9 @@ def get_important_terms_by_id(important_terms_id):
         logger.info("fetching important terms by id")
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM important_terms WHERE important_terms_id = %s AND deleted_at IS NULL', (important_terms_id,))
+                'SELECT * FROM important_terms WHERE important_terms_id = %s AND deleted_at IS NULL',
+                (important_terms_id,
+                 ))
             terms = cur.fetchone()
             return terms
     except Exception as e:
@@ -62,7 +64,9 @@ def get_important_terms_by_conversation_id(convo_id):
         logger.info("fetching important terms by conversation id")
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM important_terms WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
+                'SELECT * FROM important_terms WHERE conversation_id = %s AND deleted_at IS NULL',
+                (convo_id,
+                 ))
             terms = cur.fetchall()
             return terms
     except Exception as e:
@@ -112,6 +116,7 @@ def update_class(class_id, name):
         return None
     finally:
         close_pool_connection(conn)
+
 
 def delete_class(class_id):
     conn = get_pool_connection()
@@ -170,7 +175,9 @@ def get_all_classes_by_conversation_id(convo_id):
         logger.info("fetching classes by conversation id")
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT class_id, conversation_id, name, description, created_at FROM classes WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
+                'SELECT class_id, conversation_id, name, description, created_at FROM classes WHERE conversation_id = %s AND deleted_at IS NULL',
+                (convo_id,
+                 ))
             classes = cur.fetchall()
             return classes
     except Exception as e:
@@ -285,7 +292,9 @@ def get_data_property_by_id(data_property_id):
     try:
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM data_properties WHERE data_property_id = %s AND deleted_at IS NULL', (data_property_id,))
+                'SELECT * FROM data_properties WHERE data_property_id = %s AND deleted_at IS NULL',
+                (data_property_id,
+                 ))
             data_property = cur.fetchone()
             return data_property
     except Exception as e:
@@ -434,7 +443,9 @@ def get_object_property_by_id(object_property_id):
         logger.info("fetching object property by id")
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM object_properties WHERE object_property_id = %s AND deleted_at IS NULL', (object_property_id,))
+                'SELECT * FROM object_properties WHERE object_property_id = %s AND deleted_at IS NULL',
+                (object_property_id,
+                 ))
             object_property = cur.fetchone()
             return object_property
     except Exception as e:
@@ -485,7 +496,7 @@ def get_all_object_properties_by_class_id(class_id):
                             ))
                             FROM ranges r
                             JOIN domains_ranges_junction drj2 ON r.range_id = drj2.range_id
-                            WHERE drj2.domain_id = d.domain_id AND drj2.object_property_id = op.object_property_id AND drj2.deleted_at IS NULL AND r.deleted_at IS NULL  
+                            WHERE drj2.domain_id = d.domain_id AND drj2.object_property_id = op.object_property_id AND drj2.deleted_at IS NULL AND r.deleted_at IS NULL
                         )
                     )) AS domains
                 FROM object_properties op
@@ -493,7 +504,7 @@ def get_all_object_properties_by_class_id(class_id):
                 JOIN classes c ON coj.class_id = c.class_id
                 LEFT JOIN domains_ranges_junction drj ON op.object_property_id = drj.object_property_id
                 LEFT JOIN domains d ON drj.domain_id = d.domain_id AND d.deleted_at IS NULL
-                 WHERE c.class_id = %s AND op.deleted_at IS NULL 
+                 WHERE c.class_id = %s AND op.deleted_at IS NULL
                 GROUP BY op.object_property_id, op.created_at, op.name
             ''', (class_id,))
             object_properties = cur.fetchall()
@@ -573,7 +584,9 @@ def get_domain_by_id(domain_id):
         logger.info("fetching domain by id")
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM domains WHERE domain_id = %s AND deleted_at IS NULL', (domain_id,))
+                'SELECT * FROM domains WHERE domain_id = %s AND deleted_at IS NULL',
+                (domain_id,
+                 ))
             domain = cur.fetchone()
             return domain
     except Exception as e:
@@ -635,7 +648,10 @@ def create_domains_ranges_junction(object_property_id, domain_id, range_id):
         close_pool_connection(conn)
 
 
-def delete_domains_ranges_junction(domain_id="", range_id="", object_property_id=""):
+def delete_domains_ranges_junction(
+        domain_id="",
+        range_id="",
+        object_property_id=""):
     conn = get_pool_connection()
     try:
         logger.info("deleting domains ranges junction")
@@ -873,13 +889,16 @@ def delete_instance(instance_id):
     finally:
         close_pool_connection(conn)
 
+
 def get_instance_by_id(instance_id):
     conn = get_pool_connection()
     try:
         logger.info("fetching instance by id")
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM instances WHERE instance_id = %s AND deleted_at IS NULL', (instance_id,))
+                'SELECT * FROM instances WHERE instance_id = %s AND deleted_at IS NULL',
+                (instance_id,
+                 ))
             instance = cur.fetchone()
             return instance
     except Exception as e:
@@ -916,8 +935,8 @@ def get_all_instances_by_conversation_id(conversation_id):
         logger.info("fetching instances by conversation id")
         with conn.cursor() as cur:
             cur.execute('''
-                SELECT 
-                    c.class_id, 
+                SELECT
+                    c.class_id,
                     c.name AS class_name,
                     json_agg(
                         DISTINCT jsonb_build_object(
@@ -925,20 +944,20 @@ def get_all_instances_by_conversation_id(conversation_id):
                             'instance_name', i.name
                         )
                     ) AS instances
-                FROM 
+                FROM
                     conversations cv
-                JOIN 
+                JOIN
                     classes c ON c.conversation_id = cv.conversation_id
-                LEFT JOIN 
+                LEFT JOIN
                     classes_instances_junction cij ON cij.class_id = c.class_id
-                LEFT JOIN 
+                LEFT JOIN
                     instances i ON i.instance_id = cij.instance_id
-                WHERE 
-                    cv.conversation_id = %s 
+                WHERE
+                    cv.conversation_id = %s
                     AND cv.deleted_at IS NULL
                     AND c.deleted_at IS NULL
                     AND i.deleted_at IS NULL
-                GROUP BY 
+                GROUP BY
                     c.class_id, c.name;
             ''', (conversation_id,))
             instances = cur.fetchall()

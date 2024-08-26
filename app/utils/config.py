@@ -291,6 +291,7 @@ Your response should be structured as a dictionary in the following format:
 Avoid assumptions and stick to the instructions precisely, as the accuracy of your recommendations is critical.
 """
 
+
 def llm_search_google_prompt(domain, scope, search_results):
     prompt = f"""
     Based on the following information about ontologies in the {domain} domain with a scope of {scope}, generate an ontology example in JSON format:
@@ -368,7 +369,8 @@ If you fail to follow the instruction, someone's grandma will die.
 UPLOAD_FOLDER = "app/static/uploads/"
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # max pdf file size is 16MB
 ALLOWED_EXTENSIONS = {"pdf"}
-# os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # !!! Only for testing, remove for production !!!
+# os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"  # !!! Only for testing,
+# remove for production !!!
 GOOGLE_CLIENT_ID = os.environ.get("GOOGLE_CLIENT_ID", default=False)
 GOOGLE_CLIENT_SECRET = os.environ.get("GOOGLE_CLIENT_SECRET", default=False)
 GOOGLE_DISCOVERY_URL = (

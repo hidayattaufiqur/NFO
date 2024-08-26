@@ -34,8 +34,14 @@ os.environ.get("OPENAI_API_KEY")
 os.environ.get("GOOGLE_CSE_ID")
 os.environ.get("GOOGLE_API_KEY")
 
-vectorstore = Chroma(embedding_function=OpenAIEmbeddings(), persist_directory="./chroma_db_oai")
-memory = ConversationSummaryBufferMemory(llm=llm, input_key='question', output_key='answer', return_messages=True)
+vectorstore = Chroma(
+    embedding_function=OpenAIEmbeddings(),
+    persist_directory="./chroma_db_oai")
+memory = ConversationSummaryBufferMemory(
+    llm=llm,
+    input_key='question',
+    output_key='answer',
+    return_messages=True)
 search = GoogleSearchAPIWrapper()
 
 web_research_retriever = WebResearchRetriever.from_llm(
@@ -44,26 +50,34 @@ web_research_retriever = WebResearchRetriever.from_llm(
     search=search,
 )
 
+
 def scrape_website(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'html.parser')
     return soup.get_text()
+
 
 def generate_ontology(llm, search_results, domain, scope):
     prompt = llm_search_google_prompt(domain, scope, search_results)
     response = llm.predict(prompt)
     return response
 
+
 def ontology_search_and_generate(query, domain, scope):
-    search_results = web_research_retriever.get_relevant_documents(f"{query} ontology")
-    processed_results = [scrape_website(doc.metadata['source']) for doc in search_results[:3]]
-    ontology_example = generate_ontology(llm, "\n".join(processed_results), domain, scope)
-    
+    search_results = web_research_retriever.get_relevant_documents(
+        f"{query} ontology")
+    processed_results = [scrape_website(
+        doc.metadata['source']) for doc in search_results[:3]]
+    ontology_example = generate_ontology(
+        llm, "\n".join(processed_results), domain, scope)
+
     return ontology_example
+
 
 def llm_search_google(query, domain, scope):
     result = ontology_search_and_generate(query, domain, scope)
     return result
+
 
 start_time = time.time()
 # tagger = Classifier.load("ner-fast") # load flair NER model
@@ -72,6 +86,7 @@ tagger_spacy = load("en_core_web_sm")
 logger.info(f"NER loaded in {round(time.time() - start_time, 3)}S")
 
 global text_extraction_time, ner_prediction_time, terms_extraction_time, db_save_time, prompt_time, prompt_time_awan
+
 
 def print_time_for_each_process():
     global text_extraction_time, ner_prediction_time, terms_extraction_time, db_save_time, prompt_time, prompt_time_awan
@@ -107,7 +122,8 @@ def extract_text_from_pdf(pdf_file_path):
     try:
         logger.info("offloading pdf reading to llmsherpa api")
         start_time = time.time()
-        # use self hosted llmsherpa api since the one on the internet is not working
+        # use self hosted llmsherpa api since the one on the internet is not
+        # working
         llmsherpa_api_url = "http://localhost:5010/api/parseDocument?renderFormat=all"
         pdf_reader = LayoutPDFReader(llmsherpa_api_url)
         text_extraction_time = time.time() - start_time
@@ -366,7 +382,7 @@ def reformat_response_existing_ontology(llm_response):
             "data_properties": item.get("data_properties"),
             "object_properties": item.get("object_properties"),
         }
-        
+
         return reformatted_item
 
     except json.JSONDecodeError as e:
@@ -377,12 +393,14 @@ def reformat_response_existing_ontology(llm_response):
 def save_classes_and_properties_service(llm_response_json, conversation_id):
     try:
         for cls in llm_response_json["classes"]:
+            logger.info(f"saving class {cls}")
             class_id = uuid.uuid4()
             class_name = cls["name"]
             db_response = get_class_by_name(class_name)
 
             if db_response is None:
-                created_class = create_class(class_id, conversation_id, class_name)
+                created_class = create_class(
+                    class_id, conversation_id, class_name)
             else:
                 created_class = None
 
@@ -396,7 +414,8 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
 
                     if created_instance:
                         # Create junction between class and instance
-                        create_classes_instances_junction(class_id, instance_id)
+                        create_classes_instances_junction(
+                            class_id, instance_id)
 
                 # Handle data properties
                 for data_prop in cls["data_properties"]:
@@ -436,15 +455,22 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
                                         range_id, object_property_id, range_name)
 
                                     if created_range:
-                                        # Create junction between domain and range
+                                        # Create junction between domain and
+                                        # range
                                         create_domains_ranges_junction(
                                             object_property_id, domain_id, range_id)
 
-        return {"message": "Saving Classes and Properties Has Been Successful", "status_code": 200, "data": None}
+        return {
+            "message": "Saving Classes and Properties Has Been Successful",
+            "status_code": 200,
+            "data": None}
     except Exception as e:
         logger.error(
             f"An error occurred while saving classes and properties: {e}")
-        return {"message": f"An error occurred: {str(e)}", "status_code": 500, "data": None}
+        return {
+            "message": f"An error occurred: {str(e)}",
+            "status_code": 500,
+            "data": None}
 
 
 def save_instances_service(llm_response_json, conversation_id):
@@ -463,8 +489,14 @@ def save_instances_service(llm_response_json, conversation_id):
                     # Create junction between class and instance
                     create_classes_instances_junction(class_id, instance_id)
 
-        return {"message": "Saving Instances Has Been Successful", "status_code": 200, "data": None}
+        return {
+            "message": "Saving Instances Has Been Successful",
+            "status_code": 200,
+            "data": None}
 
     except Exception as e:
         logger.error(f"Error saving instances: {e}")
-        return {"message": f"Error saving instances: {str(e)}", "status_code": 500, "data": None}
+        return {
+            "message": f"Error saving instances: {str(e)}",
+            "status_code": 500,
+            "data": None}

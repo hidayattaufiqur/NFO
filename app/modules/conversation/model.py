@@ -27,10 +27,10 @@ def get_conversation_detail_by_id(convo_id):
         logger.info("fetching conversation detail by id")
         with conn.cursor() as cur:
             cur.execute('''
-                SELECT 
-                    c.domain, 
-                    c.scope, 
-                    c.user_id, 
+                SELECT
+                    c.domain,
+                    c.scope,
+                    c.user_id,
                     c.is_active,
                     c.conversation_id,
                     JSON_AGG(message_store.message) AS messages
@@ -54,7 +54,9 @@ def get_all_conversations_from_a_user(user_id):
         logger.info("fetching conversations from a user")
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT conversation_id, title, domain, scope, is_active, created_at FROM conversations WHERE user_id = %s AND deleted_at IS NULL', (user_id,))
+                'SELECT conversation_id, title, domain, scope, is_active, created_at FROM conversations WHERE user_id = %s AND deleted_at IS NULL',
+                (user_id,
+                 ))
             convos = cur.fetchall()
             return convos
     except Exception as e:
@@ -91,9 +93,9 @@ def delete_conversation(conversation_id):
         logger.info("deleting a conversation")
         with conn.cursor() as cur:
             cur.execute('''
-                UPDATE conversations 
+                UPDATE conversations
                 SET deleted_at = CURRENT_TIMESTAMP, is_active = FALSE
-                WHERE conversation_id = %s; 
+                WHERE conversation_id = %s;
             ''', (conversation_id,))
             conn.commit()
     except Exception as e:
@@ -147,7 +149,10 @@ def get_all_competency_questions_by_convo_id(convo_id):
     try:
         logger.info("fetching competency_questions from a conversation")
         with conn.cursor() as cur:
-            cur.execute('SELECT cq_id, user_id, conversation_id, is_valid, question, created_at FROM competency_questions WHERE conversation_id = %s AND deleted_at IS NULL', (convo_id,))
+            cur.execute(
+                'SELECT cq_id, user_id, conversation_id, is_valid, question, created_at FROM competency_questions WHERE conversation_id = %s AND deleted_at IS NULL',
+                (convo_id,
+                 ))
             cqs = cur.fetchall()
             return cqs
     except Exception as e:

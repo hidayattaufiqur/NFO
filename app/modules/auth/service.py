@@ -32,7 +32,11 @@ class User(UserMixin):
     def get(user_id):
         user_info = get_user_by_id(user_id)
         if user_info:
-            return User(user_id=user_info['user_id'], name=user_info['name'], email=user_info['email'], profile_pic=user_info['profile_pic_url'])
+            return User(
+                user_id=user_info['user_id'],
+                name=user_info['name'],
+                email=user_info['email'],
+                profile_pic=user_info['profile_pic_url'])
         return None
 
 
@@ -109,11 +113,24 @@ def login_service():
         # logging.info("redirecting to authorization_url")
         # return redirect(authorization_url)
 
-        return jsonify(response_template({"message": "User logged in successfully", "status_code": 200, "data": {"user_id": user_id, "name": id_info['name'], "profile_pic_url": id_info['picture']}}))
+        return jsonify(
+            response_template(
+                {
+                    "message": "User logged in successfully",
+                    "status_code": 200,
+                    "data": {
+                        "user_id": user_id,
+                        "name": id_info['name'],
+                        "profile_pic_url": id_info['picture']}}))
 
     except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
-        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+        return jsonify(
+            response_template(
+                {
+                    "message": f"an error occurred at route {request.path} with error: {e}",
+                    "status_code": 500,
+                    "data": None}))
 
 
 def callback_service():
@@ -137,8 +154,7 @@ def callback_service():
         request_session = requests.session()
         token_request = Request(session=request_session)
         id_info = google.oauth2.id_token.verify_oauth2_token(
-            credentials.id_token, token_request, GOOGLE_CLIENT_ID, clock_skew_in_seconds=8
-        )
+            credentials.id_token, token_request, GOOGLE_CLIENT_ID, clock_skew_in_seconds=8)
 
         logger.info("looking up user by email")
         user_info = get_user_by_email(id_info['email'])
@@ -160,11 +176,23 @@ def callback_service():
 
         logger.info(f"user: {id_info['name']} logged in successfully")
 
-        return jsonify(response_template({"message": "User logged in successfully", "status_code": 200, "data": {"name": id_info['name'], "profile_pic_url": id_info['picture']}}))
+        return jsonify(
+            response_template(
+                {
+                    "message": "User logged in successfully",
+                    "status_code": 200,
+                    "data": {
+                        "name": id_info['name'],
+                        "profile_pic_url": id_info['picture']}}))
 
     except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
-        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+        return jsonify(
+            response_template(
+                {
+                    "message": f"an error occurred at route {request.path} with error: {e}",
+                    "status_code": 500,
+                    "data": None}))
 
 
 def profile_service():
@@ -184,11 +212,17 @@ def profile_service():
         }
 
         logger.info("user fetched successfully")
-        return jsonify(response_template(({"message": "user profile", "status_code": 200, "data": user_info})))
+        return jsonify(response_template(
+            ({"message": "user profile", "status_code": 200, "data": user_info})))
 
     except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
-        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+        return jsonify(
+            response_template(
+                {
+                    "message": f"an error occurred at route {request.path} with error: {e}",
+                    "status_code": 500,
+                    "data": None}))
 
 
 def logout_service():
@@ -200,7 +234,13 @@ def logout_service():
 
         logout_user()
         session.clear()
-        return jsonify(response_template({"message": "User logged out successfully", "status_code": 200, "data": None}))
+        return jsonify(response_template(
+            {"message": "User logged out successfully", "status_code": 200, "data": None}))
     except Exception as e:
         logger.error(f"an error occurred at route {request.path} {e}")
-        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None}))
+        return jsonify(
+            response_template(
+                {
+                    "message": f"an error occurred at route {request.path} with error: {e}",
+                    "status_code": 500,
+                    "data": None}))

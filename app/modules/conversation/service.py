@@ -48,7 +48,8 @@ async def conversation_service(conversation_id):
             db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None:
-            return jsonify(chat_agent_response_template({"message": "Conversation Not Found", "status_code": 404, "prompt": data["prompt"], "output": None})), 404
+            return jsonify(chat_agent_response_template(
+                {"message": "Conversation Not Found", "status_code": 404, "prompt": data["prompt"], "output": None})), 404
 
         table_name = "message_store"
         session_id = str(conversation_id)
@@ -61,23 +62,31 @@ async def conversation_service(conversation_id):
         x = LLMChain(
             llm=llm,
             prompt=PromptTemplate(
-                input_variables=["input", "history"],
-                template=SYSTEM_MESSAGE
-            ),
+                input_variables=[
+                    "input",
+                    "history"],
+                template=SYSTEM_MESSAGE),
             verbose=True,
             memory=ConversationBufferWindowMemory(
-                memory_key="history", return_messages=True, k=10, chat_memory=history)
-        )
+                memory_key="history",
+                return_messages=True,
+                k=10,
+                chat_memory=history))
 
         logger.info(f"invoking prompt to OpenAI")
         response = await x.ainvoke({"input": data["prompt"]})
         response_json = json.loads(response["text"])
         response_json.update({"conversation_id": conversation_id})
 
-        # If the conversation is new, we need to update the domain and scope in the database
+        # If the conversation is new, we need to update the domain and scope in
+        # the database
         if db_response["domain"] != response_json["domain"] or db_response["scope"] != response_json["scope"]:
             update_conversation(
-                response_json["scope"], conversation_id, response_json["domain"], response_json["scope"], True)
+                response_json["scope"],
+                conversation_id,
+                response_json["domain"],
+                response_json["scope"],
+                True)
 
         logger.info(
             "successfully invoked OpenAI prompt and updated the conversation history")
@@ -88,9 +97,16 @@ async def conversation_service(conversation_id):
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
-        return jsonify(chat_agent_response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": None, "output": None})), 500
+        return jsonify(chat_agent_response_template(
+            {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": None, "output": None})), 500
 
-    return jsonify(chat_agent_response_template({"message": "Success", "status_code": 200, "prompt": data["prompt"], "output": response_json}))
+    return jsonify(
+        chat_agent_response_template(
+            {
+                "message": "Success",
+                "status_code": 200,
+                "prompt": data["prompt"],
+                "output": response_json}))
 
 
 def get_detail_conversation_service(conversation_id):
@@ -100,14 +116,15 @@ def get_detail_conversation_service(conversation_id):
         if db_response is None:
             logger.info(
                 f"an error occurred at route {request.path}: conversation not found")
-            return jsonify(response_template({"message": f"an error occurred at route {request.path}: conversation not found", "status_code": 404, "data": None})), 404
+            return jsonify(response_template(
+                {"message": f"an error occurred at route {request.path}: conversation not found", "status_code": 404, "data": None})), 404
 
         conversation_id = db_response["conversation_id"]
         domain = db_response["domain"]
         scope = db_response["scope"]
         is_active = db_response["is_active"]
 
-        if type(db_response["messages"][0]) != 'dict':
+        if not isinstance(db_response["messages"][0], 'dict'):
             prompt = json.loads(db_response["messages"][0])["data"]["content"]
             competency_questions = json.loads(db_response["messages"][1])[
                 "data"]["content"]
@@ -118,7 +135,8 @@ def get_detail_conversation_service(conversation_id):
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
-        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
+        return jsonify(response_template(
+            {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
     return jsonify(response_template({
         "message": "Success",
@@ -141,9 +159,11 @@ def get_all_conversations_by_user_id_service(user_id):
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
-        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
+        return jsonify(response_template(
+            {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
-    return jsonify(response_template({"message": "Success", "status_code": 200, "data": db_response})), 200
+    return jsonify(response_template(
+        {"message": "Success", "status_code": 200, "data": db_response})), 200
 
 
 def delete_conversation_service(conversation_id):
@@ -164,9 +184,11 @@ def delete_conversation_service(conversation_id):
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
-        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
+        return jsonify(response_template(
+            {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
 
-    return jsonify(response_template({"message": "Deleting Has Been Successful", "status_code": 200, "data": None}))
+    return jsonify(response_template(
+        {"message": "Deleting Has Been Successful", "status_code": 200, "data": None}))
 
 
 def save_competency_questions_service(conversation_id):
@@ -179,7 +201,7 @@ def save_competency_questions_service(conversation_id):
         competency_questions_in_db = get_all_competency_questions_by_convo_id(
             conversation_id)
 
-        if type(data["competency_question"]) != str:
+        if not isinstance(data["competency_question"], str):
             for i in range(len(data["competency_question"])):
                 competency_questions_list.append(
                     data["competency_question"][i])
@@ -197,9 +219,15 @@ def save_competency_questions_service(conversation_id):
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
-        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
+        return jsonify(response_template(
+            {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
 
-    return jsonify(response_template({"message": "Saving Competency Question Has Been Successful", "status_code": 200, "data": None}))
+    return jsonify(
+        response_template(
+            {
+                "message": "Saving Competency Question Has Been Successful",
+                "status_code": 200,
+                "data": None}))
 
 
 def get_competency_questions_service(conversation_id):
@@ -210,9 +238,11 @@ def get_competency_questions_service(conversation_id):
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
-        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
+        return jsonify(response_template(
+            {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
-    return jsonify(response_template({"message": "Success", "status_code": 200, "data": db_response})), 200
+    return jsonify(response_template(
+        {"message": "Success", "status_code": 200, "data": db_response})), 200
 
 
 def validating_competency_questions_service(cq_id):
@@ -222,6 +252,8 @@ def validating_competency_questions_service(cq_id):
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
-        return jsonify(response_template({"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
+        return jsonify(response_template(
+            {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
 
-    return jsonify(response_template({"message": "Updating Competency Question Has Been Successful", "status_code": 200, "data": None})), 200
+    return jsonify(response_template(
+        {"message": "Updating Competency Question Has Been Successful", "status_code": 200, "data": None})), 200
