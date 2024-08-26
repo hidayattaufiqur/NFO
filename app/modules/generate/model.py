@@ -113,6 +113,24 @@ def update_class(class_id, name):
     finally:
         close_pool_connection(conn)
 
+def delete_class(class_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("deleting class")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE classes SET deleted_at = CURRENT_TIMESTAMP WHERE class_id = %s
+                RETURNING *;
+            ''', (class_id,))
+            classes = cur.fetchone()
+            conn.commit()
+            return classes
+    except Exception as e:
+        logger.error(f"Error deleting class: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
 
 def get_class_by_id(class_id):
     conn = get_pool_connection()
@@ -185,6 +203,25 @@ def create_classes_data_junction(class_id, data_property_id):
         close_pool_connection(conn)
 
 
+def delete_classes_data_junction(class_id="", data_property_id=""):
+    conn = get_pool_connection()
+    try:
+        logger.info("deleting classes data junction")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE classes_data_junction SET deleted_at = CURRENT_TIMESTAMP WHERE (class_id = %s AND data_property_id = %s)
+                RETURNING *;
+            ''', (class_id, data_property_id))
+            junction = cur.fetchone()
+            conn.commit()
+            return junction
+    except Exception as e:
+        logger.error(f"Error deleting classes data junction: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
 def create_data_property(data_property_id, class_id, name, data_type):
     conn = get_pool_connection()
     try:
@@ -219,6 +256,25 @@ def update_data_property(data_property_id, name, data_type):
             return data_property
     except Exception as e:
         logger.error(f"Error updating data property: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def delete_data_property(data_property_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("deleting data property")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE data_properties SET deleted_at = CURRENT_TIMESTAMP WHERE data_property_id = %s
+                RETURNING *;
+            ''', (data_property_id,))
+            data_property = cur.fetchone()
+            conn.commit()
+            return data_property
+    except Exception as e:
+        logger.error(f"Error deleting data property: {e}")
         return None
     finally:
         close_pool_connection(conn)
@@ -316,6 +372,57 @@ def update_object_property(object_property_id, name):
             return object_property
     except Exception as e:
         logger.error(f"Error updating object property: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def delete_object_domains_ranges_junction(object_property_id):
+    conn = get_pool_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE domains_ranges_junction
+                SET deleted_at = CURRENT_TIMESTAMP
+                WHERE object_property_id = %s
+            ''', (object_property_id,))
+        conn.commit()
+    except Exception as e:
+        logger.error(f"Error deleting object domains ranges junction: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def delete_classes_object_junction(class_id, object_property_id):
+    conn = get_pool_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE classes_object_junction
+                SET deleted_at = CURRENT_TIMESTAMP
+                WHERE class_id = %s AND object_property_id = %s
+            ''', (class_id, object_property_id))
+        conn.commit()
+    except Exception as e:
+        logger.error(f"Error deleting classes object junction: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
+def delete_object_property(object_property_id):
+    conn = get_pool_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE object_properties
+                SET deleted_at = CURRENT_TIMESTAMP
+                WHERE object_property_id = %s
+            ''', (object_property_id,))
+        conn.commit()
+    except Exception as e:
+        logger.error(f"Error deleting object property: {e}")
         return None
     finally:
         close_pool_connection(conn)
@@ -690,6 +797,25 @@ def create_classes_instances_junction(class_id, instance_id):
         close_pool_connection(conn)
 
 
+def delete_classes_instances_junction(class_id="", instance_id=""):
+    conn = get_pool_connection()
+    try:
+        logger.info("deleting classes instances junction")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE classes_instances_junction SET deleted_at = CURRENT_TIMESTAMP WHERE (class_id = %s AND instance_id = %s)
+                RETURNING *;
+            ''', (class_id, instance_id))
+            junction = cur.fetchone()
+            conn.commit()
+            return junction
+    except Exception as e:
+        logger.error(f"Error deleting classes instances junction: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
 def create_instance(instance_id, class_id, name):
     conn = get_pool_connection()
     try:
@@ -728,6 +854,24 @@ def update_instance(instance_id, name):
     finally:
         close_pool_connection(conn)
 
+
+def delete_instance(instance_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("deleting instance")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE instances SET deleted_at = CURRENT_TIMESTAMP WHERE instance_id = %s
+                RETURNING *;
+            ''', (instance_id,))
+            instance = cur.fetchone()
+            conn.commit()
+            return instance
+    except Exception as e:
+        logger.error(f"Error deleting instance: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
 
 def get_instance_by_id(instance_id):
     conn = get_pool_connection()

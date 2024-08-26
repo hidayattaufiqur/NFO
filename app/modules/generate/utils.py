@@ -21,7 +21,7 @@ import requests
 import uuid
 
 from app.utils import *
-from .model import create_class, create_data_property, create_object_property, create_classes_data_junction, create_classes_object_junction, create_domain, create_range, create_domains_ranges_junction, create_instance, create_classes_instances_junction
+from .model import *
 
 logger = logging.getLogger(__name__)
 
@@ -231,7 +231,7 @@ def prompt_awan_llm(tagged_sentences, domain, scope):
     url = "https://api.awanllm.com/v1/chat/completions"
 
     payload = json.dumps({
-        "model": "Meta-Llama-3-8B-Instruct",
+        "model": "Meta-Llama-3.1-8B-Instruct",
         "messages": [
             {
                 "role": "user",
@@ -248,7 +248,7 @@ please pick important terms out of these: {tagged_sentences} that are relevant t
           '''
             },
         ],
-        "temperature": 0.7,
+        "temperature": 0.2,
     })
     headers = {
         'Content-Type': 'application/json',
@@ -282,7 +282,7 @@ please pick important terms out of these: {tagged_sentences} that are relevant t
 
 def prompt_awan_llm_chunked(tagged_sentences, domain, scope):
     start_time = time.time()
-    max_tokens = 512
+    max_tokens = 1024
     chunk_size = max_tokens // 2
     chunks = chunk_list(tagged_sentences, chunk_size)
     combined_response = []
@@ -375,7 +375,12 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
         for cls in llm_response_json["classes"]:
             class_id = uuid.uuid4()
             class_name = cls["name"]
-            created_class = create_class(class_id, conversation_id, class_name)
+            db_response = get_class_by_name(class_name)
+
+            if db_response is None:
+                created_class = create_class(class_id, conversation_id, class_name)
+            else:
+                created_class = None
 
             if created_class:
                 # Handle Instances

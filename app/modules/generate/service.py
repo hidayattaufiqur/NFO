@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 
 from app.modules.conversation import get_conversation_detail_by_id
 from app.database import *
+from app.modules.conversation.model import update_conversation
 from app.utils import *
 from app.utils.config import CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS 
 from .model import *
@@ -629,6 +630,55 @@ async def update_class_service(class_id):
     })), 200
 
 
+async def delete_class_service():
+    try:
+        data = request.json
+        class_ids = data["class_ids"]
+
+        for class_id in class_ids:
+            db_response = get_class_by_id(class_id)
+            if db_response is None: # TODO: should this be an early return if one of the classes is not found or should it only throw log error and continue with the rest of the classes?
+                return jsonify(response_template({
+                    "message": "There is no class with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+            
+            data_properties = get_all_data_properties_by_class_id(class_id)
+            if data_properties is not None:
+                for dp in data_properties:
+                    delete_classes_data_junction(class_id, dp.get("data_property_id"))
+                    delete_data_property(dp.get("data_property_id"))
+            
+            object_properties = get_all_object_properties_by_class_id(class_id)
+            if object_properties is not None:
+                for op in object_properties:
+                    delete_classes_object_junction(class_id, op.get("object_property_id"))
+                    delete_object_property(op.get("object_property_id"))
+            
+            instances = get_all_instances_by_class_id(class_id)
+            if instances is not None:
+                for instance in instances:
+                    delete_classes_instances_junction(class_id, instance.get("instance_id"))
+                    delete_instance(instance.get("instance_id"))
+
+            delete_class(class_id)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": None
+    })), 200
+
+
 async def create_data_property_service(class_id):
     try:
         data = request.json 
@@ -725,6 +775,46 @@ async def update_data_property_service(data_property_id):
         "data": data
     })), 200
 
+
+async def delete_data_properties_service(class_id):
+    try:
+        data = request.json
+        data_properties = data["data_properties_ids"]
+
+        for data_property_id in data_properties:
+
+            db_response = get_class_by_id(class_id) 
+            if db_response is None:
+                return jsonify(response_template({
+                    "message": "There is no class with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+
+            db_response = get_data_property_by_id(data_property_id)
+            if db_response is None:
+                return jsonify(response_template({
+                    "message": "There is no data property with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+
+            delete_classes_data_junction(class_id, data_property_id)
+            delete_data_property(data_property_id)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": None
+    })), 200
 
 async def get_object_properties_service(class_id):
     try:
@@ -832,6 +922,46 @@ async def create_object_property_service(class_id):
         "data": None 
     })), 200
 
+
+async def delete_object_properties_service(class_id):
+    try:
+        data = request.json
+        object_properties = data["object_properties_ids"]
+
+        for object_property_id in object_properties:
+            db_response = get_class_by_id(class_id)
+            if db_response is None:
+                return jsonify(response_template({
+                    "message": "There is no class with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+
+            db_response = get_object_property_by_id(object_property_id)
+            if db_response is None:
+                return jsonify(response_template({
+                    "message": "There is no object property with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+
+            delete_classes_object_junction(class_id, object_property_id)
+            delete_object_domains_ranges_junction(object_property_id)
+            delete_object_property(object_property_id)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": None
+    })), 200
 
 async def update_object_property_service(object_property_id):
     try:
@@ -1180,6 +1310,48 @@ async def update_instances_service(class_id):
                     })), 404
 
                 data = update_instance(instance_id, instance_name)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": None
+    })), 200
+
+
+async def delete_instances_service(class_id):
+    try:
+        data = request.json
+        instances = data["instances_ids"]
+
+        for instance_id in instances:
+            db_response = get_class_by_id(class_id)
+            if db_response is None:
+                return jsonify(response_template({
+                    "message": "There is no class with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+
+
+            db_response = get_instance_by_id(instance_id)
+            if db_response is None:
+                return jsonify(response_template({
+                    "message": "There is no instance with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+
+            delete_classes_instances_junction(class_id, instance_id)
+            delete_instance(instance_id)
+
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")

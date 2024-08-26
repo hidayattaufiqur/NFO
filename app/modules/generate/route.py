@@ -65,6 +65,12 @@ async def update_class(class_id):
     return await update_class_service(class_id)
 
 
+@bp.route('/classes/', methods=['DELETE'])
+#@require_authorization
+async def delete_class():
+    return await delete_class_service()
+
+
 """object properties"""
 
 
@@ -84,6 +90,12 @@ async def update_object_property(object_property_id):
 #@require_authorization
 async def create_object_property(class_id):
     return await create_object_property_service(class_id)
+
+
+@bp.route('/object-properties/<class_id>', methods=['DELETE'])
+#@require_authorization
+async def delete_object_properties(class_id):
+    return await delete_object_properties_service(class_id)
 
 
 @bp.route('/object-properties/<object_property_id>/domain-range', methods=['POST'])
@@ -155,6 +167,12 @@ async def update_data_property(data_property_id):
     return await update_data_property_service(data_property_id)
 
 
+@bp.route('/data-properties/<class_id>', methods=['DELETE'])
+#@require_authorization
+async def delete_data_properties(class_id):
+    return await delete_data_properties_service(class_id)
+
+
 """instances"""
 
 
@@ -174,6 +192,11 @@ async def get_instances(conversation_id):
 #@require_authorization
 async def update_instances(class_id):
     return await update_instances_service(class_id)
+
+@bp.route('/classes/instance/<class_id>', methods=['DELETE'])
+#@require_authorization
+async def delete_instances(class_id):
+    return await delete_instances_service(class_id)
 
 
 """ontology"""
