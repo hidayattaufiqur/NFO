@@ -11,3 +11,4 @@ client_secrets_bak.json
 credentials.json
 logfile
 logs
+chroma_db_oai
