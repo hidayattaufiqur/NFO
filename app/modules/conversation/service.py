@@ -124,7 +124,7 @@ def get_detail_conversation_service(conversation_id):
         scope = db_response["scope"]
         is_active = db_response["is_active"]
 
-        if not isinstance(db_response["messages"][0], 'dict'):
+        if not isinstance(db_response["messages"][0], dict):
             prompt = json.loads(db_response["messages"][0])["data"]["content"]
             competency_questions = json.loads(db_response["messages"][1])[
                 "data"]["content"]
