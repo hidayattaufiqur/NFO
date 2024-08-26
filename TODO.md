@@ -38,8 +38,9 @@ using flair or something else to get the important terms
 - [x] buat step 7 yg instances. get by conv_id sama post instances by conv_id yak (post already using conv_id to generate instances from)
 - [x] change implementation of step 2 
 - [x] fix step 2 repeatedly generating irrelevant domain and scope existing ontologies
+- [x] replace awanllm with openai
 
-- [ ] upload pdf/url and add new clase replace existing data instead of creating new ones
+- [ ] upload pdf/url and add new class replace existing data instead of creating new ones
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video

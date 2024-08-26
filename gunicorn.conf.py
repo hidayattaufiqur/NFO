@@ -3,7 +3,7 @@ import multiprocessing
 
 # Socket to bind bind = 'unix:/home/nixos-server/Fun/Projects/myproject.sock'
 
-''' 
+'''
 configurations below follow Google Cloud documentation
 [https://cloud.google.com/appengine/docs/flexible/python/runtime#recommended_gunicorn_configuration]
 '''
