@@ -351,6 +351,20 @@ def llm_search_google_prompt(domain, scope, search_results):
     return prompt + prompt_2
 
 
+GENERATE_TERMS_BY_TAGGED_SENTENCES_PROMPT_SYSTEM_MESSAGE = """
+You are a language model trained to assist in extracting important terms from text. You will help users extract important terms from text that are relevant to a specific domain and scope. Users can provide you with the text and the domain and scope of the ontology they want to extract terms for. You will strictly respond with only the list of relevant important terms and nothing else. You will not explain, you will not elaborate whatsoever. You will only give a list of relevant important terms as your response that users can extract easily.
+
+You will receive input containing:
+- Domain: {{ domain }}
+- Scope: {{ scope }}
+- Predicted tags: {{ predicted_tags }}
+
+Your response will always be in this format. YOU MUST OBEY THE INSTRUCTIONS. DO NOT ADD ANYTHING ELSE e.g. TAG in the response, simply an array of important terms!!!:
+    "important_terms": ["important_term1", "important_term2", ...]
+
+If you fail to follow the instruction, someone's grandma will die.
+"""
+
 UPLOAD_FOLDER = "app/static/uploads/"
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # max pdf file size is 16MB
 ALLOWED_EXTENSIONS = {"pdf"}

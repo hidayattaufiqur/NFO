@@ -127,26 +127,28 @@ async def generate_important_terms_from_pdf_service():
                 "status_code": 500,
                 "data": None
             })), 500
-        logger.info(f"extracted text: {extracted_text}")
 
         logger.info("predicting tags with spacy NER model")
         # predicted_tags = predict_with_flair(extracted_text)
         predicted_tags = predict_with_spacy(extracted_text)
-        logger.info(f"predicted tags: {predicted_tags}")
 
-        logger.info("invoking awan llm")
-        awan_llm_response = prompt_awan_llm_chunked(predicted_tags, domain, scope)
+        # logger.info("invoking awan llm")
+        # awan_llm_response = prompt_awan_llm_chunked(predicted_tags, domain, scope)
 
-        if "statusCode" in awan_llm_response:
-            logger.error(f"Error invoking awan llm with error: {awan_llm_response['message']}")
-            return response_template({
-                "message": f"Error invoking awan llm with error: {awan_llm_response['message']}",
-                "status_code": awan_llm_response["statusCode"],
-                "data": None
-            }), 500
+        logger.info("invoking chatai llm")
+
+        prompt = {
+            "domain": domain,
+            "scope": scope,
+            "predicted_tags": predicted_tags,
+        }
+        
+        chatai_llm_response = await prompt_chatai(prompt=prompt, template=GENERATE_TERMS_BY_TAGGED_SENTENCES_PROMPT_SYSTEM_MESSAGE)
+        chatai_llm_response_json = loads(chatai_llm_response.get("text"))
+        terms = chatai_llm_response_json.get("important_terms")
 
         important_terms_id = uuid.uuid4()
-        terms = awan_llm_response["choices"][0]["message"]["content"]
+        # terms = awan_llm_response["choices"][0]["message"]["content"]
 
         logger.info("saving important terms to database")
         create_important_terms(important_terms_id, user_id, conversation_id, terms)
@@ -175,14 +177,14 @@ async def generate_important_terms_from_pdf_service():
     os.remove(filepath)
 
     logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
-    print_time_for_each_process()
+    # print_time_for_each_process()
 
     return response_template({
         "message": "File uploaded successfully",
         "status_code": 200,
         "data": {
             "filename": filename,
-            "llm_output": llm_response_json
+            "llm_output": llm_response_json,
         }
     }), 200
 
@@ -224,19 +226,20 @@ async def generate_important_terms_from_url_service():
         predicted_tags = predict_with_spacy(extracted_text)
         logger.info(f"predicted tags: {predicted_tags}")
 
-        logger.info("invoking awan llm")
-        awan_llm_response = prompt_awan_llm_chunked(predicted_tags, domain, scope)
+        logger.info("invoking chatai llm")
 
-        if "statusCode" in awan_llm_response:
-            logger.error(f"Error invoking awan llm with error: {awan_llm_response['message']}")
-            return response_template({
-                "message": f"Error invoking awan llm with error: {awan_llm_response['message']}",
-                "status_code": awan_llm_response["statusCode"],
-                "data": None
-            }), 500
+        prompt = {
+            "domain": domain,
+            "scope": scope,
+            "predicted_tags": predicted_tags,
+        }
+        
+        chatai_llm_response = await prompt_chatai(prompt=prompt, template=GENERATE_TERMS_BY_TAGGED_SENTENCES_PROMPT_SYSTEM_MESSAGE)
+        chatai_llm_response_json = loads(chatai_llm_response.get("text"))
+        terms = chatai_llm_response_json.get("important_terms")
 
         important_terms_id = uuid.uuid4()
-        terms = awan_llm_response["choices"][0]["message"]["content"]
+        # terms = awan_llm_response["choices"][0]["message"]["content"]
 
         logger.info("saving important terms to database")
         create_important_terms(important_terms_id, user_id, conversation_id, terms)
@@ -262,7 +265,7 @@ async def generate_important_terms_from_url_service():
         }), 500
     
     logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
-    print_time_for_each_process()
+    # print_time_for_each_process()
 
     return response_template({
         "message": "Url fetched successfully",
