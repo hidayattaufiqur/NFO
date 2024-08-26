@@ -282,7 +282,7 @@ please pick important terms out of these: {tagged_sentences} that are relevant t
 
 def prompt_awan_llm_chunked(tagged_sentences, domain, scope):
     start_time = time.time()
-    max_tokens = 1024
+    max_tokens = 512
     chunk_size = max_tokens // 2
     chunks = chunk_list(tagged_sentences, chunk_size)
     combined_response = []
