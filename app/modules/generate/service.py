@@ -925,6 +925,15 @@ async def delete_object_property_range_service(object_property_id):
         data = request.json
         range_ids = data.get("range_ids")
 
+        db_response = get_object_property_by_id(object_property_id)
+
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no object property with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+
         for rg_id in range_ids:
             db_response = get_range_by_id(rg_id)
 
@@ -935,7 +944,7 @@ async def delete_object_property_range_service(object_property_id):
                     "data": None
                 })), 404
             else:
-                delete_domains_ranges_junction(object_property_id, rg_id)
+                delete_domains_ranges_junction(range_id=rg_id, object_property_id=object_property_id)
                 delete_range(rg_id)
 
     except Exception as e: 
@@ -1080,6 +1089,48 @@ async def update_object_property_domain_service(domain_id):
     })), 200
 
 
+async def delete_object_property_domain_service(object_property_id):
+    try:
+        data = request.json
+        domain_ids = data.get("domain_ids")
+
+        db_response = get_object_property_by_id(object_property_id)
+
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no object property with such ID",
+                "status_code": 404, 
+                "data": None
+            })), 404
+
+        for dm_id in domain_ids:
+            db_response = get_domain_by_id(dm_id)
+
+            if db_response is None:
+                return jsonify(response_template({
+                    "message": "There is no domain with such ID",
+                    "status_code": 404, 
+                    "data": None
+                })), 404
+            else:
+                delete_domains_ranges_junction(domain_id=dm_id, object_property_id=object_property_id)
+                delete_domain(dm_id)
+
+    except Exception as e: 
+        logger.error(f"an error occurred at route {request.path} with error: {e}")
+        return jsonify(response_template({
+            "message": f"an error occurred at route {request.path} with error: {e}",
+            "status_code": 500,
+            "data": None
+        })), 500
+
+    return jsonify(response_template({
+        "message": "Success",
+        "status_code": 200,
+        "data": None 
+    })), 200
+
+
 async def get_instances_service(conversation_id):
     try:
         # db_response = get_all_instances_by_class_id(class_id)
@@ -1158,17 +1209,44 @@ async def generate_owl_file_service(conversation_id):
             for cls in classes:
                 CurrentClass = onto[cls["name"]]
                 
+                # Data properties
                 data_properties = get_all_data_properties_by_class_id(cls["class_id"])
                 for dp in data_properties:
                     new_data_property = types.new_class(dp["data_property_name"], (DataProperty,))
                     new_data_property.domain.append(CurrentClass)
-                    # TODO: this mapping might need expanding
-                    if dp["data_property_type"].lower() == "string":
+                    
+                    # Mapping data property types
+                    data_property_type = dp["data_property_type"].lower()
+                    if data_property_type == "string":
                         new_data_property.range.append(str)
-                    elif dp["data_property_type"].lower() in ["integer", "int"]:
+                    elif data_property_type in ["integer", "int"]:
                         new_data_property.range.append(int)
+                    elif data_property_type == "float":
+                        new_data_property.range.append(float)
+                    elif data_property_type == "boolean":
+                        new_data_property.range.append(bool)
 
+                # Object properties
                 object_properties = get_all_object_properties_by_class_id(cls["class_id"])
+                # for op in object_properties:
+                #     new_object_property = types.new_class(op["object_property_name"], (ObjectProperty,))
+                #     new_object_property.domain.append(CurrentClass)
+                #     
+                #     domains = get_all_domains_by_object_property_id(op["object_property_id"])
+                #     logger.info(f"domains: {domains}")
+                #     if domains:
+                #         domain_class = onto[domains[0]["domain_name"]]
+                #         if domain_class:
+                #             new_object_property.domain = [domain_class]  # Set domain
+                #
+                #     ranges = get_all_ranges_by_object_property_id(op["object_property_id"])
+                #     logger.info(f"ranges: {ranges}")
+                #     if ranges:
+                #         range_class = onto[ranges[0]["range_name"]]
+                #         if range_class:
+                #             new_object_property.range = [range_class]  # Set range
+
+
                 for op in object_properties:
                     new_object_property = types.new_class(op["object_property_name"], (ObjectProperty,))
                     new_object_property.domain.append(CurrentClass)
@@ -1187,20 +1265,29 @@ async def generate_owl_file_service(conversation_id):
                         if range_class:
                             new_object_property.range.append(range_class)
 
+                # Instances
                 instances = get_all_instances_by_class_id(cls["class_id"])
                 for instance in instances:
-                    CurrentClass(instance["instance_name"])
+                    try:
+                        logger.info(f"Creating instance {instance['instance_name']} for class {cls['name']} with current class {CurrentClass}")
+                        # if not onto.search_one(instance["instance_name"]):
+                        CurrentClass(instance["instance_name"])
+                    except AttributeError as e:
+                        logger.error(f"Failed to create instance {instance['instance_name']} for class {cls['name']}: {str(e)}")
 
-        logger.debug(f"Ontology: {onto}")
         # Save the ontology to a temporary file
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".owl") as temp_file:
-            onto.save(file=temp_file.name, format="rdfxml")
-            temp_file_path = temp_file.name
+        temp_file_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".owl") as temp_file:
+                onto.save(file=temp_file.name, format="rdfxml")
+                temp_file_path = temp_file.name
 
-        # Return the file as an attachment
-        return send_file(temp_file_path, as_attachment=True, 
-                         download_name=f"ontology_{conversation_id}.owl", 
-                         mimetype="application/rdf+xml")
+            return send_file(temp_file_path, as_attachment=True, 
+                             download_name=f"ontology_{conversation_id}.owl", 
+                             mimetype="application/rdf+xml")
+        finally:
+            if temp_file_path:
+                os.remove(temp_file_path)
 
     except Exception as e:
         logger.error(f"An error occurred while generating OWL file: {str(e)}", exc_info=True)
@@ -1210,8 +1297,6 @@ async def generate_owl_file_service(conversation_id):
             "data": None
         })), 500
 
-    finally: 
-        os.remove(temp_file_path)
 
 
 async def get_existing_ontologies_service(conversation_id):

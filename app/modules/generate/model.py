@@ -378,15 +378,15 @@ def get_all_object_properties_by_class_id(class_id):
                             ))
                             FROM ranges r
                             JOIN domains_ranges_junction drj2 ON r.range_id = drj2.range_id
-                            WHERE drj2.domain_id = d.domain_id AND drj2.object_property_id = op.object_property_id AND drj2.deleted_at IS NULL AND r.deleted_at IS NULL
+                            WHERE drj2.domain_id = d.domain_id AND drj2.object_property_id = op.object_property_id AND drj2.deleted_at IS NULL AND r.deleted_at IS NULL  
                         )
                     )) AS domains
                 FROM object_properties op
                 JOIN classes_object_junction coj ON op.object_property_id = coj.object_property_id
                 JOIN classes c ON coj.class_id = c.class_id
                 LEFT JOIN domains_ranges_junction drj ON op.object_property_id = drj.object_property_id
-                LEFT JOIN domains d ON drj.domain_id = d.domain_id
-                WHERE c.class_id = %s AND op.deleted_at IS NULL
+                LEFT JOIN domains d ON drj.domain_id = d.domain_id AND d.deleted_at IS NULL
+                 WHERE c.class_id = %s AND op.deleted_at IS NULL 
                 GROUP BY op.object_property_id, op.created_at, op.name
             ''', (class_id,))
             object_properties = cur.fetchall()
@@ -441,6 +441,25 @@ def update_domain(domain_id, name):
         close_pool_connection(conn)
 
 
+def delete_domain(domain_id):
+    conn = get_pool_connection()
+    try:
+        logger.info("deleting domain")
+        with conn.cursor() as cur:
+            cur.execute('''
+                UPDATE domains SET deleted_at = CURRENT_TIMESTAMP WHERE domain_id = %s
+                RETURNING *;
+            ''', (domain_id,))
+            domain = cur.fetchone()
+            conn.commit()
+            return domain
+    except Exception as e:
+        logger.error(f"Error deleting domain: {e}")
+        return None
+    finally:
+        close_pool_connection(conn)
+
+
 def get_domain_by_id(domain_id):
     conn = get_pool_connection()
     try:
@@ -474,7 +493,7 @@ def get_all_domains_by_object_property_id(object_property_id):
                 FROM domains d
                 JOIN domains_ranges_junction drj ON d.domain_id = drj.domain_id
                 JOIN object_properties op ON drj.object_property_id = op.object_property_id
-                WHERE op.object_property_id = %s AND op.deleted_at IS NULL
+                WHERE op.object_property_id = %s AND op.deleted_at IS NULL AND d.deleted_at IS NULL
                 GROUP BY op.object_property_id, op.name
             ''', (object_property_id,))
             domains = cur.fetchall()
@@ -509,15 +528,15 @@ def create_domains_ranges_junction(object_property_id, domain_id, range_id):
         close_pool_connection(conn)
 
 
-def delete_domains_ranges_junction(domain_id, object_property_id):
+def delete_domains_ranges_junction(domain_id="", range_id="", object_property_id=""):
     conn = get_pool_connection()
     try:
         logger.info("deleting domains ranges junction")
         with conn.cursor() as cur:
             cur.execute('''
-                UPDATE domains_ranges_junction SET deleted_at = CURRENT_TIMESTAMP WHERE domain_id = %s AND object_property_id = %s
+                UPDATE domains_ranges_junction SET deleted_at = CURRENT_TIMESTAMP WHERE (domain_id = %s OR range_id = %s) AND object_property_id = %s
                 RETURNING *;
-            ''', (domain_id, object_property_id))
+            ''', (domain_id, range_id, object_property_id))
             junction = cur.fetchone()
             conn.commit()
             return junction
@@ -619,7 +638,7 @@ def get_all_ranges_by_object_property_id(object_property_id):
                 FROM ranges r
                 JOIN domains_ranges_junction drj ON r.range_id = drj.range_id
                 JOIN object_properties op ON drj.object_property_id = op.object_property_id
-                WHERE op.object_property_id = %s AND op.deleted_at IS NULL
+                WHERE op.object_property_id = %s AND op.deleted_at IS NULL AND r.deleted_at IS NULL
                 GROUP BY op.object_property_id, op.name
             ''', (object_property_id,))
             ranges = cur.fetchall()

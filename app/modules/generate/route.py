@@ -128,6 +128,12 @@ async def update_object_property_domain(domain_id):
     return await update_object_property_domain_service(domain_id)
 
 
+@bp.route('/object-properties/<object_property_id>/domain', methods=['DELETE'])
+#@require_authorization
+async def delete_object_property_domain(object_property_id):
+    return await delete_object_property_domain_service(object_property_id)
+
+
 """data properties"""
 
 
