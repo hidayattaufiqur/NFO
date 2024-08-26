@@ -1,0 +1,23 @@
+meta {
+  name: Delete Classes Instance
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{dev}}/generation/classes/instance/:class_id
+  body: json
+  auth: none
+}
+
+params:path {
+  class_id: 111e2968-68c8-4628-83d4-991bc16ac2b9
+}
+
+body:json {
+  {
+      "instances_ids": [
+        "334f3295-f785-4095-94cb-3d48764d1d72"
+      ]
+  }
+}

@@ -36,8 +36,10 @@ using flair or something else to get the important terms
 - [x] fix bug in llmsherpa daemon 
 - [x] (optionally) add array of ranges, domains, object properties, data properties, classes, instances to class endpoint
 - [x] buat step 7 yg instances. get by conv_id sama post instances by conv_id yak (post already using conv_id to generate instances from)
+- [x] change implementation of step 2 
+- [x] fix step 2 repeatedly generating irrelevant domain and scope existing ontologies
 
-- [ ] change implementation of step 2 
+- [ ] upload pdf/url and add new clase replace existing data instead of creating new ones
 
 # mid priority
 - [x] weigh in whether to use UUID, ULID, or instead serial as PK (or even keep serial + UUID/ULID) -> maybe watch Hussein's video

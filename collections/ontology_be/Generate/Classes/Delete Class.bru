@@ -1,0 +1,19 @@
+meta {
+  name: Delete Class
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{dev}}/generation/classes
+  body: json
+  auth: none
+}
+
+body:json {
+  {
+    "class_ids": [
+      "e7a33655-c5e6-45e5-b4df-0ae298b0d3e2"
+    ]
+  }
+}

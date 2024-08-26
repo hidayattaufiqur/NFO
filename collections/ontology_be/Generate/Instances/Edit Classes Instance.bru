@@ -4,18 +4,23 @@ meta {
   seq: 2
 }
 
-put {
-  url: {{dev}}/generation/classes/instance/:instance_id
+post {
+  url: {{dev}}/generation/classes/instance/:class_id
   body: json
   auth: none
 }
 
 params:path {
-  instance_id: 2bf00dd9-bff1-441c-835f-5a48ab199a11
+  class_id: 0e4c9191-05ca-4379-82b1-dcb99cf97108
 }
 
 body:json {
   {
-    "name": "Scraping best practiceS"
+      "instances": [
+          {
+              "instance_name": "Blackpepper",
+              "instance_id": "e7588852-013d-4633-94e9-32f840cb22a3" // optional
+          }
+      ]
   }
 }

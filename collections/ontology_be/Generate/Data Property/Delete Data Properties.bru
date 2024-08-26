@@ -1,0 +1,24 @@
+meta {
+  name: Delete Data Properties
+  type: http
+  seq: 4
+}
+
+delete {
+  url: {{dev}}/generation/data-properties/:class_Id
+  body: json
+  auth: none
+}
+
+params:path {
+  class_Id: 8095e79d-9f07-46d3-8667-996119261269
+}
+
+body:json {
+  {
+    "data_properties_ids": [
+        "dc02a0eb-ecac-4ebd-acd6-67e348978fcc",
+      "225f7ff2-135b-4e22-9013-031f71a273c3"
+    ]
+  }
+}

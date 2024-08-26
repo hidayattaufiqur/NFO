@@ -1,0 +1,25 @@
+meta {
+  name: Delete Domains
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{dev}}/generation/object-properties/:object_property_id/domain
+  body: json
+  auth: none
+}
+
+params:path {
+  object_property_id: b4aaef12-5113-4ff5-bf2f-1d69402d4628
+}
+
+body:json {
+  {
+    "domain_ids": ["997eb8d0-076e-46f6-8851-ddb5d60b94aa"]
+  }
+}
+
+body:form-urlencoded {
+  name: MobileApplication
+}

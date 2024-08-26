@@ -5,7 +5,7 @@ meta {
 }
 
 post {
-  url: {{prod}}/generation/terms/pdf
+  url: {{dev}}/generation/terms/pdf
   body: multipartForm
   auth: none
 }
@@ -19,5 +19,5 @@ body:json {
 
 body:multipart-form {
   file: @file(/home/nixos-box/Documents/hidayattaufiqur resume.pdf)
-  conversation_id: 875f75d3-0eb3-4e5a-ac13-b039eb99dd61
+  conversation_id: 1f95504e-cd69-4542-990b-49ac13658dc6
 }
