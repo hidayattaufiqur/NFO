@@ -4,7 +4,7 @@ from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import LLMChain
 from flair.models import SequenceTagger
-from partial_json_parser import loads, Allow, STR, OBJ
+from partial_json_parser import loads
 from spacy import load
 from llmsherpa.readers import LayoutPDFReader
 from langchain.vectorstores import Chroma
@@ -12,7 +12,7 @@ from langchain.embeddings import OpenAIEmbeddings
 from langchain.memory import ConversationSummaryBufferMemory
 from langchain.utilities import GoogleSearchAPIWrapper
 from langchain.retrievers.web_research import WebResearchRetriever
-from langchain.chains import RetrievalQAWithSourcesChain
+from bs4 import BeautifulSoup
 
 import time
 import json
@@ -28,32 +28,42 @@ logger = logging.getLogger(__name__)
 # TODO: try different temp
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 llmgpt3 = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
+llm_stream = ChatOpenAI(model="gpt-4o-mini", temperature=0, streaming=True)
 
+os.environ.get("OPENAI_API_KEY")
+os.environ.get("GOOGLE_CSE_ID")
+os.environ.get("GOOGLE_API_KEY")
 
-# Load environment variables for API keys
-os.environ["OPENAI_API_KEY"] = "[INSERT YOUR OPENAI API KEY HERE]"
-os.environ["GOOGLE_CSE_ID"] = "[INSERT YOUR GOOGLE CSE ID HERE]"
-os.environ["GOOGLE_API_KEY"] = "[INSERT YOUR GOOGLE API KEY HERE]"
+vectorstore = Chroma(embedding_function=OpenAIEmbeddings(), persist_directory="./chroma_db_oai")
+memory = ConversationSummaryBufferMemory(llm=llm, input_key='question', output_key='answer', return_messages=True)
+search = GoogleSearchAPIWrapper()
 
+web_research_retriever = WebResearchRetriever.from_llm(
+    vectorstore=vectorstore,
+    llm=llm_stream,
+    search=search,
+)
 
-# Initialize the LLM
-# llm_stream = ChatOpenAI(model="gpt-4o-mini", temperature=0, streaming=True)
-#
-# # Setup a Vector Store for embeddings using Chroma DB
-# vectorstore = Chroma(embedding_function=OpenAIEmbeddings(), persist_directory="./chroma_db_oai")
-#
-# # Initialize memory for the retriever
-# memory = ConversationSummaryBufferMemory(llm=llm, input_key='question', output_key='answer', return_messages=True)
-#
-# # Initialize Google Search API for Web Search
-# search = GoogleSearchAPIWrapper()
-#
-# # Setup a Retriever
-# web_research_retriever = WebResearchRetriever.from_llm(
-# vectorstore=vectorstore,
-# llm=llm_stream,
-# search=search,
-# )
+def scrape_website(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.text, 'html.parser')
+    return soup.get_text()
+
+def generate_ontology(llm, search_results, domain, scope):
+    prompt = llm_search_google_prompt(domain, scope, search_results)
+    response = llm.predict(prompt)
+    return response
+
+def ontology_search_and_generate(query, domain, scope):
+    search_results = web_research_retriever.get_relevant_documents(f"{query} ontology")
+    processed_results = [scrape_website(doc.metadata['source']) for doc in search_results[:3]]
+    ontology_example = generate_ontology(llm, "\n".join(processed_results), domain, scope)
+    
+    return ontology_example
+
+def llm_search_google(query, domain, scope):
+    result = ontology_search_and_generate(query, domain, scope)
+    return result
 
 start_time = time.time()
 # tagger = Classifier.load("ner-fast") # load flair NER model
@@ -344,26 +354,20 @@ def reformat_response(llm_response):
 
 def reformat_response_existing_ontology(llm_response):
     try:
-        if isinstance(llm_response, dict):
-            parsed_data = loads(llm_response['text'])
+        item = loads(llm_response)
 
-            reformatted_data = []
-            
-            for item in parsed_data['data']:
-                logger.info(f"item: {item}")
-                reformatted_item = {
-                    "domain": item.get("domain"),
-                    "scope": item.get("scope"),
-                    "class_name": item.get("class_name"),
-                    "description": item.get("description"),
-                    "class_labels": item.get("class_labels"),
-                    "link": item.get("link"),
-                    "data_properties": item.get("data_properties"),
-                    "object_properties": item.get("object_properties"),
-                }
-                reformatted_data.append(reformatted_item)
-            
-            return reformatted_data
+        reformatted_item = {
+            "domain": item.get("domain"),
+            "scope": item.get("scope"),
+            "class_name": item.get("class_name"),
+            "description": item.get("description"),
+            "class_labels": item.get("class_labels"),
+            "link": item.get("link"),
+            "data_properties": item.get("data_properties"),
+            "object_properties": item.get("object_properties"),
+        }
+        
+        return reformatted_item
 
     except json.JSONDecodeError as e:
         print(f"JSON decoding failed: {e}")

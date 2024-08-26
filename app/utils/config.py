@@ -290,6 +290,67 @@ Your response should be structured as a dictionary in the following format:
 
 Avoid assumptions and stick to the instructions precisely, as the accuracy of your recommendations is critical.
 """
+
+def llm_search_google_prompt(domain, scope, search_results):
+    prompt = f"""
+    Based on the following information about ontologies in the {domain} domain with a scope of {scope}, generate an ontology example in JSON format:
+
+    {search_results}
+
+    The ontology should include the following fields:
+    - class_labels: A list of main classes in the ontology
+    - class_name: The name of the ontology
+    - data_properties: A list of data properties with their names and types
+    - description: A brief description of the ontology
+    - domain: The domain of the ontology
+    - link: A link to more information about the ontology
+    - object_properties: A list of object properties with their names, domains, and ranges
+    - scope: The scope of the ontology
+
+    """
+
+    prompt_2 = """
+    Your response should be structured as a dictionary in the following format:
+      "domain": "domain",
+      "scope": "scope",
+      "class_name": "class_name",
+      "link": [ "ontology_link" ],
+      "description": "brief_description_1",
+      "class_labels": ["class_label_1", "class_label_2"],
+      "data_properties": [
+        {
+          "data_property_name": "data_property_name_1",
+          "data_property_type": "data_property_type_1"
+        },
+        {
+          "data_property_name": "data_property_name_2",
+          "data_property_type": "data_property_type_2"
+        }
+      ],
+      "object_properties": [
+        {
+          "domains": [
+            {
+              "domain_name": "domain_name_1",
+              "ranges": [
+                {
+                  "range_name": "range_name_1"
+                }
+              ]
+            }
+          ],
+          "object_property_name": "object_property_name_1"
+        }
+      ]
+
+    - Avoid using made up link for the ontology, such as "https://example.com/ontology.owl". If you used multiple links or URLs, please provide them in an array.
+    - Avoid using formatted string such as "```json" or "```python" to avoid error in parsing,
+    - Avoid assumptions and stick to the instructions precisely, as the accuracy of your recommendations is critical.
+    """
+
+    return prompt + prompt_2
+
+
 UPLOAD_FOLDER = "app/static/uploads/"
 MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # max pdf file size is 16MB
 ALLOWED_EXTENSIONS = {"pdf"}

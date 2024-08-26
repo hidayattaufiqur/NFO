@@ -1483,14 +1483,18 @@ async def get_existing_ontologies_service(conversation_id):
                 "data": None
             })), 404
 
-        prompt = {
-            "domain": db_response["domain"],
-            "scope": db_response["scope"],
-            "prompt": prompt,
-        }
+        # prompt = {
+        #     "domain": db_response["domain"],
+        #     "scope": db_response["scope"],
+        #     "prompt": prompt,
+        # }
 
-        llm_response = await prompt_chatai(prompt, input_variables=["domain", "scope", "prompt"], template=EXISTING_ONTOLOGIES_GENERATION_SYSTEM_MESSAGE)
-        llm_response_json = reformat_response_existing_ontology(llm_response)
+        # llm_response = await prompt_chatai(prompt, input_variables=["domain", "scope", "prompt"], template=EXISTING_ONTOLOGIES_GENERATION_SYSTEM_MESSAGE)
+
+        search_result = llm_search_google(prompt, db_response["domain"], db_response["scope"])
+        llm_response_json = reformat_response_existing_ontology(search_result)
+
+        logger.info(f"search_result: {search_result}")
 
     except Exception as e: 
         logger.error(f"an error occurred at route {request.path} with error: {e}")

@@ -65,7 +65,7 @@ async def update_class(class_id):
     return await update_class_service(class_id)
 
 
-@bp.route('/classes/', methods=['DELETE'])
+@bp.route('/classes', methods=['DELETE'])
 #@require_authorization
 async def delete_class():
     return await delete_class_service()
@@ -212,3 +212,4 @@ async def generate_owl_file(conversation_id):
 # #@require_authorization
 async def get_existing_ontologies(conversation_id):
     return await get_existing_ontologies_service(conversation_id)
+
