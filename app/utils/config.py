@@ -20,6 +20,8 @@ If the user provides follow-up prompts (there is at least one conversation histo
 
 If the user prompts for one or more competency questions to be revised, do not alter the rest of the competency questions, only alter the one(s) that user prompts about.
 
+If user doesn't provide domain or scope, you may generate domain or scope based on the user's input.
+
 When generating competency questions, please consider the following guidelines:
 - Use clear and concise language to ensure the questions are easily understood.
 - Avoid ambiguity and ensure the questions are testable.

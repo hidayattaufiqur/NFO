@@ -97,8 +97,6 @@ async def generate_important_terms_from_pdf_service():
         conversation_id = data["conversation_id"]
 
         logger.info(f"conversation_id: {conversation_id}")
-        # TODO: need to know whether domain and scope from a saved conversation
-        # is prioritized over body request or not
         db_response = get_conversation_detail_by_id(conversation_id)
 
         logger.info(f"db_response: {db_response}")
@@ -208,8 +206,6 @@ async def generate_important_terms_from_url_service():
         conversation_id = data["conversation_id"]
         url = data["url"]
 
-        # TODO: need to know whether domain and scope from a saved conversation
-        # is prioritized over body request or not
         db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None:
@@ -425,8 +421,6 @@ async def generate_facets_of_properties_service():
         user_id = session.get('user_id')
         conversation_id = data["conversation_id"]
 
-        # TODO: need to know whether domain and scope from a saved conversation
-        # is prioritized over body request or not
         db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None:
@@ -447,7 +441,6 @@ async def generate_facets_of_properties_service():
         llm_response_json = reformat_response(llm_response)
         end_time = time.time()
 
-        # TODO: add global time counter for this function
         logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
 
     except Exception as e:

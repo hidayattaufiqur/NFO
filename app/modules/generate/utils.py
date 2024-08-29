@@ -25,7 +25,7 @@ from .model import *
 
 logger = logging.getLogger(__name__)
 
-# TODO: try different temp
+# HACK: try different temp
 llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 llmgpt3 = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
 llm_stream = ChatOpenAI(model="gpt-4o-mini", temperature=0, streaming=True)

@@ -10,10 +10,12 @@ bp = Blueprint('generation', __name__, url_prefix='/generation')
 
 @bp.route('/terms/pdf', methods=['POST'])
 @require_authorization
+# TODO: rename to something about generating step 4-7 using pdf
 async def generate_important_terms_from_pdf():
     return await generate_important_terms_from_pdf_service()
 
 
+# TODO: rename to something about generating step 4-7 using url
 @bp.route('/terms/url', methods=["POST"])
 @require_authorization
 async def generate_important_terms_from_url():
@@ -209,7 +211,8 @@ async def delete_instances(class_id):
 async def generate_owl_file(conversation_id):
     return await generate_owl_file_service(conversation_id)
 
-
+# TODO: save the results to DB 
+# FIX: fix potential error when parsing response from LLM 
 @bp.route('/ontology/<conversation_id>/existing-ontologies', methods=['POST'])
 # @require_authorization
 async def get_existing_ontologies(conversation_id):
