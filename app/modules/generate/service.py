@@ -352,14 +352,23 @@ async def get_classes_and_properties_service(conversation_id):
     })), 200
 
 
-async def generate_classes_and_properties_service():
+async def generate_classes_and_properties_service(conversation_id):
     start_process_time = time.time()
     prompt = ""
     try:
         data = request.get_json()
         terms_id = data["important_terms_id"]
-        domain = data["domain"]
-        scope = data["scope"]
+
+        db_response = get_conversation_detail_by_id(conversation_id)
+        if db_response is None:
+            return response_template({
+                "message": "There is no conversation with such ID",
+                "status_code": 404,
+                "data": None
+            }), 404
+
+        domain = db_response["domain"]
+        scope = db_response["scope"]
 
         db_response = get_important_terms_by_id(terms_id)
         after_db_fetch_time = time.time()

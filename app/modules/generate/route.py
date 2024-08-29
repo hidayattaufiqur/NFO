@@ -10,12 +10,10 @@ bp = Blueprint('generation', __name__, url_prefix='/generation')
 
 @bp.route('/terms/pdf', methods=['POST'])
 @require_authorization
-# TODO: rename to something about generating step 4-7 using pdf
 async def generate_important_terms_from_pdf():
     return await generate_important_terms_from_pdf_service()
 
 
-# TODO: rename to something about generating step 4-7 using url
 @bp.route('/terms/url', methods=["POST"])
 @require_authorization
 async def generate_important_terms_from_url():
@@ -43,10 +41,10 @@ async def get_classes_and_properties(conversation_id):
     return await get_classes_and_properties_service(conversation_id)
 
 
-@bp.route('/classes-and-properties', methods=['POST'])
+@bp.route('/classes-and-properties/<conversation_id>', methods=['POST'])
 @require_authorization
-async def generate_classes_and_properties():
-    return await generate_classes_and_properties_service()
+async def generate_classes_and_properties(conversation_id):
+    return await generate_classes_and_properties_service(conversation_id)
 
 
 @bp.route('/classes/<conversation_id>', methods=['GET'])
