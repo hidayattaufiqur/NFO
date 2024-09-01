@@ -482,30 +482,35 @@ def get_all_object_properties_by_class_id(class_id):
             #     GROUP BY op.object_property_id, op.created_at, op.name, c.name
             # ''', (class_id,))
             cur.execute('''
-                SELECT
-                    op.name as object_property_name,
-                    op.object_property_id,
-                    op.created_at,
-                    json_agg(DISTINCT jsonb_build_object(
-                        'domain_id', d.domain_id,
-                        'domain_name', d.name,
-                        'ranges', (
-                            SELECT json_agg(jsonb_build_object(
-                                'range_id', r.range_id,
-                                'range_name', r.name
-                            ))
-                            FROM ranges r
-                            JOIN domains_ranges_junction drj2 ON r.range_id = drj2.range_id
-                            WHERE drj2.domain_id = d.domain_id AND drj2.object_property_id = op.object_property_id AND drj2.deleted_at IS NULL AND r.deleted_at IS NULL
-                        )
-                    )) AS domains
+            SELECT
+                op.name as object_property_name,
+                op.object_property_id,
+                op.created_at,
+                json_agg(DISTINCT jsonb_build_object(
+                    'domain_id', d.domain_id,
+                    'domain_name', d.name,
+                    'ranges', (
+                        SELECT json_agg(jsonb_build_object(
+                            'range_id', r.range_id,
+                            'range_name', r.name
+                        ))
+                        FROM ranges r
+                        JOIN domains_ranges_junction drj2 ON r.range_id = drj2.range_id
+                        WHERE drj2.domain_id = d.domain_id
+                          AND drj2.object_property_id = op.object_property_id
+                          AND drj2.deleted_at IS NULL
+                          AND r.deleted_at IS NULL
+                          AND r.range_id IS NOT NULL
+                    )
+                )) FILTER (WHERE d.domain_id IS NOT NULL) AS domains
                 FROM object_properties op
                 JOIN classes_object_junction coj ON op.object_property_id = coj.object_property_id
                 JOIN classes c ON coj.class_id = c.class_id
                 LEFT JOIN domains_ranges_junction drj ON op.object_property_id = drj.object_property_id
                 LEFT JOIN domains d ON drj.domain_id = d.domain_id AND d.deleted_at IS NULL
-                 WHERE c.class_id = %s AND op.deleted_at IS NULL
-                GROUP BY op.object_property_id, op.created_at, op.name
+                WHERE c.class_id = '6f29cf9e-4a50-4af6-a5f1-3deb69cfffd4'
+                AND op.deleted_at IS NULL
+                GROUP BY op.object_property_id, op.created_at, op.name;
             ''', (class_id,))
             object_properties = cur.fetchall()
             return object_properties
