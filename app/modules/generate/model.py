@@ -508,7 +508,7 @@ def get_all_object_properties_by_class_id(class_id):
                 JOIN classes c ON coj.class_id = c.class_id
                 LEFT JOIN domains_ranges_junction drj ON op.object_property_id = drj.object_property_id
                 LEFT JOIN domains d ON drj.domain_id = d.domain_id AND d.deleted_at IS NULL
-                WHERE c.class_id = '6f29cf9e-4a50-4af6-a5f1-3deb69cfffd4'
+                WHERE c.class_id = %s
                 AND op.deleted_at IS NULL
                 GROUP BY op.object_property_id, op.created_at, op.name;
             ''', (class_id,))

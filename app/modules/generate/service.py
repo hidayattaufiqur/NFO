@@ -318,16 +318,16 @@ async def get_classes_and_properties_service(conversation_id):
                     "data": None
                 })), 404
 
-            for obj_prop in object_properties:
-                object_property_id = obj_prop.get("object_property_id")
-                ranges = get_all_ranges_by_object_property_id(
-                    object_property_id)
-                if ranges is None:
-                    return jsonify(response_template({
-                        "message": "There is no ranges in conversation with such ID",
-                        "status_code": 404,
-                        "data": None
-                    })), 404
+            # for obj_prop in object_properties:
+            #     object_property_id = obj_prop.get("object_property_id")
+            #     ranges = get_all_ranges_by_object_property_id(
+            #         object_property_id)
+            #     if ranges is None:
+            #         return jsonify(response_template({
+            #             "message": "There is no ranges in conversation with such ID",
+            #             "status_code": 404,
+            #             "data": None
+            #         })), 404
 
             response.append({
                 "class_id": class_id,
