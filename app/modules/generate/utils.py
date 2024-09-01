@@ -68,6 +68,7 @@ def ontology_search_and_generate(query, domain, scope):
         f"{query} ontology")
     processed_results = [scrape_website(
         doc.metadata['source']) for doc in search_results[:3]]
+    logger.info(f"processed_results from scraping: {processed_results}")
     ontology_example = generate_ontology(
         llm, "\n".join(processed_results), domain, scope)
 
@@ -370,18 +371,21 @@ def reformat_response(llm_response):
 
 def reformat_response_existing_ontology(llm_response):
     try:
-        item = loads(llm_response)
+        if isinstance(llm_response, str):
+            item = loads(llm_response)
 
-        reformatted_item = {
-            "domain": item.get("domain"),
-            "scope": item.get("scope"),
-            "class_name": item.get("class_name"),
-            "description": item.get("description"),
-            "class_labels": item.get("class_labels"),
-            "link": item.get("link"),
-            "data_properties": item.get("data_properties"),
-            "object_properties": item.get("object_properties"),
-        }
+            reformatted_item = {
+                "domain": item.get("domain"),
+                "scope": item.get("scope"),
+                "class_name": item.get("class_name"),
+                "description": item.get("description"),
+                "class_labels": item.get("class_labels"),
+                "link": item.get("link"),
+                "data_properties": item.get("data_properties"),
+                "object_properties": item.get("object_properties"),
+            }
+        else:
+            raise ValueError("Response is not a string")
 
         return reformatted_item
 
