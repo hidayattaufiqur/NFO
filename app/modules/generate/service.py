@@ -3,7 +3,6 @@ from werkzeug.utils import secure_filename
 
 from app.modules.conversation import get_conversation_detail_by_id
 from app.database import *
-from app.modules.conversation.model import update_conversation
 from app.utils import *
 from app.utils.config import CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS
 from .model import *
@@ -16,6 +15,7 @@ import os
 import json
 import uuid
 import time
+import datetime
 
 logger = logging.getLogger(__name__)
 
@@ -23,12 +23,22 @@ logger = logging.getLogger(__name__)
 async def get_important_terms_service(conversation_id):
     try:
         db_response = get_important_terms_by_conversation_id(conversation_id)
+
         if db_response is None:
             return jsonify(response_template({
                 "message": "There is no important terms in conversation with such ID",
                 "status_code": 404,
                 "data": None
             })), 404
+
+        terms_str = db_response[0].get("terms").strip('{}')
+        terms_list = re.findall(r'"(.*?)"', terms_str)
+
+        db_response_json = {
+            "important_terms_id": db_response[0].get("important_terms_id"),
+            "terms": terms_list
+        }
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -41,7 +51,7 @@ async def get_important_terms_service(conversation_id):
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
-        "data": db_response
+        "data": db_response_json
     })), 200
 
 
@@ -73,7 +83,7 @@ async def save_important_terms_service(conversation_id):
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
-        "data": data
+        "data": None 
     })), 200
 
 
@@ -1459,27 +1469,46 @@ async def delete_instances_service(class_id):
 
 async def generate_owl_file_service(conversation_id):
     try:
-        # Create a new ontology
-        onto = get_ontology(
-            f"https://llm-nfo-frontend.vercel.app/ontology_{conversation_id}.owl")
+        time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        logger.info(f"time: {time}")
+
+        onto = get_ontology(f"https://llm-nfo-frontend.vercel.app/ontology_{conversation_id}.owl") # creating a new IRI for the ontology
+
         with onto:
             classes = get_all_classes_by_conversation_id(conversation_id)
 
-            for cls in classes:
-                types.new_class(cls["name"], (Thing,))
+            def sanitize_name(name):
+                name = name.replace(" ", "_")
+                name = ''.join(c for c in name if c.isalnum() or c == '_')
+                if not name[0].isalpha() and name[0] != '_':
+                    name = '_' + name
+                return name
 
             for cls in classes:
-                CurrentClass = onto[cls["name"]]
+                class_name = sanitize_name(cls["name"])
+                if class_name is None or class_name == "":
+                    continue
+
+                Class = types.new_class(class_name, (Thing,))
+                logger.info(f"Created new class '{class_name}'.")
+
+            for cls in classes:
+                class_name = sanitize_name(cls["name"])
+                if class_name is None or class_name == "":
+                    continue
+                CurrentClass = onto[class_name]
 
                 # Data properties
-                data_properties = get_all_data_properties_by_class_id(
-                    cls["class_id"])
+                data_properties = get_all_data_properties_by_class_id(cls["class_id"])
                 for dp in data_properties:
-                    new_data_property = types.new_class(
-                        dp["data_property_name"], (DataProperty,))
+                    dp_name = sanitize_name(dp["data_property_name"])
+                    if dp_name is None or dp_name == "": 
+                        continue
+
+                    new_data_property = types.new_class(dp_name, (DataProperty,))
+                    logger.info(f"Created new data property '{dp_name}'.")
                     new_data_property.domain.append(CurrentClass)
 
-                    # Mapping data property types
                     data_property_type = dp["data_property_type"].lower()
                     if data_property_type == "string":
                         new_data_property.range.append(str)
@@ -1489,79 +1518,77 @@ async def generate_owl_file_service(conversation_id):
                         new_data_property.range.append(float)
                     elif data_property_type == "boolean":
                         new_data_property.range.append(bool)
+                    else:
+                        new_data_property.range.append(str)
+                        logger.warning(f"Unknown data property type '{data_property_type}' for '{dp_name}'. Defaulting to 'str'.")
 
                 # Object properties
-                object_properties = get_all_object_properties_by_class_id(
-                    cls["class_id"])
-                # for op in object_properties:
-                #     new_object_property = types.new_class(op["object_property_name"], (ObjectProperty,))
-                #     new_object_property.domain.append(CurrentClass)
-                #
-                #     domains = get_all_domains_by_object_property_id(op["object_property_id"])
-                #     logger.info(f"domains: {domains}")
-                #     if domains:
-                #         domain_class = onto[domains[0]["domain_name"]]
-                #         if domain_class:
-                #             new_object_property.domain = [domain_class]  # Set domain
-                #
-                #     ranges = get_all_ranges_by_object_property_id(op["object_property_id"])
-                #     logger.info(f"ranges: {ranges}")
-                #     if ranges:
-                #         range_class = onto[ranges[0]["range_name"]]
-                #         if range_class:
-                # new_object_property.range = [range_class]  # Set range
-
+                object_properties = get_all_object_properties_by_class_id(cls["class_id"])
                 for op in object_properties:
-                    new_object_property = types.new_class(
-                        op["object_property_name"], (ObjectProperty,))
+                    op_name = sanitize_name(op["object_property_name"])
+                    if op_name is None or op_name == "":
+                        continue
+
+                    new_object_property = types.new_class(op_name, (ObjectProperty,))
+                    logger.info(f"Created new object property '{op_name}'.")
                     new_object_property.domain.append(CurrentClass)
 
-                    domains = get_all_domains_by_object_property_id(
-                        op["object_property_id"])
-                    logger.info(f"domains: {domains}")
+                    # Handle domains
+                    domains = get_all_domains_by_object_property_id(op["object_property_id"])
+                    logger.info(f"Processing domains for '{op_name}': {domains}")
                     for d in domains:
-                        domain_class = onto[d["domains"][0]["domain_name"]]
-                        if domain_class:
-                            new_object_property.domain.append(domain_class)
+                        domain_name = sanitize_name(d["domains"][0]["domain_name"]) 
+                        if domain_name is None or domain_name == "":
+                            continue
 
-                    ranges = get_all_ranges_by_object_property_id(
-                        op["object_property_id"])
-                    logger.info(f"ranges: {ranges}")
+                        domain_class = types.new_class(domain_name, (Thing,))
+                        logger.info(f"Created new domain class '{domain_name}'.")
+                        new_object_property.domain.append(domain_class)
+
+                    # Handle ranges
+                    ranges = get_all_ranges_by_object_property_id(op["object_property_id"])
+                    logger.info(f"Processing ranges for '{op_name}': {ranges}")
                     for r in ranges:
-                        range_class = onto[r["ranges"][0]["range_name"]]
-                        if range_class:
-                            new_object_property.range.append(range_class)
+                        range_name = sanitize_name(r["ranges"][0]["range_name"])
+                        if range_name is None or range_name == "":
+                            continue
+
+                        range_class = types.new_class(range_name, (Thing,))
+                        logger.info(f"Created new range class '{range_name}'.")
+                        new_object_property.range.append(range_class)
 
                 # Instances
                 instances = get_all_instances_by_class_id(cls["class_id"])
                 for instance in instances:
                     try:
-                        logger.info(
-                            f"Creating instance {instance['instance_name']} for class {cls['name']} with current class {CurrentClass}")
-                        # if not onto.search_one(instance["instance_name"]):
-                        CurrentClass(instance["instance_name"])
-                    except AttributeError as e:
-                        logger.error(
-                            f"Failed to create instance {instance['instance_name']} for class {cls['name']}: {str(e)}")
+                        instance_name = sanitize_name(instance['instance_name'])
+                        if instance_name is None or instance_name == "":
+                            continue 
 
-        # Save the ontology to a temporary file
+                        logger.info(f"Creating instance '{instance_name}' for class '{class_name}'.")
+                        inst = CurrentClass(instance_name)
+                        logger.info(f"Created new instance '{instance_name}'.")
+                    except Exception as e:
+                        logger.error(f"Failed to create instance '{instance_name}' for class '{class_name}': {str(e)}")
+
         temp_file_path = None
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".owl") as temp_file:
                 onto.save(file=temp_file.name, format="rdfxml")
                 temp_file_path = temp_file.name
 
-            return send_file(temp_file_path, as_attachment=True,
-                             download_name=f"ontology_{conversation_id}.owl",
-                             mimetype="application/rdf+xml")
+            return send_file(
+                temp_file_path,
+                as_attachment=True,
+                download_name=f"ontology_{conversation_id}_{time}.owl",
+                mimetype="application/rdf+xml"
+            )
         finally:
-            if temp_file_path:
+            if temp_file_path and os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
 
     except Exception as e:
-        logger.error(
-            f"An error occurred while generating OWL file: {str(e)}",
-            exc_info=True)
+        logger.error(f"An error occurred while generating OWL file: {str(e)}", exc_info=True)
         return jsonify(response_template({
             "message": f"An error occurred while generating OWL file: {str(e)}",
             "status_code": 500,
