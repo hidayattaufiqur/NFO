@@ -201,6 +201,13 @@ def save_competency_questions_service(conversation_id):
         competency_questions_in_db = get_all_competency_questions_by_convo_id(
             conversation_id)
 
+        if competency_questions_in_db is None:
+            return jsonify(response_template({
+                "message": "There is no competency questions in conversation with such ID",
+                "status_code": 404,
+                "data": None
+            })), 404
+
         if not isinstance(data["competency_question"], str):
             for i in range(len(data["competency_question"])):
                 competency_questions_list.append(
@@ -220,7 +227,7 @@ def save_competency_questions_service(conversation_id):
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
         return jsonify(response_template(
-            {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
+            {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
     return jsonify(
         response_template(
