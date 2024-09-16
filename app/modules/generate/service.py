@@ -31,16 +31,17 @@ async def get_important_terms_service(conversation_id):
                 "data": None
             })), 404
 
-        logger.info(f"db_response: {db_response[0]['terms']}")
-
-        terms_str = db_response[0].get("terms").strip('{}')
-        terms_list = terms_str.split(",")
         sanitized_terms_list = []
 
-        for term in terms_list:
-            sanitized_terms_list.append(term.strip('"').replace(' ', '').replace("'", "").replace("\\", ""))
+        if len(db_response) > 0:
+            terms_str = db_response[0].get("terms").strip('{}')
+            terms_list = terms_str.split(",")
+            sanitized_terms_list = []
 
-        db_response[0]["terms"] = sanitized_terms_list
+            for term in terms_list:
+                sanitized_terms_list.append(term.strip('"').replace(' ', '').replace("'", "").replace("\\", ""))
+
+            db_response[0]["terms"] = sanitized_terms_list
 
     except Exception as e:
         logger.error(
