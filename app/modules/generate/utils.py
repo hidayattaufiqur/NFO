@@ -399,7 +399,7 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
         for cls in llm_response_json["classes"]:
             logger.info(f"saving class {cls}")
             class_id = uuid.uuid4()
-            class_name = cls["name"]
+            class_name = cls["name"].replace(" ", "")
             db_response = get_class_by_name(class_name)
 
             if db_response is None:
@@ -412,7 +412,7 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
                 # Handle Instances
                 for instance in cls["instances"]:
                     instance_id = uuid.uuid4()
-                    instance_name = instance
+                    instance_name = instance.replace(" ", "")
                     created_instance = create_instance(
                         instance_id, class_id, instance_name)
 
@@ -424,7 +424,7 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
                 # Handle data properties
                 for data_prop in cls["data_properties"]:
                     data_property_id = uuid.uuid4()
-                    data_property_name = data_prop["name"]
+                    data_property_name = data_prop["name"].replace(" ", "")
                     data_property_type = data_prop["recommended_data_type"]
                     created_data_property = create_data_property(
                         data_property_id, class_id, data_property_name, data_property_type)
@@ -437,7 +437,7 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
                 # Handle object properties
                 for obj_prop in cls["object_properties"]:
                     object_property_id = uuid.uuid4()
-                    object_property_name = obj_prop["name"]
+                    object_property_name = obj_prop["name"].replace(" ", "")
                     created_obj_property = create_object_property(
                         object_property_id, class_id, object_property_name)
 
@@ -449,12 +449,14 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
                         # Handle domains and ranges
                         for domain_name in obj_prop["recommended_domain"]:
                             domain_id = uuid.uuid4()
+                            domain_name = domain_name.replace(" ", "")
                             created_domain = create_domain(
                                 domain_id, object_property_id, domain_name)
 
                             if created_domain:
                                 for range_name in obj_prop["recommended_range"]:
                                     range_id = uuid.uuid4()
+                                    range_name = range_name.replace(" ", "")
                                     created_range = create_range(
                                         range_id, object_property_id, range_name)
 
