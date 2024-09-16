@@ -351,6 +351,7 @@ def llm_search_google_prompt(domain, scope, search_results):
     - Avoid using made up link for the ontology, such as "https://example.com/ontology.owl". If you used multiple links or URLs, please provide them in an array.
     - Avoid using formatted string such as "```json" or "```python" to avoid error in parsing,
     - Avoid assumptions and stick to the instructions precisely, as the accuracy of your recommendations is critical.
+    - If the user input is irrelevant to the scope, you may still generate an ontology example as long as it is relevant to the domain.
     """
 
     return prompt + prompt_2
