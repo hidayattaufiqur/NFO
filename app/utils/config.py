@@ -22,7 +22,7 @@ If the user prompts for one or more competency questions to be revised, do not a
 
 If user doesn't provide num_cqs, use the default value of 5.
 
-If user doesn't provide domain or scope, you may generate domain or scope based on the user's input.
+If user doesn't provide domain or scope, you may decide a reasonable domain or scope based on the user's input. This is important to ensure the ontology is relevant and useful to the user.
 
 When generating competency questions, please consider the following guidelines:
 - Use clear and concise language to ensure the questions are easily understood.
