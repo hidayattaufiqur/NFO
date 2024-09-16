@@ -484,8 +484,18 @@ def save_instances_service(llm_response_json, conversation_id):
             class_name = cls.get("class_name")
 
             for instance in cls.get("instances"):
+                instances = get_all_instances_by_class_id(class_id)
+
+                is_instance_exists = False
+                for ins in instances:  # instance of a class should be unique
+                    if ins.get("instance_name") == instance:
+                        logger.info(f"Instance already exists: {instance}")
+                        is_instance_exists = True
+
+                if is_instance_exists: continue
+
                 instance_id = uuid.uuid4()
-                instance_name = instance
+                instance_name = instance.replace(" ", "")
                 created_instance = create_instance(
                     instance_id, class_id, instance_name)
 

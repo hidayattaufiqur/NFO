@@ -1377,6 +1377,16 @@ async def get_instances_service(conversation_id):
                 "status_code": 404,
                 "data": None
             })), 404
+
+        sanitized_instances = []
+
+        for data in db_response:
+            for instance in data.get("instances"):
+                if instance.get("instance_name") is None: continue
+                else: instance["instance_name"] = instance["instance_name"].replace(" ", "")
+
+            sanitized_instances.append(data)
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1389,7 +1399,7 @@ async def get_instances_service(conversation_id):
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
-        "data": db_response
+        "data": sanitized_instances
     })), 200
 
 
