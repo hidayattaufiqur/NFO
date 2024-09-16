@@ -568,6 +568,7 @@ async def create_class_service(conversation_id):
         #     scope = db_response["scope"]
 
         for cls in class_names:
+            class_name = cls.get("class_name").replace(" ", "")
             logger.info("creating class")
             if cls.get("class_id"):
                 class_id = cls.get("class_id")
@@ -579,11 +580,11 @@ async def create_class_service(conversation_id):
                         "data": None
                     })), 404
 
-                update_class(class_id, cls.get("class_name"))
+                update_class(class_id, class_name)
             else:
                 class_id = uuid.uuid4()
                 create_class(class_id, conversation_id,
-                             cls.get("class_name"), "")
+                             class_name, "")
 
             response = {"class_id": class_id,
                         "class_name": cls.get("class_name")}
