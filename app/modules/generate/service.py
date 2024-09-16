@@ -39,7 +39,7 @@ async def get_important_terms_service(conversation_id):
             sanitized_terms_list = []
 
             for term in terms_list:
-                sanitized_terms_list.append(term.strip('"').replace(' ', '').replace("'", "").replace("\\", ""))
+                sanitized_terms_list.append(term.replace('"', '').replace(' ', '').replace("'", "").replace("\\", "").replace("/", ""))
 
             db_response[0]["terms"] = sanitized_terms_list
 

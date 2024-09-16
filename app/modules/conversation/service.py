@@ -250,8 +250,9 @@ def get_competency_questions_service(conversation_id):
             })), 404
 
         if len(db_response) > 0:
-            cq_str = db_response[0].get("question").strip('{}')
-            cq_str = cq_str.replace('"', '')
+            # strip '{}\/' to remove the quotes and forward slashes
+            cq_str = db_response[0].get("question").strip("{}")
+            cq_str = cq_str.replace('"', '').replace("/", "").replace("\\", "")
             cq_list = cq_str.split(',')
 
             db_response[0]["question"] = cq_list
