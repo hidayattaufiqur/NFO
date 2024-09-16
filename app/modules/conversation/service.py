@@ -242,6 +242,21 @@ def get_competency_questions_service(conversation_id):
         db_response = get_all_competency_questions_by_convo_id(
             conversation_id)
 
+        if db_response is None:
+            return jsonify(response_template({
+                "message": "There is no competency questions in conversation with such ID",
+                "status_code": 404,
+                "data": None
+            })), 404
+
+        cq_str = db_response[0].get("question").strip('{}')
+        cq_list = cq_str.replace('"', '').split(',')
+
+        db_response_json = {
+            "cq_id": db_response[0].get("cq_id"),
+            "question": cq_list
+        }
+
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
@@ -249,7 +264,7 @@ def get_competency_questions_service(conversation_id):
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
     return jsonify(response_template(
-        {"message": "Success", "status_code": 200, "data": db_response})), 200
+        {"message": "Success", "status_code": 200, "data": db_response_json})), 200
 
 
 def validating_competency_questions_service(cq_id):
