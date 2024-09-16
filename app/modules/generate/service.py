@@ -1503,25 +1503,28 @@ async def generate_owl_file_service(conversation_id):
                 return name
 
             for cls in classes:
-                class_name = sanitize_name(cls["name"])
+                class_name = cls["name"]
                 if class_name is None or class_name == "":
                     continue
 
+                class_name = sanitize_name(cls["name"])
                 Class = types.new_class(class_name, (Thing,))
                 logger.info(f"Created new class '{class_name}'.")
 
             for cls in classes:
-                class_name = sanitize_name(cls["name"])
+                class_name = cls["name"]
                 if class_name is None or class_name == "":
                     continue
+                class_name = sanitize_name(cls["name"])
                 CurrentClass = onto[class_name]
 
                 # Data properties
                 data_properties = get_all_data_properties_by_class_id(cls["class_id"])
                 for dp in data_properties:
-                    dp_name = sanitize_name(dp["data_property_name"])
+                    dp_name = dp["data_property_name"]
                     if dp_name is None or dp_name == "": 
                         continue
+                    dp_name = sanitize_name(dp["data_property_name"])
 
                     new_data_property = types.new_class(dp_name, (DataProperty,))
                     logger.info(f"Created new data property '{dp_name}'.")
@@ -1543,9 +1546,10 @@ async def generate_owl_file_service(conversation_id):
                 # Object properties
                 object_properties = get_all_object_properties_by_class_id(cls["class_id"])
                 for op in object_properties:
-                    op_name = sanitize_name(op["object_property_name"])
+                    op_name = op["object_property_name"]
                     if op_name is None or op_name == "":
                         continue
+                    op_name = sanitize_name(op["object_property_name"])
 
                     new_object_property = types.new_class(op_name, (ObjectProperty,))
                     logger.info(f"Created new object property '{op_name}'.")
@@ -1555,9 +1559,10 @@ async def generate_owl_file_service(conversation_id):
                     domains = get_all_domains_by_object_property_id(op["object_property_id"])
                     logger.info(f"Processing domains for '{op_name}': {domains}")
                     for d in domains:
-                        domain_name = sanitize_name(d["domains"][0]["domain_name"]) 
+                        domain_name = d["domains"][0]["domain_name"]
                         if domain_name is None or domain_name == "":
                             continue
+                        domain_name = sanitize_name(d["domains"][0]["domain_name"]) 
 
                         domain_class = types.new_class(domain_name, (Thing,))
                         logger.info(f"Created new domain class '{domain_name}'.")
@@ -1567,9 +1572,10 @@ async def generate_owl_file_service(conversation_id):
                     ranges = get_all_ranges_by_object_property_id(op["object_property_id"])
                     logger.info(f"Processing ranges for '{op_name}': {ranges}")
                     for r in ranges:
-                        range_name = sanitize_name(r["ranges"][0]["range_name"])
+                        range_name = r["ranges"][0]["range_name"]
                         if range_name is None or range_name == "":
                             continue
+                        range_name = sanitize_name(r["ranges"][0]["range_name"])
 
                         range_class = types.new_class(range_name, (Thing,))
                         logger.info(f"Created new range class '{range_name}'.")
@@ -1579,9 +1585,10 @@ async def generate_owl_file_service(conversation_id):
                 instances = get_all_instances_by_class_id(cls["class_id"])
                 for instance in instances:
                     try:
-                        instance_name = sanitize_name(instance['instance_name'])
+                        instance_name = instance['instance_name']
                         if instance_name is None or instance_name == "":
                             continue 
+                        instance_name = sanitize_name(instance['instance_name'])
 
                         logger.info(f"Creating instance '{instance_name}' for class '{class_name}'.")
                         inst = CurrentClass(instance_name)
