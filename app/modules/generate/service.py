@@ -31,12 +31,18 @@ async def get_important_terms_service(conversation_id):
                 "data": None
             })), 404
 
+        logger.info(f"db_response: {db_response[0]['terms']}")
+
         terms_str = db_response[0].get("terms").strip('{}')
-        terms_list = re.findall(r'"(.*?)"', terms_str)
+        terms_list = terms_str.split(",")
+        sanitized_terms_list = []
+
+        for term in terms_list:
+            sanitized_terms_list.append(term.strip('"').replace(' ', '').replace("'", "").replace("\\", ""))
 
         db_response_json = {
             "important_terms_id": db_response[0].get("important_terms_id"),
-            "terms": terms_list
+            "terms": sanitized_terms_list
         }
 
     except Exception as e:
@@ -59,6 +65,8 @@ async def save_important_terms_service(conversation_id):
     try:
         data = request.json
         terms = data["terms"]
+        terms = [term.replace(' ', '').replace("'", "").replace('"', "") for term in terms]
+
         user_id = session.get('user_id')
 
         db_response = get_important_terms_by_conversation_id(conversation_id)
