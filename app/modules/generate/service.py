@@ -40,10 +40,7 @@ async def get_important_terms_service(conversation_id):
         for term in terms_list:
             sanitized_terms_list.append(term.strip('"').replace(' ', '').replace("'", "").replace("\\", ""))
 
-        db_response_json = {
-            "important_terms_id": db_response[0].get("important_terms_id"),
-            "terms": sanitized_terms_list
-        }
+        db_response[0]["terms"] = sanitized_terms_list
 
     except Exception as e:
         logger.error(
@@ -57,7 +54,7 @@ async def get_important_terms_service(conversation_id):
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
-        "data": db_response_json
+        "data": db_response
     })), 200
 
 

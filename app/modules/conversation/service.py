@@ -249,13 +249,12 @@ def get_competency_questions_service(conversation_id):
                 "data": None
             })), 404
 
-        cq_str = db_response[0].get("question").strip('{}')
-        cq_list = cq_str.replace('"', '').split(',')
+        if len(db_response) > 0:
+            cq_str = db_response[0].get("question").strip('{}')
+            cq_str = cq_str.replace('"', '')
+            cq_list = cq_str.split(',')
 
-        db_response_json = {
-            "cq_id": db_response[0].get("cq_id"),
-            "question": cq_list
-        }
+            db_response[0]["question"] = cq_list
 
     except Exception as e:
         logger.info(
@@ -264,7 +263,7 @@ def get_competency_questions_service(conversation_id):
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
     return jsonify(response_template(
-        {"message": "Success", "status_code": 200, "data": db_response_json})), 200
+        {"message": "Success", "status_code": 200, "data": db_response})), 200
 
 
 def validating_competency_questions_service(cq_id):
