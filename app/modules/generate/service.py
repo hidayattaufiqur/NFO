@@ -68,8 +68,9 @@ async def save_important_terms_service(conversation_id):
         user_id = session.get('user_id')
 
         db_response = get_important_terms_by_conversation_id(conversation_id)
+        logger.info(f"db_response: {db_response}")
 
-        if db_response is None:
+        if db_response is None or len(db_response) == 0:
             important_terms_id = uuid.uuid4()
             data = create_important_terms(
                 important_terms_id, user_id, conversation_id, terms)
