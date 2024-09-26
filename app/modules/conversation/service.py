@@ -22,7 +22,7 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
-llm = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
+llm = ChatOpenAI(model="gpt-4o", temperature=0)
 
 
 async def conversation_service(conversation_id):
@@ -75,6 +75,7 @@ async def conversation_service(conversation_id):
 
         logger.info(f"invoking prompt to OpenAI")
         response = await x.ainvoke({"input": data["prompt"]})
+        logger.info(f"response: {response['text']}")
         response_json = json.loads(response["text"])
         response_json.update({"conversation_id": conversation_id})
 
@@ -82,7 +83,7 @@ async def conversation_service(conversation_id):
         # the database
         if db_response["domain"] != response_json["domain"] or db_response["scope"] != response_json["scope"]:
             update_conversation(
-                response_json["scope"],
+                "" if response_json["scope"] is None else response_json["scope"],
                 conversation_id,
                 response_json["domain"],
                 response_json["scope"],
@@ -144,8 +145,8 @@ def get_detail_conversation_service(conversation_id):
         "data": {
             "conversation_id": conversation_id,
             "prompt": prompt,
-            "domain": domain,
-            "scope": scope,
+            "domain": "" if domain is None else domain,
+            "scope": "" if scope is None else scope,
             "is_active": is_active,
             "competency_questions": competency_questions
         }

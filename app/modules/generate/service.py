@@ -276,6 +276,7 @@ async def generate_important_terms_from_url_service():
         }
 
         llm_response = await prompt_chatai(prompt)
+        logger.info(f"llm_response: {llm_response}")
         llm_response_json = reformat_response(llm_response)
         save_classes_and_properties_service(llm_response_json, conversation_id)
         logger.info(
@@ -1653,9 +1654,7 @@ async def get_existing_ontologies_service(conversation_id):
 
         search_result = llm_search_google(
             prompt, db_response["domain"], db_response["scope"])
-        llm_response_json = reformat_response_existing_ontology(search_result)
-
-        logger.info(f"search_result: {search_result}")
+        llm_response_json = reformat_response_existing_ontology(search_result.content)
 
     except Exception as e:
         logger.error(

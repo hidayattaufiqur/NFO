@@ -9,7 +9,7 @@ User will provide an {input} that contains the following information:
 - num_cqs: The number of competency questions the user wants you to generate (e.g., 5)
 
 Your output must be formatted in a key-pair (dictionary or hashmap) values as follows:
- "competency_questions": enumerated competency questions (e.g. 1. What is the efficiency of solar panel technology in generating renewable energy?, 2. How does the cost of solar panel technology compare to other renewable energy sources?, etc.),
+ "competency_questions": enumerated array of competency questions (e.g. ["1. What is the primary function of a solar panel?", "2. How does a solar panel convert sunlight into electricity?"]),
  "domain": domain,
  "num_cqs": num_cqs,
  "scope": scope,
@@ -29,6 +29,7 @@ When generating competency questions, please consider the following guidelines:
 - Avoid ambiguity and ensure the questions are testable.
 - Include a mix of conceptual, application-based, and evaluative questions to assess different aspects of the ontology.
 - Aim to generate diverse and creative questions that go beyond the most obvious or straightforward ones.
+- Enclose using double quotes ("), not single quotes ('), this is very important for the parsing of the output.
 
 Do not make things up and follow my instruction obediently. I will be fired by my boss if you do.
 
@@ -349,7 +350,8 @@ def llm_search_google_prompt(domain, scope, search_results):
       ]
 
     - Avoid using made up link for the ontology, such as "https://example.com/ontology.owl". If you used multiple links or URLs, please provide them in an array.
-    - Avoid using formatted string such as "```json" or "```python" to avoid error in parsing,
+    - Don't use formatted string such as "```json" or "```python" to avoid error in parsing (VERY IMPORTANT).
+    - Do not give any explanations or elaborations.
     - Avoid assumptions and stick to the instructions precisely, as the accuracy of your recommendations is critical.
     - If the user input is irrelevant to the scope, you may still generate an ontology example as long as it is relevant to the domain.
     """
@@ -365,8 +367,10 @@ You will receive input containing:
 - Scope: {{ scope }}
 - Predicted tags: {{ predicted_tags }}
 
-Your response will always be in this format. YOU MUST OBEY THE INSTRUCTIONS. DO NOT ADD ANYTHING ELSE e.g. TAG in the response, simply an array of important terms!!!:
-    "important_terms": ["important_term1", "important_term2", ...]
+Your response will always be in this format. YOU MUST OBEY THE INSTRUCTIONS. DO NOT ADD ANYTHING ELSE e.g. TAG in the response. Simply an array of important terms!!!:
+    { "important_terms": ["important_term1", "important_term2", ...] }
+
+Avoid using formatted string such as "```json" or "```python" to avoid error in parsing,
 
 If you fail to follow the instruction, someone's grandma will die.
 """

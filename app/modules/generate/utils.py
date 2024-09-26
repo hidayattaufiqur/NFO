@@ -26,9 +26,9 @@ from .model import *
 logger = logging.getLogger(__name__)
 
 # HACK: try different temp
-llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
-llmgpt3 = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0)
-llm_stream = ChatOpenAI(model="gpt-4o-mini", temperature=0, streaming=True)
+llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0)
+llmgpt3 = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0) # deprecated
+llm_stream = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, streaming=True)
 
 os.environ.get("OPENAI_API_KEY")
 os.environ.get("GOOGLE_CSE_ID")
@@ -59,7 +59,7 @@ def scrape_website(url):
 
 def generate_ontology(llm, search_results, domain, scope):
     prompt = llm_search_google_prompt(domain, scope, search_results)
-    response = llm.predict(prompt)
+    response = llm.invoke(prompt)
     return response
 
 
@@ -67,7 +67,7 @@ def ontology_search_and_generate(query, domain, scope):
     search_results = web_research_retriever.get_relevant_documents(
         f"{query} ontology")
     processed_results = [scrape_website(
-        doc.metadata['source']) for doc in search_results[:3]]
+        doc.metadata['source']) for doc in search_results[:1]]
     logger.info(f"processed_results from scraping: {processed_results}")
     ontology_example = generate_ontology(
         llm, "\n".join(processed_results), domain, scope)
@@ -334,6 +334,7 @@ def prompt_awan_llm_chunked(tagged_sentences, domain, scope):
 
 def reformat_response(llm_response):
     try:
+        logger.info(f"llm_response: {llm_response}")
         if isinstance(llm_response, dict):
             try:
                 parsed_data = loads(llm_response['text'])
