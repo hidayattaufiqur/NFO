@@ -1508,7 +1508,7 @@ async def generate_owl_file_service(conversation_id):
                     continue
 
                 class_name = sanitize_name(cls["name"])
-                Class = types.new_class(class_name, (Thing,))
+                Class = types.new_class(class_name, (SuperClass,)) # for a more complex implementation, a class might be a subclass of another class
                 logger.info(f"Created new class '{class_name}'.")
 
             for cls in classes:
@@ -1528,7 +1528,7 @@ async def generate_owl_file_service(conversation_id):
 
                     new_data_property = types.new_class(dp_name, (DataProperty,))
                     logger.info(f"Created new data property '{dp_name}'.")
-                    # new_data_property.domain.append(CurrentClass)
+                    new_data_property.domain.append(CurrentClass)
 
                     data_property_type = dp["data_property_type"].lower()
                     if data_property_type == "string":
@@ -1539,6 +1539,8 @@ async def generate_owl_file_service(conversation_id):
                         new_data_property.range.append(float)
                     elif data_property_type == "boolean":
                         new_data_property.range.append(bool)
+                    elif data_property_type == "date":
+                        new_data_property.range.append(datetime.date)
                     else:
                         new_data_property.range.append(str)
                         logger.warning(f"Unknown data property type '{data_property_type}' for '{dp_name}'. Defaulting to 'str'.")
@@ -1553,7 +1555,6 @@ async def generate_owl_file_service(conversation_id):
 
                     new_object_property = types.new_class(op_name, (ObjectProperty,))
                     logger.info(f"Created new object property '{op_name}'.")
-                    # new_object_property.domain.append(CurrentClass)
 
                     # Handle domains
                     domains = get_all_domains_by_object_property_id(op["object_property_id"])
@@ -1564,10 +1565,10 @@ async def generate_owl_file_service(conversation_id):
                             continue
                         domain_name = sanitize_name(d["domains"][0]["domain_name"]) 
 
-                        # domain_class = types.new_class(domain_name, (Thing,))
-                        # new_object_property.domain.append(domain_class)
-                        new_object_property.domain = [domain_name]
+                        """domain class type supposed to correspond to the type of the domain according to [https://owlready2.readthedocs.io/en/latest/properties.html#creating-a-new-class-of-property]"""
+                        domain_class = types.new_class(domain_name, (Thing,)) # for now, we'll use Thing as the domain class type to make it dynamic
                         logger.info(f"Created new domain class '{domain_name}'.")
+                        new_object_property.domain = [domain_class]
 
                     # Handle ranges
                     ranges = get_all_ranges_by_object_property_id(op["object_property_id"])
@@ -1578,9 +1579,10 @@ async def generate_owl_file_service(conversation_id):
                             continue
                         range_name = sanitize_name(r["ranges"][0]["range_name"])
 
-                        # range_class = types.new_class(range_name, (Thing,))
-                        new_object_property.range = [range_name]
+                        """range class type supposed to correspond to the type of the range according to [https://owlready2.readthedocs.io/en/latest/properties.html#creating-a-new-class-of-property]"""
+                        range_class = types.new_class(range_name, (Thing,)) # for now, we'll use Thing as the range class type to make it dynamic
                         logger.info(f"Created new range class '{range_name}'.")
+                        new_object_property.range = [range_class]
 
                 # Instances
                 instances = get_all_instances_by_class_id(cls["class_id"])
