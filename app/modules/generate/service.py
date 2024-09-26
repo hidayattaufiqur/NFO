@@ -1566,8 +1566,8 @@ async def generate_owl_file_service(conversation_id):
 
                         # domain_class = types.new_class(domain_name, (Thing,))
                         # new_object_property.domain.append(domain_class)
+                        new_object_property.domain = [domain_name]
                         logger.info(f"Created new domain class '{domain_name}'.")
-                        new_object_property.domain.append(domain_name)
 
                     # Handle ranges
                     ranges = get_all_ranges_by_object_property_id(op["object_property_id"])
@@ -1579,8 +1579,8 @@ async def generate_owl_file_service(conversation_id):
                         range_name = sanitize_name(r["ranges"][0]["range_name"])
 
                         # range_class = types.new_class(range_name, (Thing,))
+                        new_object_property.range = [range_name]
                         logger.info(f"Created new range class '{range_name}'.")
-                        new_object_property.range.append(range_name)
 
                 # Instances
                 instances = get_all_instances_by_class_id(cls["class_id"])
