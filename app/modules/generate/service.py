@@ -1528,7 +1528,7 @@ async def generate_owl_file_service(conversation_id):
 
                     new_data_property = types.new_class(dp_name, (DataProperty,))
                     logger.info(f"Created new data property '{dp_name}'.")
-                    new_data_property.domain.append(CurrentClass)
+                    # new_data_property.domain.append(CurrentClass)
 
                     data_property_type = dp["data_property_type"].lower()
                     if data_property_type == "string":
@@ -1553,7 +1553,7 @@ async def generate_owl_file_service(conversation_id):
 
                     new_object_property = types.new_class(op_name, (ObjectProperty,))
                     logger.info(f"Created new object property '{op_name}'.")
-                    new_object_property.domain.append(CurrentClass)
+                    # new_object_property.domain.append(CurrentClass)
 
                     # Handle domains
                     domains = get_all_domains_by_object_property_id(op["object_property_id"])
@@ -1564,9 +1564,10 @@ async def generate_owl_file_service(conversation_id):
                             continue
                         domain_name = sanitize_name(d["domains"][0]["domain_name"]) 
 
-                        domain_class = types.new_class(domain_name, (Thing,))
+                        # domain_class = types.new_class(domain_name, (Thing,))
+                        # new_object_property.domain.append(domain_class)
                         logger.info(f"Created new domain class '{domain_name}'.")
-                        new_object_property.domain.append(domain_class)
+                        new_object_property.domain.append(domain_name)
 
                     # Handle ranges
                     ranges = get_all_ranges_by_object_property_id(op["object_property_id"])
@@ -1577,9 +1578,9 @@ async def generate_owl_file_service(conversation_id):
                             continue
                         range_name = sanitize_name(r["ranges"][0]["range_name"])
 
-                        range_class = types.new_class(range_name, (Thing,))
+                        # range_class = types.new_class(range_name, (Thing,))
                         logger.info(f"Created new range class '{range_name}'.")
-                        new_object_property.range.append(range_class)
+                        new_object_property.range.append(range_name)
 
                 # Instances
                 instances = get_all_instances_by_class_id(cls["class_id"])
