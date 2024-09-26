@@ -3,6 +3,7 @@ import requests
 import logging
 import uuid
 import re
+import datetime
 
 from flask import url_for, session, Blueprint, jsonify, request
 from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user
@@ -104,7 +105,7 @@ def login_service():
 
         user = User(user_id=user_id, name=id_info['name'],
                     email=id_info['email'], profile_pic=id_info['picture'])
-        _ = login_user(user)
+        _ = login_user(user=user, remember=True, duration=datetime.timedelta(days=3), force=True)
 
         logger.info(f"user: {id_info['name']} logged in successfully")
         # flow = create_flow()
