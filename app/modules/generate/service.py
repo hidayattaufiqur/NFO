@@ -1490,25 +1490,26 @@ async def generate_owl_file_service(conversation_id):
         time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         logger.info(f"time: {time}")
 
-        onto = get_ontology(f"https://llm-nfo-frontend.vercel.app/ontology_{conversation_id}.owl") # creating a new IRI for the ontology
+        def sanitize_name(name):
+            name = name.replace(" ", "_")
+            name = ''.join(c for c in name if c.isalnum() or c == '_')
+            if not name[0].isalpha() and name[0] != '_':
+                name = '_' + name
+            return name
+
+        onto = get_ontology(f"https://llm-nfo-frontend.vercel.app/ontology_{conversation_id}.owl#") # creating a new IRI for the ontology
 
         with onto:
             classes = get_all_classes_by_conversation_id(conversation_id)
 
-            def sanitize_name(name):
-                name = name.replace(" ", "_")
-                name = ''.join(c for c in name if c.isalnum() or c == '_')
-                if not name[0].isalpha() and name[0] != '_':
-                    name = '_' + name
-                return name
-
+            class_dict = {} 
             for cls in classes:
                 class_name = cls["name"]
                 if class_name is None or class_name == "":
                     continue
 
                 class_name = sanitize_name(cls["name"])
-                Class = types.new_class(class_name, (SuperClass,)) # for a more complex implementation, a class might be a subclass of another class
+                class_dict[class_name] = types.new_class(class_name, (Thing,)) # for a more complex implementation, a class might be a subclass of another class
                 logger.info(f"Created new class '{class_name}'.")
 
             for cls in classes:
@@ -1516,7 +1517,8 @@ async def generate_owl_file_service(conversation_id):
                 if class_name is None or class_name == "":
                     continue
                 class_name = sanitize_name(cls["name"])
-                CurrentClass = onto[class_name]
+                if class_name in class_dict:
+                    CurrentClass = onto[class_name]
 
                 # Data properties
                 data_properties = get_all_data_properties_by_class_id(cls["class_id"])
@@ -1528,7 +1530,7 @@ async def generate_owl_file_service(conversation_id):
 
                     new_data_property = types.new_class(dp_name, (DataProperty,))
                     logger.info(f"Created new data property '{dp_name}'.")
-                    new_data_property.domain.append(CurrentClass)
+                    # new_data_property.domain.append(CurrentClass)
 
                     data_property_type = dp["data_property_type"].lower()
                     if data_property_type == "string":
@@ -1555,6 +1557,7 @@ async def generate_owl_file_service(conversation_id):
 
                     new_object_property = types.new_class(op_name, (ObjectProperty,))
                     logger.info(f"Created new object property '{op_name}'.")
+                    # new_object_property.domain.append(CurrentClass)
 
                     # Handle domains
                     domains = get_all_domains_by_object_property_id(op["object_property_id"])
@@ -1580,7 +1583,7 @@ async def generate_owl_file_service(conversation_id):
                         range_name = sanitize_name(r["ranges"][0]["range_name"])
 
                         """range class type supposed to correspond to the type of the range according to [https://owlready2.readthedocs.io/en/latest/properties.html#creating-a-new-class-of-property]"""
-                        range_class = types.new_class(range_name, (Thing,)) # for now, we'll use Thing as the range class type to make it dynamic
+                        range_class = types.new_class(range_name, (Thing,))
                         logger.info(f"Created new range class '{range_name}'.")
                         new_object_property.range = [range_class]
 
@@ -1594,7 +1597,7 @@ async def generate_owl_file_service(conversation_id):
                         instance_name = sanitize_name(instance['instance_name'])
 
                         logger.info(f"Creating instance '{instance_name}' for class '{class_name}'.")
-                        inst = CurrentClass(instance_name)
+                        _ = CurrentClass(instance_name)
                         logger.info(f"Created new instance '{instance_name}'.")
                     except Exception as e:
                         logger.error(f"Failed to create instance '{instance_name}' for class '{class_name}': {str(e)}")
@@ -1614,6 +1617,8 @@ async def generate_owl_file_service(conversation_id):
         finally:
             if temp_file_path and os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
+
+            onto.destroy()
 
     except Exception as e:
         logger.error(f"An error occurred while generating OWL file: {str(e)}", exc_info=True)
