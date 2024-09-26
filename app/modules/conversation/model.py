@@ -1,16 +1,16 @@
 from app.database import close_pool_connection, get_pool_connection, logger
 
 
-def create_conversation(conversation_id, user_id, domain, scope):
+def create_conversation(conversation_id, user_id, domain, scope, title=""):
     conn = get_pool_connection()
     try:
         logger.info(f"creating conversation with id: {conversation_id}")
         with conn.cursor() as cur:
             cur.execute('''
-                INSERT INTO conversations (conversation_id, user_id, domain, scope)
-                VALUES (%s, %s, %s, %s)
+                INSERT INTO conversations (conversation_id, user_id, domain, scope, title)
+                VALUES (%s, %s, %s, %s, %s)
                 RETURNING *;
-            ''', (conversation_id, user_id, domain, scope))
+            ''', (conversation_id, user_id, domain, scope, title))
             convo = cur.fetchone()
             conn.commit()
             return convo
