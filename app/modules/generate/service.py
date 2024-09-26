@@ -1530,7 +1530,7 @@ async def generate_owl_file_service(conversation_id):
 
                     new_data_property = types.new_class(dp_name, (DataProperty,))
                     logger.info(f"Created new data property '{dp_name}'.")
-                    # new_data_property.domain.append(CurrentClass)
+                    new_data_property.domain.append(CurrentClass)
 
                     data_property_type = dp["data_property_type"].lower()
                     if data_property_type == "string":
@@ -1557,7 +1557,7 @@ async def generate_owl_file_service(conversation_id):
 
                     new_object_property = types.new_class(op_name, (ObjectProperty,))
                     logger.info(f"Created new object property '{op_name}'.")
-                    # new_object_property.domain.append(CurrentClass)
+                    new_object_property.domain.append(CurrentClass)
 
                     # Handle domains
                     domains = get_all_domains_by_object_property_id(op["object_property_id"])
@@ -1614,11 +1614,11 @@ async def generate_owl_file_service(conversation_id):
                 download_name=f"ontology_{conversation_id}_{time}.owl",
                 mimetype="application/rdf+xml"
             )
+
+            onto.destroy()
         finally:
             if temp_file_path and os.path.exists(temp_file_path):
                 os.remove(temp_file_path)
-
-            onto.destroy()
 
     except Exception as e:
         logger.error(f"An error occurred while generating OWL file: {str(e)}", exc_info=True)
