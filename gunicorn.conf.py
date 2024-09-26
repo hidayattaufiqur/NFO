@@ -9,7 +9,7 @@ configurations below follow Google Cloud documentation
 '''
 
 # workers = multiprocessing.cpu_count() * 2 + 1
-worker = 1
+worker = 2
 forwarded_allow_ips = '*'
 secure_scheme_headers = {'X-FORWARDED-PROTO': 'https'}
 
