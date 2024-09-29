@@ -635,9 +635,10 @@ async def create_class_service(conversation_id):
                         "class_name": cls.get("class_name")}
             responses.append(response)
 
-            cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
             cache.delete(f"classes_{class_id}") # invalidate cache
-            cache.delete(f"owl_file_{conversation_id}") # invalidate cached_result
+
+        cache.delete(f"owl_file_{conversation_id}") # invalidate cached_result
+        cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
 
             # prompt = {
             #     "domain": domain,
@@ -753,12 +754,16 @@ async def delete_class_service():
                     "data": None
                 })), 404
 
+            cache.delete(f"classes_{class_id}") # invalidate cache
+
             data_properties = get_all_data_properties_by_class_id(class_id)
             if data_properties is not None:
                 for dp in data_properties:
                     delete_classes_data_junction(
                         class_id, dp.get("data_property_id"))
                     delete_data_property(dp.get("data_property_id"))
+
+                    cache.delete(f"data_properties_{dp.get('data_property_id')}")
 
             object_properties = get_all_object_properties_by_class_id(class_id)
             if object_properties is not None:
@@ -767,6 +772,8 @@ async def delete_class_service():
                         class_id, op.get("object_property_id"))
                     delete_object_property(op.get("object_property_id"))
 
+                cache.delete(f"object_properties_{op.get('object_property_id')}")
+
             instances = get_all_instances_by_class_id(class_id)
             if instances is not None:
                 for instance in instances:
@@ -774,10 +781,11 @@ async def delete_class_service():
                         class_id, instance.get("instance_id"))
                     delete_instance(instance.get("instance_id"))
 
+                    cache.delete(f"instances_{instance.get('instance_id')}")
+
             delete_class(class_id)
 
         cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
-        cache.delete(f"classes_{class_id}") # invalidate cache
         cache.delete(f"owl_file_{conversation_id}") # invalidate cached_result
 
     except Exception as e:
@@ -828,8 +836,9 @@ async def create_data_property_service(class_id):
                     data_property_type)
                 create_classes_data_junction(class_id, data_property_id)
 
+            cache.delete(f"data_properties_{data_property_id}")
+
         cache.delete(f"classes_and_properties_{conversation_id}")
-        cache.delete(f"data_properties_{class_id}")
         cache.delete(f"owl_file_{conversation_id}")
 
     except Exception as e:
@@ -949,7 +958,8 @@ async def delete_data_properties_service(class_id):
             delete_classes_data_junction(class_id, data_property_id)
             delete_data_property(data_property_id)
 
-        cache.delete(f"data_properties_{data_property_id}")
+            cache.delete(f"data_properties_{data_property_id}")
+
         cache.delete(f"classes_and_properties_{conversation_id}")
         cache.delete(f"owl_file_{conversation_id}")
 
@@ -1053,6 +1063,8 @@ async def create_object_property_service(class_id):
                                 "data": None
                             })), 404
 
+                    cache.delete(f"object_property_domain_{domain_id}")
+
                     ranges = domain.get("ranges")
 
                     if ranges:
@@ -1078,6 +1090,8 @@ async def create_object_property_service(class_id):
                                         "status_code": 404,
                                         "data": None
                                     })), 404
+
+                        cache.delete(f"object_property_range_{range_id}")
                     else:
                         return jsonify(response_template({
                             "message": "Domain should have at least one range",
@@ -1288,6 +1302,8 @@ async def delete_object_property_range_service(object_property_id):
                     range_id=rg_id, object_property_id=object_property_id)
                 delete_range(rg_id)
 
+            cache.delete(f"object_property_range_{rg_id}")
+
         cache.delete(f"object_property_range_{object_property_id}")
         cache.delete(f"classes_and_properties_{conversation_id}")
         cache.delete(f"owl_file_{conversation_id}")
@@ -1385,6 +1401,8 @@ async def create_object_property_domain_range_service(object_property_id):
                         "data": None
                     })), 404
 
+            cache.delete(f"object_property_domain_{domain_id}")
+
             ranges = domain.get("ranges")
 
             for rg in ranges:
@@ -1410,6 +1428,8 @@ async def create_object_property_domain_range_service(object_property_id):
                 if new_domain or new_range:
                     create_domains_ranges_junction(
                         object_property_id, domain_id, range_id)
+
+                cache.delete(f"object_property_domain_{domain_id}")
 
         cache.delete(f"object_property_domain_{object_property_id}")
         cache.delete(f"classes_and_properties_{conversation_id}")
@@ -1495,7 +1515,8 @@ async def delete_object_property_domain_service(object_property_id):
                     domain_id=dm_id, object_property_id=object_property_id)
                 delete_domain(dm_id)
 
-        cache.delete(f"object_property_domain_{domain_id}")
+            cache.delete(f"object_property_domain_{dm_id}")
+
         cache.delete(f"classes_and_properties_{conversation_id}")
         cache.delete(f"owl_file_{conversation_id}")
 
@@ -1587,7 +1608,8 @@ async def update_instances_service(class_id):
 
                 data = update_instance(instance_id, instance_name)
 
-        cache.delete(f"instances_{instance_id}")
+            cache.delete(f"instances_{instance_id}")
+
         cache.delete(f"owl_file_{conversation_id}")
 
     except Exception as e:
@@ -1630,8 +1652,8 @@ async def delete_instances_service(class_id):
 
             delete_classes_instances_junction(class_id, instance_id)
             delete_instance(instance_id)
+            cache.delete(f"instances_{instance_id}")
 
-        cache.delete(f"instances_{instance_id}")
         cache.delete(f"owl_file_{conversation_id}")
 
     except Exception as e:
