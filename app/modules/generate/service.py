@@ -1654,15 +1654,7 @@ async def generate_owl_file_service(conversation_id):
     try:
         cached_result = cache.get(f"owl_file_{conversation_id}")
 
-        if cached_result:
-            return jsonify(response_template({
-                "message": "Success",
-                "status_code": 200,
-                "data": cached_result
-            })), 200
-
         time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        logger.info(f"time: {time}")
 
         def sanitize_name(name):
             name = name.replace(" ", "_")
@@ -1777,11 +1769,12 @@ async def generate_owl_file_service(conversation_id):
                         logger.error(f"Failed to create instance '{instance_name}' for class '{class_name}': {str(e)}")
 
         temp_file_path = None
-        cache.set(f"owl_file_{conversation_id}", time, timeout=300)
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".owl") as temp_file:
                 onto.save(file=temp_file.name, format="rdfxml")
                 temp_file_path = temp_file.name
+
+            cache.set(f"owl_file_{conversation_id}", temp_file_path, timeout=300)
 
             return send_file(
                 temp_file_path,
