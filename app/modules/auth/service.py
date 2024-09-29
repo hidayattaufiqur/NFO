@@ -12,11 +12,13 @@ from google.auth.transport.requests import Request
 
 from .model import *
 from app.utils import *
+from app.cache import get_cache
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 bp = Blueprint('auth', __name__)
 login_manager = LoginManager()
+cache = get_cache()
 
 
 class User(UserMixin):
@@ -205,6 +207,11 @@ def profile_service():
 
         refresh_session()
 
+        cached_result = cache.get(f"user_profile_{current_user.user_id}")
+        if cached_result:
+            return jsonify(response_template(
+                ({"message": "user profile", "status_code": 200, "data": cached_result})))
+
         user_info = {
             'user_id': current_user.user_id,
             'name': current_user.name,
@@ -212,7 +219,10 @@ def profile_service():
             'profile_pic': current_user.profile_pic
         }
 
+
         logger.info("user fetched successfully")
+        cache.set(f"user_profile_{current_user.user_id}", user_info, timeout=300)
+
         return jsonify(response_template(
             ({"message": "user profile", "status_code": 200, "data": user_info})))
 
@@ -228,6 +238,7 @@ def profile_service():
 
 def logout_service():
     try:
+
         auth_response = is_authorized()
 
         if auth_response:

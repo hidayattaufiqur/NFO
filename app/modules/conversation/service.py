@@ -10,6 +10,7 @@ from langchain.memory import ConversationBufferWindowMemory
 
 from app.utils import response_template, chat_agent_response_template
 from app.database import get_connection, get_chat_message_history_connection
+from app.cache import get_cache
 from app.utils import *
 from .model import *
 
@@ -19,6 +20,7 @@ import uuid
 
 logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
+cache = get_cache()
 
 load_dotenv()
 
@@ -95,6 +97,8 @@ async def conversation_service(conversation_id):
 
         db_conn.close()
 
+        cache.delete(f"conversation_detail_{conversation_id}")
+
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
@@ -112,6 +116,37 @@ async def conversation_service(conversation_id):
 
 def get_detail_conversation_service(conversation_id):
     try:
+        cached_result = cache.get(f"conversation_detail_{conversation_id}")
+        if cached_result:
+            db_response = cached_result
+
+            conversation_id = db_response["conversation_id"]
+            domain = db_response["domain"]
+            scope = db_response["scope"]
+            is_active = db_response["is_active"]
+
+            if not isinstance(db_response["messages"][0], dict):
+                prompt = json.loads(db_response["messages"][0])["data"]["content"]
+                competency_questions = json.loads(db_response["messages"][1])[
+                    "data"]["content"]
+            else:
+                prompt = db_response["messages"][0]["data"]["content"]
+                competency_questions = db_response["messages"][1]["data"]["content"]
+
+
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": {
+                    "conversation_id": conversation_id,
+                    "prompt": prompt,
+                    "domain": "" if domain is None else domain,
+                    "scope": "" if scope is None else scope,
+                    "is_active": is_active,
+                    "competency_questions": competency_questions
+                }
+            })), 200
+
         db_response = get_conversation_detail_by_id(conversation_id)
 
         if db_response is None:
@@ -132,6 +167,8 @@ def get_detail_conversation_service(conversation_id):
         else:
             prompt = db_response["messages"][0]["data"]["content"]
             competency_questions = db_response["messages"][1]["data"]["content"]
+
+        cache.set(f"conversation_detail_{conversation_id}", db_response, timeout=300)
 
     except Exception as e:
         logger.info(
@@ -155,7 +192,14 @@ def get_detail_conversation_service(conversation_id):
 
 def get_all_conversations_by_user_id_service(user_id):
     try:
+        cached_result = cache.get(f"conversations_by_user_{user_id}")
+        if cached_result:
+            return jsonify(response_template(
+                {"message": "Success", "status_code": 200, "data": cached_result})), 200
+
         db_response = get_all_conversations_from_a_user(user_id)
+
+        cache.set(f"conversations_by_user_{user_id}", db_response, timeout=300)
 
     except Exception as e:
         logger.info(
@@ -181,6 +225,8 @@ def delete_conversation_service(conversation_id):
 
         history.clear()
         delete_conversation(conversation_id)
+        cache.delete(f"conversation_detail_{conversation_id}")
+
 
     except Exception as e:
         logger.info(
@@ -224,6 +270,8 @@ def save_competency_questions_service(conversation_id):
             create_competency_question(
                 cq_id, user_id, conversation_id, competency_questions_list)
 
+        cache.delete(f"competency_questions_{conversation_id}")
+
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
@@ -240,6 +288,15 @@ def save_competency_questions_service(conversation_id):
 
 def get_competency_questions_service(conversation_id):
     try:
+        cached_result = cache.get(f"competency_questions_{conversation_id}")
+
+        if cached_result:
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": cached_result
+            })), 200
+
         db_response = get_all_competency_questions_by_convo_id(
             conversation_id)
 
@@ -257,6 +314,8 @@ def get_competency_questions_service(conversation_id):
             cq_list = cq_str.split(',')
 
             db_response[0]["question"] = cq_list
+        
+        cache.set(f"competency_questions_{conversation_id}", db_response, timeout=300)
 
     except Exception as e:
         logger.info(
@@ -271,6 +330,8 @@ def get_competency_questions_service(conversation_id):
 def validating_competency_questions_service(cq_id):
     try:
         validating_competency_question(cq_id, True)
+
+        cache.delete(f"competency_questions_{cq_id}")
 
     except Exception as e:
         logger.info(

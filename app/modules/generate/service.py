@@ -202,6 +202,7 @@ async def generate_important_terms_from_pdf_service():
 
     logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
     # print_time_for_each_process()
+    cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
 
     return response_template({
         "message": "File uploaded successfully",
@@ -435,6 +436,14 @@ async def generate_classes_and_properties_service(conversation_id):
 
         after_prompt_time = time.time()
 
+        cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
+        cache.delete(f"classes_{class_id}") # invalidate cached_result
+        cache.delete(f"owl_file_{conversation_id}") # invalidate cached_result
+        cache.delete(f"object_properties_{class_id}") # invalidate cached_result
+        cach.delete(f"object_property_range_{object_property_id}") # invalidate cached_result
+        cache.delete(f"object_property_domain_{object_property_id}") # invalidate cached_result
+        cache.delete(f"data_properties_{class_id}") # invalidate cached_result
+
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
@@ -485,6 +494,13 @@ async def generate_facets_of_properties_service():
 
         logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
 
+        cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
+        cache.delete(f"owl_file_{conversation_id}") # invalidate cached_result
+        cache.delete(f"object_properties_{class_id}") # invalidate cached_result
+        cach.delete(f"object_property_range_{object_property_id}") # invalidate cached_result
+        cache.delete(f"object_property_domain_{object_property_id}") # invalidate cached_result
+        cache.delete(f"data_properties_{class_id}") # invalidate cached_result
+
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
@@ -527,6 +543,9 @@ async def generate_instances_of_classes_service():
 
         logger.info(f"Total time: {round(end_time - start_process_time, 2)}s")
 
+        cache.delete(f"instances_{conversation_id}") # invalidate cache
+        cache.delete(f"owl_file_{conversation_id}") # invalidate cached_result
+
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
@@ -541,6 +560,15 @@ async def generate_instances_of_classes_service():
 
 async def get_classes_service(conversation_id):
     try:
+        cached_result = cache.get(f"classes_{conversation_id}")
+
+        if cached_result:
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": cached_result
+            })), 200
+
         db_response = get_all_classes_by_conversation_id(conversation_id)
         if db_response is None:
             return jsonify(response_template({
@@ -548,6 +576,8 @@ async def get_classes_service(conversation_id):
                 "status_code": 404,
                 "data": None
             })), 404
+
+        cache.set(f"classes_{conversation_id}", db_response, timeout=300)
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -606,6 +636,8 @@ async def create_class_service(conversation_id):
             responses.append(response)
 
             cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
+            cache.delete(f"classes_{class_id}") # invalidate cache
+            cache.delete(f"owl_file_{conversation_id}") # invalidate cached_result
 
             # prompt = {
             #     "domain": domain,
@@ -687,6 +719,10 @@ async def update_class_service(class_id):
             class_id = db_response.get("class_id")
             data = update_class(class_id, class_name)
 
+        cache.delete(f"classes_{class_id}")
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -741,6 +777,8 @@ async def delete_class_service():
             delete_class(class_id)
 
         cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
+        cache.delete(f"classes_{class_id}") # invalidate cache
+        cache.delete(f"owl_file_{conversation_id}") # invalidate cached_result
 
     except Exception as e:
         logger.error(
@@ -790,6 +828,10 @@ async def create_data_property_service(class_id):
                     data_property_type)
                 create_classes_data_junction(class_id, data_property_id)
 
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"data_properties_{class_id}")
+        cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -808,6 +850,15 @@ async def create_data_property_service(class_id):
 
 async def get_data_properties_service(class_id):
     try:
+        cached_result = cache.get(f"data_properties_{class_id}")
+
+        if cached_result:
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": cached_result
+            })), 200
+
         db_response = get_all_data_properties_by_class_id(class_id)
         if db_response is None:
             return jsonify(response_template({
@@ -815,6 +866,8 @@ async def get_data_properties_service(class_id):
                 "status_code": 404,
                 "data": None
             })), 404
+
+        cache.set(f"data_properties_{class_id}", db_response, timeout=300)
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -849,6 +902,10 @@ async def update_data_property_service(data_property_id):
             data_property_id = db_response.get("data_property_id")
             data = update_data_property(
                 data_property_id, data_property_name, data_property_type)
+
+        cache.delete(f"data_properties_{data_property_id}")
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"owl_file_{conversation_id}")
 
     except Exception as e:
         logger.error(
@@ -892,6 +949,10 @@ async def delete_data_properties_service(class_id):
             delete_classes_data_junction(class_id, data_property_id)
             delete_data_property(data_property_id)
 
+        cache.delete(f"data_properties_{data_property_id}")
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -910,6 +971,15 @@ async def delete_data_properties_service(class_id):
 
 async def get_object_properties_service(class_id):
     try:
+        cached_result = cache.get(f"object_properties_{class_id}")
+
+        if cached_result:
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": cached_result
+            })), 200
+
         db_response = get_all_object_properties_by_class_id(class_id)
         if db_response is None:
             return jsonify(response_template({
@@ -917,6 +987,9 @@ async def get_object_properties_service(class_id):
                 "status_code": 404,
                 "data": None
             })), 404
+
+        cache.set(f"object_properties_{class_id}", db_response, timeout=300)
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1012,6 +1085,10 @@ async def create_object_property_service(class_id):
                             "data": None
                         })), 400
 
+        cache.delete(f"object_properties_{object_property_id}")
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1054,6 +1131,10 @@ async def delete_object_properties_service(class_id):
             delete_object_domains_ranges_junction(object_property_id)
             delete_object_property(object_property_id)
 
+            cache.delete(f"object_properties_{object_property_id}")
+            cache.delete(f"classes_and_properties_{conversation_id}")
+            cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1087,6 +1168,10 @@ async def update_object_property_service(object_property_id):
             object_property_id = db_response.get("object_property_id")
             data = update_object_property(object_property_id, object_property)
 
+        cache.delete(f"object_properties_{object_property_id}")
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1105,6 +1190,15 @@ async def update_object_property_service(object_property_id):
 
 async def get_object_property_range_service(object_property_id):
     try:
+        cached_result = cache.get(f"object_property_range_{object_property_id}")
+
+        if cached_result:
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": cached_result
+            })), 200
+
         db_response = get_all_ranges_by_object_property_id(object_property_id)
         if db_response is None:
             return jsonify(response_template({
@@ -1112,6 +1206,8 @@ async def get_object_property_range_service(object_property_id):
                 "status_code": 404,
                 "data": None
             })), 404
+
+        cache.set(f"object_property_range_{object_property_id}", db_response, timeout=300)
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1143,6 +1239,10 @@ async def update_object_property_range_service(range_id):
             })), 404
         else:
             data = update_object_property_range(range_id, range_name)
+
+        cache.delete(f"object_property_range_{range_id}")
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"owl_file_{conversation_id}")
 
     except Exception as e:
         logger.error(
@@ -1188,6 +1288,10 @@ async def delete_object_property_range_service(object_property_id):
                     range_id=rg_id, object_property_id=object_property_id)
                 delete_range(rg_id)
 
+        cache.delete(f"object_property_range_{object_property_id}")
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1206,6 +1310,15 @@ async def delete_object_property_range_service(object_property_id):
 
 async def get_object_property_domain_service(object_property_id):
     try:
+        cached_result = cache.get(f"object_property_domain_{object_property_id}")
+
+        if cached_result:
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": cached_result
+            })), 200
+
         db_response = get_all_domains_by_object_property_id(object_property_id)
         if db_response is None:
             return jsonify(response_template({
@@ -1213,6 +1326,9 @@ async def get_object_property_domain_service(object_property_id):
                 "status_code": 404,
                 "data": None
             })), 404
+
+        cache.set(f"object_property_domain_{object_property_id}", db_response, timeout=300)
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1295,6 +1411,10 @@ async def create_object_property_domain_range_service(object_property_id):
                     create_domains_ranges_junction(
                         object_property_id, domain_id, range_id)
 
+        cache.delete(f"object_property_domain_{object_property_id}")
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1326,6 +1446,10 @@ async def update_object_property_domain_service(domain_id):
             })), 404
         else:
             data = update_domain(domain_id, domain_name)
+
+        cache.delete(f"object_property_domain_{domain_id}")
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"owl_file_{conversation_id}")
 
     except Exception as e:
         logger.error(
@@ -1371,6 +1495,10 @@ async def delete_object_property_domain_service(object_property_id):
                     domain_id=dm_id, object_property_id=object_property_id)
                 delete_domain(dm_id)
 
+        cache.delete(f"object_property_domain_{domain_id}")
+        cache.delete(f"classes_and_properties_{conversation_id}")
+        cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1389,6 +1517,15 @@ async def delete_object_property_domain_service(object_property_id):
 
 async def get_instances_service(conversation_id):
     try:
+        cached_result = cache.get(f"instances_{conversation_id}")
+
+        if cached_result:
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": cached_result
+            })), 200
+
         # db_response = get_all_instances_by_class_id(class_id)
         db_response = get_all_instances_by_conversation_id(conversation_id)
         if db_response is None:
@@ -1406,6 +1543,8 @@ async def get_instances_service(conversation_id):
                 else: instance["instance_name"] = instance["instance_name"].replace(" ", "")
 
             sanitized_instances.append(data)
+
+        cache.set(f"instances_{conversation_id}", sanitized_instances, timeout=300)
 
     except Exception as e:
         logger.error(
@@ -1448,6 +1587,9 @@ async def update_instances_service(class_id):
 
                 data = update_instance(instance_id, instance_name)
 
+        cache.delete(f"instances_{instance_id}")
+        cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1489,6 +1631,9 @@ async def delete_instances_service(class_id):
             delete_classes_instances_junction(class_id, instance_id)
             delete_instance(instance_id)
 
+        cache.delete(f"instances_{instance_id}")
+        cache.delete(f"owl_file_{conversation_id}")
+
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error: {e}")
@@ -1507,6 +1652,15 @@ async def delete_instances_service(class_id):
 
 async def generate_owl_file_service(conversation_id):
     try:
+        cached_result = cache.get(f"owl_file_{conversation_id}")
+
+        if cached_result:
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": cached_result
+            })), 200
+
         time = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
         logger.info(f"time: {time}")
 
@@ -1623,6 +1777,7 @@ async def generate_owl_file_service(conversation_id):
                         logger.error(f"Failed to create instance '{instance_name}' for class '{class_name}': {str(e)}")
 
         temp_file_path = None
+        cache.set(f"owl_file_{conversation_id}", time, timeout=300)
         try:
             with tempfile.NamedTemporaryFile(delete=False, suffix=".owl") as temp_file:
                 onto.save(file=temp_file.name, format="rdfxml")
@@ -1651,6 +1806,15 @@ async def generate_owl_file_service(conversation_id):
 
 async def get_existing_ontologies_service(conversation_id):
     try:
+        cached_result = cache.get(f"existing_ontologies_{conversation_id}")
+
+        if cached_result:
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": cached_result
+            })), 200
+
         data = request.get_json()
         prompt = data.get("prompt")
         db_response = get_conversation_detail_by_id(conversation_id)
@@ -1674,6 +1838,8 @@ async def get_existing_ontologies_service(conversation_id):
         search_result = llm_search_google(
             prompt, db_response["domain"], db_response["scope"])
         llm_response_json = reformat_response_existing_ontology(search_result.content)
+
+        cache.set(f"existing_ontologies_{conversation_id}", llm_response_json, timeout=300)
 
     except Exception as e:
         logger.error(
