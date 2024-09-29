@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 
 from app.modules.conversation import get_conversation_detail_by_id
 from app.database import *
+from app.cache import *
 from app.utils import *
 from app.utils.config import CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS
 from .model import *
@@ -18,7 +19,7 @@ import time
 import datetime
 
 logger = logging.getLogger(__name__)
-
+cache = get_cache()
 
 async def get_important_terms_service(conversation_id):
     try:
@@ -283,6 +284,8 @@ async def generate_important_terms_from_url_service():
             f"texts have been extracted in {time.time()-start_time:,.2f} ")
 
         end_time = time.time()
+
+        cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
     except Exception as e:
         logger.error(
             f"an error occurred at route {request.path} with error message: {e}")
@@ -307,6 +310,16 @@ async def generate_important_terms_from_url_service():
 
 async def get_classes_and_properties_service(conversation_id):
     try:
+        cached_result = cache.get(f"classes_and_properties_{conversation_id}")
+        if cached_result:
+            logger.info("cache hit!")
+            return jsonify(response_template({
+                "message": "Success",
+                "status_code": 200,
+                "data": cached_result
+            })), 200
+
+
         classes = get_all_classes_by_conversation_id(conversation_id)
         response = []
 
@@ -353,6 +366,8 @@ async def get_classes_and_properties_service(conversation_id):
                 "data_properties": data_properties,
                 "object_properties": object_properties,
             })
+
+            cache.set(f"classes_and_properties_{conversation_id}", response, timeout=300)
 
     except Exception as e:
         logger.error(
@@ -590,6 +605,8 @@ async def create_class_service(conversation_id):
                         "class_name": cls.get("class_name")}
             responses.append(response)
 
+            cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
+
             # prompt = {
             #     "domain": domain,
             #     "scope": scope,
@@ -722,6 +739,8 @@ async def delete_class_service():
                     delete_instance(instance.get("instance_id"))
 
             delete_class(class_id)
+
+        cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
 
     except Exception as e:
         logger.error(

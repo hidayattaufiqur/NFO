@@ -36,6 +36,8 @@ chromadb = "^0.5.5"
 google-api-python-client = "2.84.0"
 html2text = "2024.2.26"
 beautifulsoup4 = "^4.12.3"
+flask-caching = "^2.3.0"
+redis = "^5.1.0"
 
 
 [build-system]

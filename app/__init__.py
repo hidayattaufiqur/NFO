@@ -4,6 +4,7 @@ from flask import Flask
 from flask_login import LoginManager
 from flask_cors import CORS
 from datetime import timedelta
+from flask_caching import Cache
 
 from .utils import *
 
@@ -36,9 +37,19 @@ def create_app():
     app.config['SESSION_COOKIE_SAMESITE'] = "None"
     app.config['SESSION_COOKIE_SECURE'] = True  # disabled for testing
 
+    # caching 
+    app.config['CACHE_TYPE'] = 'RedisCache'
+    app.config['CACHE_REDIS_HOST'] = os.environ.get('REDIS_HOST')
+    app.config['CACHE_REDIS_PORT'] = os.environ.get('REDIS_PORT')
+    app.config['CACHE_REDIS_DB'] = 0              
+    app.config['CACHE_DEFAULT_TIMEOUT'] = 300     
+        
     from . import database as db
     with app.app_context():
         db.init_db(app)
+        
+    from . import cache as c
+    _ = c.init_cache(app)
 
     @app.route('/')
     def index():
