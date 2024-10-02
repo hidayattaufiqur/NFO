@@ -745,6 +745,7 @@ async def delete_class_service():
                     cache.delete(f"instances_{instance.get('instance_id')}")
 
             delete_class(class_id)
+            cache.delete(f"classes_{conversation_id}") # invalidate cache
 
     except Exception as e:
         logger.error(
@@ -756,7 +757,6 @@ async def delete_class_service():
         })), 500
 
     cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
-    cache.delete(f"classes_{conversation_id}") # invalidate cache
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
@@ -1590,7 +1590,8 @@ async def delete_instances_service(class_id):
     try:
         data = request.json
         instances = data["instances_ids"]
-        conversation_id = get_class_by_id(instances[0].get("class_id"))["conversation_id"]
+        class_id = get_instance_by_id(instances[0])["class_id"]
+        conversation_id = get_class_by_id(class_id)["conversation_id"]
 
         for instance_id in instances:
             db_response = get_class_by_id(class_id)
