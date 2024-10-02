@@ -1621,7 +1621,7 @@ async def delete_instances_service(class_id):
             "data": None
         })), 500
 
-    cache.delete(f"instances_{instance_id}")
+    cache.delete(f"instances_{conversation_id}")
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
