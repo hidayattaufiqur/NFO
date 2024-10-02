@@ -41,7 +41,7 @@ async def get_classes_and_properties(conversation_id):
     return await get_classes_and_properties_service(conversation_id)
 
 
-@bp.route('/classes-and-properties/<conversation_id>', methods=['POST'])
+@bp.route('/classes-and-properties/<conversation_id>', methods=['POST']) # obselete
 @require_authorization
 async def generate_classes_and_properties(conversation_id):
     return await generate_classes_and_properties_service(conversation_id)
@@ -59,7 +59,7 @@ async def create_class(conversation_id):
     return await create_class_service(conversation_id)
 
 
-@bp.route('/classes/<class_id>', methods=['PUT'])
+@bp.route('/classes/<class_id>', methods=['PUT']) # obselete
 @require_authorization
 async def update_class(class_id):
     return await update_class_service(class_id)
@@ -80,7 +80,7 @@ async def get_object_properties(class_id):
     return await get_object_properties_service(class_id)
 
 
-@bp.route('/object-properties/<object_property_id>', methods=['PUT'])
+@bp.route('/object-properties/<object_property_id>', methods=['PUT']) # obselete
 @require_authorization
 async def update_object_property(object_property_id):
     return await update_object_property_service(object_property_id)
@@ -162,7 +162,7 @@ async def get_data_properties(class_id):
     return await get_data_properties_service(class_id)
 
 
-@bp.route('/data-properties/<data_property_id>', methods=['PUT'])
+@bp.route('/data-properties/<data_property_id>', methods=['PUT']) # obselete
 @require_authorization
 async def update_data_property(data_property_id):
     return await update_data_property_service(data_property_id)
