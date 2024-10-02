@@ -208,6 +208,7 @@ def profile_service():
         refresh_session()
 
         cached_result = cache.get(f"user_profile_{current_user.user_id}")
+
         if cached_result:
             return jsonify(response_template(
                 ({"message": "user profile", "status_code": 200, "data": cached_result})))
@@ -221,6 +222,7 @@ def profile_service():
 
 
         logger.info("user fetched successfully")
+
         cache.set(f"user_profile_{current_user.user_id}", user_info, timeout=300)
 
         return jsonify(response_template(
@@ -244,6 +246,7 @@ def logout_service():
         if auth_response:
             return jsonify(auth_response), 401
 
+        cache.delete(f"user_profile_{current_user.user_id}")
         logout_user()
         session.clear()
         return jsonify(response_template(

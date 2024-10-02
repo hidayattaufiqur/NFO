@@ -34,11 +34,10 @@ async def conversation_service(conversation_id):
         else:
             return jsonify(response_template({
                 "message": "Invalid data type, expecting application/json.",
-                "status_code": 400,
+                "status_code": 415,
                 "data": None
-            })), 400
+            })), 415
 
-        data = request.get_json()
         user_id = session.get('user_id')
         db_conn = get_connection()
 
@@ -97,13 +96,13 @@ async def conversation_service(conversation_id):
 
         db_conn.close()
 
-        cache.delete(f"conversation_detail_{conversation_id}")
-
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
         return jsonify(chat_agent_response_template(
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": None, "output": None})), 500
+
+    cache.delete(f"conversation_detail_{conversation_id}")
 
     return jsonify(
         chat_agent_response_template(
@@ -168,13 +167,13 @@ def get_detail_conversation_service(conversation_id):
             prompt = db_response["messages"][0]["data"]["content"]
             competency_questions = db_response["messages"][1]["data"]["content"]
 
-        cache.set(f"conversation_detail_{conversation_id}", db_response, timeout=300)
-
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
         return jsonify(response_template(
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
+
+    cache.set(f"conversation_detail_{conversation_id}", db_response, timeout=300)
 
     return jsonify(response_template({
         "message": "Success",
@@ -199,13 +198,13 @@ def get_all_conversations_by_user_id_service(user_id):
 
         db_response = get_all_conversations_from_a_user(user_id)
 
-        cache.set(f"conversations_by_user_{user_id}", db_response, timeout=300)
-
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
         return jsonify(response_template(
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
+
+    cache.set(f"conversations_by_user_{user_id}", db_response, timeout=300)
 
     return jsonify(response_template(
         {"message": "Success", "status_code": 200, "data": db_response})), 200
@@ -225,7 +224,6 @@ def delete_conversation_service(conversation_id):
 
         history.clear()
         delete_conversation(conversation_id)
-        cache.delete(f"conversation_detail_{conversation_id}")
 
 
     except Exception as e:
@@ -234,6 +232,7 @@ def delete_conversation_service(conversation_id):
         return jsonify(response_template(
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
 
+    cache.delete(f"conversation_detail_{conversation_id}")
     return jsonify(response_template(
         {"message": "Deleting Has Been Successful", "status_code": 200, "data": None}))
 
@@ -270,7 +269,6 @@ def save_competency_questions_service(conversation_id):
             create_competency_question(
                 cq_id, user_id, conversation_id, competency_questions_list)
 
-        cache.delete(f"competency_questions_{conversation_id}")
 
     except Exception as e:
         logger.info(
@@ -278,6 +276,7 @@ def save_competency_questions_service(conversation_id):
         return jsonify(response_template(
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
+    cache.delete(f"competency_questions_{conversation_id}")
     return jsonify(
         response_template(
             {
@@ -315,7 +314,6 @@ def get_competency_questions_service(conversation_id):
 
             db_response[0]["question"] = cq_list
         
-        cache.set(f"competency_questions_{conversation_id}", db_response, timeout=300)
 
     except Exception as e:
         logger.info(
@@ -323,6 +321,7 @@ def get_competency_questions_service(conversation_id):
         return jsonify(response_template(
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "data": None})), 500
 
+    cache.set(f"competency_questions_{conversation_id}", db_response, timeout=300)
     return jsonify(response_template(
         {"message": "Success", "status_code": 200, "data": db_response})), 200
 
@@ -331,13 +330,12 @@ def validating_competency_questions_service(cq_id):
     try:
         validating_competency_question(cq_id, True)
 
-        cache.delete(f"competency_questions_{cq_id}")
-
     except Exception as e:
         logger.info(
             f"an error occurred at route {request.path} with error: {e}")
         return jsonify(response_template(
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
 
+    cache.delete(f"competency_questions_{cq_id}")
     return jsonify(response_template(
         {"message": "Updating Competency Question Has Been Successful", "status_code": 200, "data": None})), 200
