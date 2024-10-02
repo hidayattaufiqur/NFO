@@ -590,7 +590,6 @@ async def create_class_service(conversation_id):
                     })), 404
 
                 update_class(class_id, class_name)
-                cache.delete(f"classes_{class_id}") # invalidate cache
             else:
                 class_id = uuid.uuid4()
                 create_class(class_id, conversation_id,
@@ -600,6 +599,7 @@ async def create_class_service(conversation_id):
                         "class_name": cls.get("class_name")}
             responses.append(response)
 
+        cache.delete(f"classes_{conversation_id}")
 
             # prompt = {
             #     "domain": domain,
@@ -682,7 +682,7 @@ async def update_class_service(class_id): # obselete
             class_id = db_response.get("class_id")
             data = update_class(class_id, class_name)
 
-        cache.delete(f"classes_{class_id}")
+        # cache.delete(f"classes_{conversation_id}")
         # cache.delete(f"classes_and_properties_{conversation_id}")
 
     except Exception as e:
@@ -716,7 +716,6 @@ async def delete_class_service():
                     "data": None
                 })), 404
 
-            cache.delete(f"classes_{class_id}") # invalidate cache
 
             data_properties = get_all_data_properties_by_class_id(class_id)
             if data_properties is not None:
@@ -757,6 +756,7 @@ async def delete_class_service():
         })), 500
 
     cache.delete(f"classes_and_properties_{conversation_id}") # invalidate cache
+    cache.delete(f"classes_{conversation_id}") # invalidate cache
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
@@ -1546,6 +1546,7 @@ async def update_instances_service(class_id):
     try:
         data = request.json
         instances = data["instances"]
+        conversation_id = get_class_by_id(instances[0].get("class_id"))["conversation_id"]
 
         for instance in instances:
             instance_name = instance.get("instance_name")
@@ -1567,7 +1568,6 @@ async def update_instances_service(class_id):
 
                 data = update_instance(instance_id, instance_name)
 
-                cache.delete(f"instances_{instance_id}")
 
     except Exception as e:
         logger.error(
@@ -1578,6 +1578,7 @@ async def update_instances_service(class_id):
             "data": None
         })), 500
 
+    cache.delete(f"instances_{conversation_id}")
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,
@@ -1589,6 +1590,7 @@ async def delete_instances_service(class_id):
     try:
         data = request.json
         instances = data["instances_ids"]
+        conversation_id = get_class_by_id(instances[0].get("class_id"))["conversation_id"]
 
         for instance_id in instances:
             db_response = get_class_by_id(class_id)
@@ -1609,7 +1611,6 @@ async def delete_instances_service(class_id):
 
             delete_classes_instances_junction(class_id, instance_id)
             delete_instance(instance_id)
-            cache.delete(f"instances_{instance_id}")
 
     except Exception as e:
         logger.error(
@@ -1620,6 +1621,7 @@ async def delete_instances_service(class_id):
             "data": None
         })), 500
 
+    cache.delete(f"instances_{instance_id}")
     return jsonify(response_template({
         "message": "Success",
         "status_code": 200,

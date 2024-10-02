@@ -491,7 +491,7 @@ def save_instances_service(llm_response_json, conversation_id):
 
                 is_instance_exists = False
                 for ins in instances:  # instance of a class should be unique
-                    if ins.get("instance_name") == instance:
+                    if ins.get("instance_name").replace(" ", "").lower() == instance.replace(" ", "").lower():
                         logger.info(f"Instance already exists: {instance}")
                         is_instance_exists = True
 
