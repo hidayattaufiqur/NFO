@@ -30,6 +30,7 @@ When generating competency questions, please consider the following guidelines:
 - Include a mix of conceptual, application-based, and evaluative questions to assess different aspects of the ontology.
 - Aim to generate diverse and creative questions that go beyond the most obvious or straightforward ones.
 - Enclose using double quotes ("), not single quotes ('), this is very important for the parsing of the output.
+- Avoid using formatted string such as "```json" or "```python" to avoid error in parsing,
 
 Do not make things up and follow my instruction obediently. I will be fired by my boss if you do.
 
@@ -370,7 +371,7 @@ You will receive input containing:
 Your response will always be in this format. YOU MUST OBEY THE INSTRUCTIONS. DO NOT ADD ANYTHING ELSE e.g. TAG in the response. Simply an array of important terms!!!:
     { "important_terms": ["important_term1", "important_term2", ...] }
 
-Avoid using formatted string such as "```json" or "```python" to avoid error in parsing,
+Avoid using formatted string such as "```json" or "```python" to avoid error in parsing,json
 
 If you fail to follow the instruction, someone's grandma will die.
 """

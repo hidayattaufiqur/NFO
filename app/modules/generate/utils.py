@@ -26,9 +26,9 @@ from .model import *
 logger = logging.getLogger(__name__)
 
 # HACK: try different temp
-llm = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0)
+llm = ChatOpenAI(model="gpt-4o", temperature=0)
 llmgpt3 = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0) # deprecated
-llm_stream = ChatOpenAI(model="gpt-4o-2024-08-06", temperature=0, streaming=True)
+llm_stream = ChatOpenAI(model="gpt-4o", temperature=0, streaming=True)
 
 os.environ.get("OPENAI_API_KEY")
 os.environ.get("GOOGLE_CSE_ID")
