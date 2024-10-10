@@ -103,6 +103,7 @@ async def conversation_service(conversation_id):
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500, "prompt": None, "output": None})), 500
 
     cache.delete(f"conversation_detail_{conversation_id}")
+    cache.delete(f"conversations_by_user_{user_id}")
 
     return jsonify(
         chat_agent_response_template(
