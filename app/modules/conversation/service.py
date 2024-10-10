@@ -224,7 +224,7 @@ def delete_conversation_service(conversation_id):
 
         history.clear()
         delete_conversation(conversation_id)
-
+        user_id = session.get('user_id')
 
     except Exception as e:
         logger.info(
@@ -233,6 +233,8 @@ def delete_conversation_service(conversation_id):
             {"message": f"an error occurred at route {request.path} with error: {e}", "status_code": 500})), 500
 
     cache.delete(f"conversation_detail_{conversation_id}")
+    cache.delete(f"conversations_by_user_{user_id}")
+
     return jsonify(response_template(
         {"message": "Deleting Has Been Successful", "status_code": 200, "data": None}))
 
