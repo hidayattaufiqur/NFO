@@ -153,13 +153,13 @@ def get_class_by_id(class_id):
         close_pool_connection(conn)
 
 
-def get_class_by_name(name):
+def get_class_by_name(conversation_id, name):
     conn = get_pool_connection()
     try:
         logger.info("fetching class by name")
         with conn.cursor() as cur:
             cur.execute(
-                'SELECT * FROM classes WHERE name = %s AND deleted_at IS NULL', (name,))
+                'SELECT * FROM classes WHERE name = %s AND conversation_id = %s AND deleted_at IS NULL', (name, conversation_id))
             name = cur.fetchone()
             return name
     except Exception as e:

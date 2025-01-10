@@ -401,13 +401,16 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
             logger.info(f"saving class {cls}")
             class_id = uuid.uuid4()
             class_name = cls["name"].replace(" ", "")
-            db_response = get_class_by_name(class_name)
+            db_response = get_class_by_name(conversation_id, class_name)
 
             if db_response is None:
+                logger.info(f"creating class {class_name}")
                 created_class = create_class(
                     class_id, conversation_id, class_name)
             else:
-                created_class = None
+                logger.info(f"class {class_name} already exists")
+                created_class = True
+                class_id = db_response["class_id"]
 
             if created_class:
                 # Handle Instances
@@ -418,6 +421,7 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
                         instance_id, class_id, instance_name)
 
                     if created_instance:
+                        logger.info(f"created instance {instance_name}")
                         # Create junction between class and instance
                         create_classes_instances_junction(
                             class_id, instance_id)
@@ -431,6 +435,7 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
                         data_property_id, class_id, data_property_name, data_property_type)
 
                     if created_data_property:
+                        logger.info(f"created data property {data_property_name}")
                         # Create junction between class and data property
                         create_classes_data_junction(
                             class_id, data_property_id)
@@ -443,6 +448,7 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
                         object_property_id, class_id, object_property_name)
 
                     if created_obj_property:
+                        logger.info(f"created object property {object_property_name}")
                         # Create junction between class and object property
                         create_classes_object_junction(
                             class_id, object_property_id)
@@ -455,6 +461,7 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
                                 domain_id, object_property_id, domain_name)
 
                             if created_domain:
+                                logger.info(f"created domain {domain_name}")
                                 for range_name in obj_prop["recommended_range"]:
                                     range_id = uuid.uuid4()
                                     range_name = range_name.replace(" ", "")
@@ -462,6 +469,7 @@ def save_classes_and_properties_service(llm_response_json, conversation_id):
                                         range_id, object_property_id, range_name)
 
                                     if created_range:
+                                        logger.info(f"created range {range_name}")
                                         # Create junction between domain and
                                         # range
                                         create_domains_ranges_junction(
