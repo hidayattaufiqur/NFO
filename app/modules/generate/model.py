@@ -1,4 +1,7 @@
+import uuid  
+
 from app.database import close_pool_connection, get_pool_connection, logger
+from psycopg2.extras import execute_values
 
 
 def create_important_terms(important_terms_id, user_id, convo_id, terms):
@@ -971,4 +974,138 @@ def get_all_instances_by_conversation_id(conversation_id):
         logger.error(f"Error fetching instances by conversation id: {e}")
         return None
     finally:
+        close_pool_connection(conn)
+
+
+"""batches"""
+
+
+def save_classes_and_properties_service(llm_response_json, conversation_id):  
+    conn = get_pool_connection()  
+    try:  
+        conn.autocommit = False  
+        cursor = conn.cursor()  
+  
+        cursor.execute("""  
+            SELECT name, class_id FROM classes WHERE conversation_id = %s  
+        """, (conversation_id,))  
+        existing_classes = {row[0]: row[1] for row in cursor.fetchall()}  
+  
+        new_classes = []  
+        new_instances = []  
+        new_data_properties = []  
+        new_object_properties = []  
+        new_domains = []  
+        new_ranges = []  
+        new_classes_instances_junctions = []  
+        new_classes_data_junctions = []  
+        new_classes_object_junctions = []  
+        new_domains_ranges_junctions = []  
+  
+        for cls in llm_response_json["classes"]:  
+            class_name = cls["name"].replace(" ", "")  
+            if class_name not in existing_classes:  
+                class_id = uuid.uuid4()  
+                new_classes.append((class_id, conversation_id, class_name))  
+                existing_classes[class_name] = class_id  
+            else:  
+                class_id = existing_classes[class_name]  
+  
+            for instance in cls["instances"]:  
+                instance_name = instance.replace(" ", "")  
+                instance_id = uuid.uuid4()  
+                new_instances.append((instance_id, class_id, instance_name))  
+                new_classes_instances_junctions.append((class_id, instance_id))  
+  
+            for data_prop in cls["data_properties"]:  
+                data_property_name = data_prop["name"].replace(" ", "")  
+                data_property_type = data_prop["recommended_data_type"]  
+                data_property_id = uuid.uuid4()  
+                new_data_properties.append((data_property_id, class_id, data_property_name, data_property_type))  
+                new_classes_data_junctions.append((class_id, data_property_id))  
+  
+            for obj_prop in cls["object_properties"]:  
+                object_property_name = obj_prop["name"].replace(" ", "")  
+                object_property_id = uuid.uuid4()  
+                new_object_properties.append((object_property_id, class_id, object_property_name))  
+                new_classes_object_junctions.append((class_id, object_property_id))  
+  
+                for domain_name in obj_prop["recommended_domain"]:  
+                    domain_name = domain_name.replace(" ", "")  
+                    domain_id = uuid.uuid4()  
+                    new_domains.append((domain_id, object_property_id, domain_name))  
+  
+                    for range_name in obj_prop["recommended_range"]:  
+                        range_name = range_name.replace(" ", "")  
+                        range_id = uuid.uuid4()  
+                        new_ranges.append((range_id, object_property_id, range_name))  
+                        new_domains_ranges_junctions.append((object_property_id, domain_id, range_id))  
+  
+        if new_classes:  
+            execute_values(cursor, """  
+                INSERT INTO classes (class_id, conversation_id, name) VALUES %s  
+            """, new_classes)  
+  
+        if new_instances:  
+            execute_values(cursor, """  
+                INSERT INTO instances (instance_id, class_id, name) VALUES %s  
+            """, new_instances)  
+  
+        if new_data_properties:  
+            execute_values(cursor, """  
+                INSERT INTO data_properties (data_property_id, class_id, name, data_type) VALUES %s  
+            """, new_data_properties)  
+  
+        if new_object_properties:  
+            execute_values(cursor, """  
+                INSERT INTO object_properties (object_property_id, class_id, name) VALUES %s  
+            """, new_object_properties)  
+            
+        if new_domains:  
+            execute_values(cursor, """  
+                INSERT INTO domains (domain_id, object_property_id, name) VALUES %s  
+            """, new_domains)  
+  
+        if new_ranges:  
+            execute_values(cursor, """  
+                INSERT INTO ranges (range_id, object_property_id, name) VALUES %s  
+            """, new_ranges)  
+  
+        if new_classes_instances_junctions:  
+            execute_values(cursor, """  
+                INSERT INTO classes_instances_junction (class_id, instance_id) VALUES %s  
+            """, new_classes_instances_junctions)  
+  
+        if new_classes_data_junctions:  
+            execute_values(cursor, """  
+                INSERT INTO classes_data_junction (class_id, data_property_id) VALUES %s  
+            """, new_classes_data_junctions)  
+  
+        if new_classes_object_junctions:  
+            execute_values(cursor, """  
+                INSERT INTO classes_object_junction (class_id, object_property_id) VALUES %s  
+            """, new_classes_object_junctions)  
+  
+        if new_domains_ranges_junctions:  
+            execute_values(cursor, """  
+                INSERT INTO domains_ranges_junction (object_property_id, domain_id, range_id) VALUES %s  
+            """, new_domains_ranges_junctions)  
+  
+        conn.commit()  
+  
+        return {  
+            "message": "Saving Classes and Properties Has Been Successful",  
+            "status_code": 200,  
+            "data": None  
+        }  
+    except Exception as e:  
+        conn.rollback()  
+        logger.error(f"An error occurred while saving classes and properties: {e}")  
+        return {  
+            "message": f"An error occurred: {str(e)}",  
+            "status_code": 500,  
+            "data": None  
+        }  
+    finally:  
+        cursor.close()  
         close_pool_connection(conn)

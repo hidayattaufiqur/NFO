@@ -16,9 +16,7 @@ logger = logging.getLogger(__name__)
 psycopg2.extras.register_uuid()
 logger.info("UUID extras has been registered on psycopg2")
 
-# TODO: Change db_name retrieval to use environment variables
-connection_string = f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@localhost/nfo"
-
+connection_string = f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('DB_PASSWORD')}@{os.environ.get('DB_HOST')}/{os.environ.get('DB_NAME')}"
 
 def init_db(app):
     global pool

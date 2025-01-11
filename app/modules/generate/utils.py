@@ -25,10 +25,9 @@ from .model import *
 
 logger = logging.getLogger(__name__)
 
-# HACK: try different temp
-llm = ChatOpenAI(model="gpt-4o", temperature=0)
-llmgpt3 = ChatOpenAI(model="gpt-3.5-turbo-0613", temperature=0) # deprecated
-llm_stream = ChatOpenAI(model="gpt-4o", temperature=0, streaming=True)
+llm = ChatOpenAI(model="gpt-4o", temperature=0.5)
+llmmini = ChatOpenAI(model="gpt-4o-mini", temperature=0.5) # deprecated
+llm_stream = ChatOpenAI(model="gpt-4o", temperature=0.5, streaming=True)
 
 os.environ.get("OPENAI_API_KEY")
 os.environ.get("GOOGLE_CSE_ID")
@@ -233,7 +232,7 @@ async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_t
     global prompt_time
     start_time = time.time()
     x = LLMChain(
-        llm=llm if model == "llm" else llmgpt3,
+        llm=llm if model == "llm" else llmmini,
         prompt=PromptTemplate(
             input_variables=input_variables,
             template=template,
@@ -335,6 +334,7 @@ def prompt_awan_llm_chunked(tagged_sentences, domain, scope):
 def reformat_response(llm_response):
     try:
         logger.info(f"llm_response: {llm_response}")
+        logger.info(f"type(llm_response): {type(llm_response)}")
         if isinstance(llm_response, dict):
             try:
                 parsed_data = loads(llm_response['text'])
@@ -395,98 +395,152 @@ def reformat_response_existing_ontology(llm_response):
         raise ValueError(f"Failed to decode JSON. Error: {e}")
 
 
-def save_classes_and_properties_service(llm_response_json, conversation_id):
-    try:
-        for cls in llm_response_json["classes"]:
-            logger.info(f"saving class {cls}")
-            class_id = uuid.uuid4()
-            class_name = cls["name"].replace(" ", "")
-            db_response = get_class_by_name(conversation_id, class_name)
-
-            if db_response is None:
-                logger.info(f"creating class {class_name}")
-                created_class = create_class(
-                    class_id, conversation_id, class_name)
-            else:
-                logger.info(f"class {class_name} already exists")
-                created_class = True
-                class_id = db_response["class_id"]
-
-            if created_class:
-                # Handle Instances
-                for instance in cls["instances"]:
-                    instance_id = uuid.uuid4()
-                    instance_name = instance.replace(" ", "")
-                    created_instance = create_instance(
-                        instance_id, class_id, instance_name)
-
-                    if created_instance:
-                        logger.info(f"created instance {instance_name}")
-                        # Create junction between class and instance
-                        create_classes_instances_junction(
-                            class_id, instance_id)
-
-                # Handle data properties
-                for data_prop in cls["data_properties"]:
-                    data_property_id = uuid.uuid4()
-                    data_property_name = data_prop["name"].replace(" ", "")
-                    data_property_type = data_prop["recommended_data_type"]
-                    created_data_property = create_data_property(
-                        data_property_id, class_id, data_property_name, data_property_type)
-
-                    if created_data_property:
-                        logger.info(f"created data property {data_property_name}")
-                        # Create junction between class and data property
-                        create_classes_data_junction(
-                            class_id, data_property_id)
-
-                # Handle object properties
-                for obj_prop in cls["object_properties"]:
-                    object_property_id = uuid.uuid4()
-                    object_property_name = obj_prop["name"].replace(" ", "")
-                    created_obj_property = create_object_property(
-                        object_property_id, class_id, object_property_name)
-
-                    if created_obj_property:
-                        logger.info(f"created object property {object_property_name}")
-                        # Create junction between class and object property
-                        create_classes_object_junction(
-                            class_id, object_property_id)
-
-                        # Handle domains and ranges
-                        for domain_name in obj_prop["recommended_domain"]:
-                            domain_id = uuid.uuid4()
-                            domain_name = domain_name.replace(" ", "")
-                            created_domain = create_domain(
-                                domain_id, object_property_id, domain_name)
-
-                            if created_domain:
-                                logger.info(f"created domain {domain_name}")
-                                for range_name in obj_prop["recommended_range"]:
-                                    range_id = uuid.uuid4()
-                                    range_name = range_name.replace(" ", "")
-                                    created_range = create_range(
-                                        range_id, object_property_id, range_name)
-
-                                    if created_range:
-                                        logger.info(f"created range {range_name}")
-                                        # Create junction between domain and
-                                        # range
-                                        create_domains_ranges_junction(
-                                            object_property_id, domain_id, range_id)
-
-        return {
-            "message": "Saving Classes and Properties Has Been Successful",
-            "status_code": 200,
-            "data": None}
-    except Exception as e:
-        logger.error(
-            f"An error occurred while saving classes and properties: {e}")
-        return {
-            "message": f"An error occurred: {str(e)}",
-            "status_code": 500,
-            "data": None}
-
+# from psycopg2.extras import execute_values  
+# from app.database import get_pool_connection, close_pool_connection, logger  
+#   
+# def save_classes_and_properties_service(llm_response_json, conversation_id):  
+#     conn = get_pool_connection()  
+#     try:  
+#         # Start a transaction  
+#         conn.autocommit = False  
+#         cursor = conn.cursor()  
+#   
+#         # Dictionary to store existing classes and their UUIDs  
+#         cursor.execute("""  
+#             SELECT name, class_id FROM classes WHERE conversation_id = %s  
+#         """, (conversation_id,))  
+#         existing_classes = {row[0]: row[1] for row in cursor.fetchall()}  
+#   
+#         # Lists to store new records  
+#         new_classes = []  
+#         new_instances = []  
+#         new_data_properties = []  
+#         new_object_properties = []  
+#         new_domains = []  
+#         new_ranges = []  
+#         new_classes_instances_junctions = []  
+#         new_classes_data_junctions = []  
+#         new_classes_object_junctions = []  
+#         new_domains_ranges_junctions = []  
+#   
+#         for cls in llm_response_json["classes"]:  
+#             class_name = cls["name"].replace(" ", "")  
+#             if class_name not in existing_classes:  
+#                 class_id = uuid.uuid4()  
+#                 new_classes.append((class_id, conversation_id, class_name))  
+#                 existing_classes[class_name] = class_id  
+#             else:  
+#                 class_id = existing_classes[class_name]  
+#   
+#             for instance in cls["instances"]:  
+#                 instance_name = instance.replace(" ", "")  
+#                 instance_id = uuid.uuid4()  
+#                 new_instances.append((instance_id, class_id, instance_name))  
+#                 new_classes_instances_junctions.append((class_id, instance_id))  
+#   
+#             for data_prop in cls["data_properties"]:  
+#                 data_property_name = data_prop["name"].replace(" ", "")  
+#                 data_property_type = data_prop["recommended_data_type"]  
+#                 data_property_id = uuid.uuid4()  
+#                 new_data_properties.append((data_property_id, class_id, data_property_name, data_property_type))  
+#                 new_classes_data_junctions.append((class_id, data_property_id))  
+#   
+#             for obj_prop in cls["object_properties"]:  
+#                 object_property_name = obj_prop["name"].replace(" ", "")  
+#                 object_property_id = uuid.uuid4()  
+#                 new_object_properties.append((object_property_id, class_id, object_property_name))  
+#                 new_classes_object_junctions.append((class_id, object_property_id))  
+#   
+#                 for domain_name in obj_prop["recommended_domain"]:  
+#                     domain_name = domain_name.replace(" ", "")  
+#                     domain_id = uuid.uuid4()  
+#                     new_domains.append((domain_id, object_property_id, domain_name))  
+#   
+#                     for range_name in obj_prop["recommended_range"]:  
+#                         range_name = range_name.replace(" ", "")  
+#                         range_id = uuid.uuid4()  
+#                         new_ranges.append((range_id, object_property_id, range_name))  
+#                         new_domains_ranges_junctions.append((object_property_id, domain_id, range_id))  
+#   
+#         # Insert new classes  
+#         if new_classes:  
+#             execute_values(cursor, """  
+#                 INSERT INTO classes (class_id, conversation_id, name) VALUES %s  
+#             """, new_classes)  
+#   
+#         # Insert new instances  
+#         if new_instances:  
+#             execute_values(cursor, """  
+#                 INSERT INTO instances (instance_id, class_id, name) VALUES %s  
+#             """, new_instances)  
+#   
+#         # Insert new data properties  
+#         if new_data_properties:  
+#             execute_values(cursor, """  
+#                 INSERT INTO data_properties (data_property_id, class_id, name, data_type) VALUES %s  
+#             """, new_data_properties)  
+#   
+#         # Insert new object properties  
+#         if new_object_properties:  
+#             execute_values(cursor, """  
+#                 INSERT INTO object_properties (object_property_id, class_id, name) VALUES %s  
+#             """, new_object_properties)  
+#   
+#         # Insert new domains  
+#         if new_domains:  
+#             execute_values(cursor, """  
+#                 INSERT INTO domains (domain_id, object_property_id, name) VALUES %s  
+#             """, new_domains)  
+#   
+#         # Insert new ranges  
+#         if new_ranges:  
+#             execute_values(cursor, """  
+#                 INSERT INTO ranges (range_id, object_property_id, name) VALUES %s  
+#             """, new_ranges)  
+#   
+#         # Insert new classes_instances_junctions  
+#         if new_classes_instances_junctions:  
+#             execute_values(cursor, """  
+#                 INSERT INTO classes_instances_junction (class_id, instance_id) VALUES %s  
+#             """, new_classes_instances_junctions)  
+#   
+#         # Insert new classes_data_junctions  
+#         if new_classes_data_junctions:  
+#             execute_values(cursor, """  
+#                 INSERT INTO classes_data_junction (class_id, data_property_id) VALUES %s  
+#             """, new_classes_data_junctions)  
+#   
+#         # Insert new classes_object_junctions  
+#         if new_classes_object_junctions:  
+#             execute_values(cursor, """  
+#                 INSERT INTO classes_object_junction (class_id, object_property_id) VALUES %s  
+#             """, new_classes_object_junctions)  
+#   
+#         # Insert new domains_ranges_junctions  
+#         if new_domains_ranges_junctions:  
+#             execute_values(cursor, """  
+#                 INSERT INTO domains_ranges_junction (object_property_id, domain_id, range_id) VALUES %s  
+#             """, new_domains_ranges_junctions)  
+#   
+#         # Commit the transaction  
+#         conn.commit()  
+#   
+#         return {  
+#             "message": "Saving Classes and Properties Has Been Successful",  
+#             "status_code": 200,  
+#             "data": None  
+#         }  
+#     except Exception as e:  
+#         conn.rollback()  
+#         logger.error(f"An error occurred while saving classes and properties: {e}")  
+#         return {  
+#             "message": f"An error occurred: {str(e)}",  
+#             "status_code": 500,  
+#             "data": None  
+#         }  
+#     finally:  
+#         cursor.close()  
+#         close_pool_connection(conn)
 
 def save_instances_service(llm_response_json, conversation_id):
     try:

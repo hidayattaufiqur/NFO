@@ -209,8 +209,6 @@ async def delete_instances(class_id):
 async def generate_owl_file(conversation_id):
     return await generate_owl_file_service(conversation_id)
 
-# TODO: save the results to DB 
-# FIX: fix potential error when parsing response from LLM 
 @bp.route('/ontology/<conversation_id>/existing-ontologies', methods=['POST'])
 # @require_authorization
 async def get_existing_ontologies(conversation_id):

@@ -24,7 +24,7 @@ cache = get_cache()
 
 load_dotenv()
 
-llm = ChatOpenAI(model="gpt-4o", temperature=0)
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
 
 async def conversation_service(conversation_id):
@@ -60,6 +60,7 @@ async def conversation_service(conversation_id):
             table_name, session_id)
 
         logger.info("creating LLMChain")
+        # TODO: consider using prompt_chatai() function here 
         x = LLMChain(
             llm=llm,
             prompt=PromptTemplate(
