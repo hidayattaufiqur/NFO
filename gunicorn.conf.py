@@ -5,7 +5,8 @@ import os
 project_root = os.path.dirname(os.path.abspath(__file__))  
   
 # Socket to bind  
-bind = f'unix:{project_root}/gunicorn.sock'  
+# bind = f'unix:{project_root}/gunicorn.sock'  
+bind = '0.0.0.0:5000'
   
 # Configurations based on Google Cloud documentation  
 workers = 2 
