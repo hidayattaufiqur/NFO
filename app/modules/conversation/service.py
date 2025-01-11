@@ -11,15 +11,14 @@ from langchain.memory import ConversationBufferWindowMemory
 from app.utils import response_template, chat_agent_response_template
 from app.database import get_connection, get_chat_message_history_connection
 from app.cache import get_cache
+from app.logger import get_logger
 from app.utils import *
 from .model import *
 
 import json
-import logging
 import uuid
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 cache = get_cache()
 
 load_dotenv()

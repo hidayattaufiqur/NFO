@@ -1,17 +1,17 @@
 from langchain_community.chat_message_histories.sql import SQLChatMessageHistory
 from flask import current_app, g
+from app.logger import get_logger
 
 import psycopg
 import psycopg2
 import psycopg2.pool
 import psycopg2.extras
 import os
-import logging
 
 from dotenv import load_dotenv
 
 load_dotenv()
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 psycopg2.extras.register_uuid()
 logger.info("UUID extras has been registered on psycopg2")

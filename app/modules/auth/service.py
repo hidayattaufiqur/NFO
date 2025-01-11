@@ -1,6 +1,5 @@
 import google.oauth2.credentials
 import requests
-import logging
 import uuid
 import re
 import datetime
@@ -13,9 +12,9 @@ from google.auth.transport.requests import Request
 from .model import *
 from app.utils import *
 from app.cache import get_cache
+from app.logger import get_logger
 
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 bp = Blueprint('auth', __name__)
 login_manager = LoginManager()
 cache = get_cache()

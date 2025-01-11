@@ -4,14 +4,14 @@ from flask import Flask
 from flask_login import LoginManager
 from flask_cors import CORS
 from datetime import timedelta
-from flask_caching import Cache
+from app.logger import get_logger, configure_logger
 
 from .utils import *
 
 import os
-import logging
 
-logger = logging.getLogger(__name__)
+configure_logger()
+logger = get_logger(__name__)
 login_manager = LoginManager()
 _ = load_dotenv()
 

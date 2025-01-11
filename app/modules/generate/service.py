@@ -3,6 +3,7 @@ from werkzeug.utils import secure_filename
 
 from app.modules.conversation import get_conversation_detail_by_id
 from app.database import *
+from app.logger import get_logger
 from app.cache import *
 from app.utils import *
 from app.utils.config import CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS
@@ -11,14 +12,13 @@ from .utils import *
 from owlready2 import *
 
 import tempfile
-import logging
 import os
 import json
 import uuid
 import time
 import datetime
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 cache = get_cache()
 
 async def get_important_terms_service(conversation_id):

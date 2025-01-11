@@ -1,8 +1,7 @@
 from flask_caching import Cache
+from app.logger import get_logger
 
-import logging
-
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 cache = None
 
 def init_cache(app):

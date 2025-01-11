@@ -16,17 +16,17 @@ from bs4 import BeautifulSoup
 
 import time
 import json
-import logging
 import requests
 import uuid
 
+from app.logger import get_logger
 from app.utils import *
 from .model import *
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 llm = ChatOpenAI(model="gpt-4o", temperature=0.5)
-llmmini = ChatOpenAI(model="gpt-4o-mini", temperature=0.5) # deprecated
+llmmini = ChatOpenAI(model="gpt-4o-mini", temperature=0.5) 
 llm_stream = ChatOpenAI(model="gpt-4o", temperature=0.5, streaming=True)
 
 os.environ.get("OPENAI_API_KEY")
