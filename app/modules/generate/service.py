@@ -253,14 +253,18 @@ async def generate_important_terms_from_url_service():
 
         start_time = time.time()
 
-        extracted_text = extract_text_from_url(url)
+        if cache.get(f"extracted_text_from_url_{url}"):
+            extracted_text = cache.get(f"extracted_text_from_url_{url}")
+            logger.info(f"texts have been extracted from cache in {time.time()-start_time:,.2f} ")
+        else: 
+            extracted_text = extract_text_from_url(url)
+           
+            if extracted_text is None:
+                logger.error("error extracting text from url")
+                raise ValueError("Error extracting text from url")
 
-        if extracted_text is None:
-            logger.error("error extracting text from url")
-            raise ValueError("Error extracting text from url")
-
-        cache.set(f"extracted_text_from_url_{url}", extracted_text, timeout=300)
-        logger.info(f"texts have been extracted in {time.time()-start_time:,.2f} ")
+            cache.set(f"extracted_text_from_url_{url}", extracted_text, timeout=300)
+            logger.info(f"texts have been extracted in {time.time()-start_time:,.2f} ")
 
         '''
         remove the use of manual NER extraction to improve the performance of the system
