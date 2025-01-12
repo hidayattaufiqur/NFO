@@ -3,9 +3,7 @@ from segtok.segmenter import split_single
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import PromptTemplate
 from langchain.chains import LLMChain
-from flair.models import SequenceTagger
 from partial_json_parser import loads
-from spacy import load
 from llmsherpa.readers import LayoutPDFReader
 from langchain.vectorstores import Chroma
 from langchain.embeddings import OpenAIEmbeddings
@@ -80,9 +78,6 @@ def llm_search_google(query, domain, scope):
 
 
 start_time = time.time()
-# tagger = Classifier.load("ner-fast") # load flair NER model
-# tagger_flair = SequenceTagger.load("ner-fast") # load flair NER model
-tagger_spacy = load("en_core_web_sm")
 logger.info(f"NER loaded in {round(time.time() - start_time, 3)}S")
 
 global text_extraction_time, ner_prediction_time, terms_extraction_time, db_save_time, prompt_time, prompt_time_awan
@@ -171,27 +166,6 @@ def predict_with_flair(sentences):
                     "tag": entity.tag,
                     "score": entity.score
                 })
-
-    end_time = time.time()
-    ner_prediction_time = end_time - start_time
-    logger.info(
-        f"NER predicting has been completed in {end_time - start_time:,.2f} seconds")
-
-    return tagged_sentences
-
-
-def predict_with_spacy(sentences):
-    global ner_prediction_time
-    start_time = time.time()
-    tagged_sentences = []
-
-    logger.info("predicting NER tags")
-    doc = tagger_spacy(sentences)
-    for entity in doc.ents:
-        tagged_sentences.append({
-            "text": entity.text,
-            "tag": entity.label_,
-        })
 
     end_time = time.time()
     ner_prediction_time = end_time - start_time
