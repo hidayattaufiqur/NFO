@@ -125,8 +125,16 @@ async def generate_important_terms_from_pdf_service():
         user_id = session.get('user_id')
         conversation_id = data["conversation_id"]
 
-        logger.info(f"conversation_id: {conversation_id}")
-        db_response = get_conversation_detail_by_id(conversation_id)
+        if cache.get(f"conversation_detail_{conversation_id}"): db_response = cache.get(f"conversation_detail_{conversation_id}")
+        else: db_response = get_conversation_detail_by_id(conversation_id)
+
+        if db_response is None:
+            # domain = data["domain"]
+            # scope = data["scope"]
+            raise ValueError("No conversation found with such id")
+        else:
+            domain = db_response["domain"]
+            scope = db_response["scope"]
 
         logger.info(f"db_response: {db_response}")
 
@@ -161,41 +169,50 @@ async def generate_important_terms_from_pdf_service():
                 "data": None
             })), 500
 
-        logger.info("predicting tags with spacy NER model")
-        # predicted_tags = predict_with_flair(extracted_text)
-        predicted_tags = predict_with_spacy(extracted_text)
-
-        # logger.info("invoking awan llm")
-        # awan_llm_response = prompt_awan_llm_chunked(predicted_tags, domain, scope)
-
+        start_time = time.time()
         logger.info("invoking chatai llm")
 
         prompt = {
             "domain": domain,
             "scope": scope,
-            "predicted_tags": predicted_tags,
+            "text": extracted_text,
+            # "predicted_tags": predicted_tags,
         }
 
-        chatai_llm_response = await prompt_chatai(prompt=prompt, template=GENERATE_TERMS_BY_TAGGED_SENTENCES_PROMPT_SYSTEM_MESSAGE)
+        # chatai_llm_response = await prompt_chatai(prompt=prompt, template=GENERATE_TERMS_BY_TAGGED_SENTENCES_PROMPT_SYSTEM_MESSAGE, model="llmmini")
+
+        chatai_llm_response = await prompt_chatai(prompt=prompt, template=COMBINED_SYSTEM_MESSAGE, model="llmmini")
         chatai_llm_response_json = loads(chatai_llm_response.get("text"))
         terms = chatai_llm_response_json.get("important_terms")
+        logger.info(f"terms have been generated in {time.time()-start_time:,.2f} ")
 
         important_terms_id = uuid.uuid4()
         # terms = awan_llm_response["choices"][0]["message"]["content"]
 
+        start_time = time.time()
         logger.info("saving important terms to database")
         create_important_terms(
             important_terms_id, user_id, conversation_id, terms)
+        logger.info(f"saving important terms has been completed in {time.time()-start_time:,.2f} ")
 
-        prompt = {
-            "domain": domain,
-            "scope": scope,
-            "important_terms": terms
-        }
+        # prompt = {
+        #     "domain": domain,
+        #     "scope": scope,
+        #     "important_terms": terms
+        # }
 
-        llm_response = await prompt_chatai(prompt)
-        llm_response_json = reformat_response(llm_response)
+        # start_time = time.time()
+        # llm_response = await prompt_chatai(prompt=prompt, model="llmmini")
+        # logger.info(f"classes and props have been generated in {time.time()-start_time:,.2f} ")
+        # llm_response_json = reformat_response(llm_response)
+
+        llm_response_json = reformat_response(chatai_llm_response)
+        logger.info(f"llm_response_json: {llm_response_json}")
+
+        start_time = time.time()
         save_classes_and_properties_service(llm_response_json, conversation_id)
+        logger.info(f"classes and props have been saved in {time.time()-start_time:,.2f} ")
+
         end_time = time.time()
 
     except Exception as e:
@@ -301,11 +318,11 @@ async def generate_important_terms_from_url_service():
             important_terms_id, user_id, conversation_id, terms)
         logger.info(f"saving important terms has been completed in {time.time()-start_time:,.2f} ")
 
-        prompt = {
-            "domain": domain,
-            "scope": scope,
-            "important_terms": terms
-        }
+        # prompt = {
+        #     "domain": domain,
+        #     "scope": scope,
+        #     "important_terms": terms
+        # }
 
         # start_time = time.time()
         # llm_response = await prompt_chatai(prompt=prompt, model="llmmini")
