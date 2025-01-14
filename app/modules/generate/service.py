@@ -159,7 +159,7 @@ async def generate_important_terms_from_pdf_service():
             filename = secure_filename(file.filename)
             filepath = os.path.join(UPLOAD_FOLDER, filename)
             if not os.path.exists(filepath):
-            file.save(filepath)
+                file.save(filepath)
 
         extracted_text = extract_text_from_pdf(filepath)
         if extracted_text is None:
