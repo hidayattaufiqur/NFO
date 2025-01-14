@@ -32,7 +32,7 @@ When generating competency questions, please consider the following guidelines:
 - Enclose using double quotes ("), not single quotes ('), this is very important for the parsing of the output.
 - Avoid using formatted string such as "```json" or "```python" to avoid error in parsing,
 
-Do not make things up and follow my instruction obediently. I will be fired by my boss if you do.
+Do not make things up and follow my instruction obediently. I will be fired by my boss if you do. Remember to STRICTLY follow the format above.
 
 Previous conversation history:
 {history}
