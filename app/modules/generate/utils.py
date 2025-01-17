@@ -51,7 +51,7 @@ web_research_retriever = WebResearchRetriever.from_llm(
 def scrape_website(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
-    return soup.get_text()
+    return soup.get_text(strip=True)
 
 
 def generate_ontology(llm, search_results, domain, scope):
