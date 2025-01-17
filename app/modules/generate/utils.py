@@ -54,26 +54,26 @@ def scrape_website(url):
     return soup.get_text(strip=True)
 
 
-def generate_ontology(llm, search_results, domain, scope):
+async def generate_ontology(llm, search_results, domain, scope):
     prompt = llm_search_google_prompt(domain, scope, search_results)
-    response = llm.invoke(prompt)
+    response = await llm.ainvoke(prompt)
     return response
 
 
-def ontology_search_and_generate(query, domain, scope):
+async def ontology_search_and_generate(query, domain, scope):
     search_results = web_research_retriever.get_relevant_documents(
         f"{query} ontology")
     processed_results = [scrape_website(
         doc.metadata['source']) for doc in search_results[:1]]
     logger.info(f"processed_results from scraping: {processed_results}")
-    ontology_example = generate_ontology(
-        llm, "\n".join(processed_results), domain, scope)
+    ontology_example = await generate_ontology(
+        llmmini, "\n".join(processed_results), domain, scope)
 
     return ontology_example
 
 
-def llm_search_google(query, domain, scope):
-    result = ontology_search_and_generate(query, domain, scope)
+async def llm_search_google(query, domain, scope):
+    result = await ontology_search_and_generate(query, domain, scope)
     return result
 
 

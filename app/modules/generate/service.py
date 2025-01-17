@@ -1846,7 +1846,7 @@ async def get_existing_ontologies_service(conversation_id):
         # "scope", "prompt"],
         # template=EXISTING_ONTOLOGIES_GENERATION_SYSTEM_MESSAGE)
 
-        search_result = llm_search_google(
+        search_result = await llm_search_google(
             prompt, db_response["domain"], db_response["scope"])
         llm_response_json = reformat_response_existing_ontology(search_result.content)
 
