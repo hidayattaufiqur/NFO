@@ -50,7 +50,7 @@ web_research_retriever = WebResearchRetriever.from_llm(
 
 def scrape_website(url):
     response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'html.parser')
+    soup = BeautifulSoup(response.text, 'lxml')
     return soup.get_text()
 
 
@@ -97,11 +97,12 @@ def extract_text_from_url(url):
     global text_extraction_time
     try:
         start_time = time.time()
-        response = requests.get(
-            "https://r.jina.ai/" + url,
-            headers={"X-Return-Format": "text"},
-        )
-        extracted_text = response.text
+        # response = requests.get(
+        #     "https://r.jina.ai/" + url,
+        #     headers={"X-Return-Format": "text"},
+        # )
+        # extracted_text = response.text
+        extracted_text = scrape_website(url)
         end_time = time.time()
         text_extraction_time = end_time - start_time
         logger.info(

@@ -147,6 +147,7 @@ async def generate_important_terms_from_pdf_service():
             scope = db_response["scope"]
 
         file = request.files['file']
+
         if file.filename == '':
             logger.error("no file selected")
             return jsonify(response_template({
