@@ -21,7 +21,7 @@ connection_string = f"postgresql://{os.environ.get('DB_USER')}:{os.environ.get('
 def init_db(app):
     global pool
     pool = psycopg2.pool.ThreadedConnectionPool(
-        1, 20,
+        5, 50,
         user=os.environ.get('DB_USER'),
         password=os.environ.get('DB_PASSWORD'),
         host=os.environ.get('DB_HOST'),
