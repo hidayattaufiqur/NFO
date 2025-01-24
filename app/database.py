@@ -245,6 +245,8 @@ def init_db(app):
 
                 CREATE INDEX IF NOT EXISTS idx_classes_data_junction_class_id ON classes_data_junction(class_id);
                 CREATE INDEX IF NOT EXISTS idx_classes_object_junction_class_id ON classes_object_junction(class_id);
+
+                CREATE INDEX IF NOT EXISTS idx_message_store_session_id ON message_store(session_id);
             ''')
 
             logger.info("database initialized")

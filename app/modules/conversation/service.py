@@ -55,12 +55,16 @@ async def conversation_service(conversation_id):
         session_id = str(conversation_id)
 
         logger.info(f"accessing conversation history")
-        history = get_chat_message_history_connection(
-            table_name, session_id)
+        history = cache.get(f"history_{session_id}")
+
+        if history is None:
+            logger.info(f"creating history for {session_id}")
+            history = get_chat_message_history_connection(
+                table_name, session_id)
+            cache.set(f"history_{session_id}", history, timeout=60)
 
         logger.info("creating LLMChain")
 
-        # TODO: consider using prompt_chatai() function here 
         x = LLMChain(
             llm=llm,
             prompt=PromptTemplate(
@@ -68,11 +72,10 @@ async def conversation_service(conversation_id):
                     "input",
                     "history"],
                 template=SYSTEM_MESSAGE),
-            verbose=True,
             memory=ConversationBufferWindowMemory(
                 memory_key="history",
                 return_messages=True,
-                k=10,
+                k=3,
                 chat_memory=history))
 
         logger.info(f"invoking prompt to OpenAI")
