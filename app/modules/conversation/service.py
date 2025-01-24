@@ -55,13 +55,8 @@ async def conversation_service(conversation_id):
         session_id = str(conversation_id)
 
         logger.info(f"accessing conversation history")
-        history = cache.get(f"history_{session_id}")
-
-        if history is None:
-            logger.info(f"creating history for {session_id}")
-            history = get_chat_message_history_connection(
+        history = get_chat_message_history_connection(
                 table_name, session_id)
-            cache.set(f"history_{session_id}", history, timeout=60)
 
         logger.info("creating LLMChain")
 
