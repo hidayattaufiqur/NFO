@@ -47,16 +47,26 @@ web_research_retriever = WebResearchRetriever.from_llm(
     search=search,
 )
 
+def truncate_text(text, max_words=500):
+    return " ".join(text.split()[:max_words])
 
 def scrape_website(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
-    return soup.get_text(strip=True)
 
+    for tag in soup.find_all(['nav', 'footer', 'script', 'style']):
+        tag.decompose()
+    
+    main_content = ""
+    for tag in soup.find_all(['article', 'main', 'p']):
+        main_content += tag.get_text(strip=True) + " "
 
+    return truncate_text(main_content, max_words=800).strip()
+    
 async def generate_ontology(llm, search_results, domain, scope):
     prompt = llm_search_google_prompt(domain, scope, search_results)
     response = await llm.ainvoke(prompt)
+
     return response
 
 
@@ -129,13 +139,13 @@ def extract_text_from_pdf(pdf_file_path):
 
         extracted_text = ""
         for value in doc_json:
-            if "sentences" in value:
-                extracted_text += (value["sentences"][0])
+            if "sentences" in value and value.get("type") in ["paragraph", "heading"]:
+                extracted_text += value["sentences"][0] + " "
 
         logger.info(
             f"pdf file read and text extracted successfully in {time.time() - start_time:,.2f} seconds")
 
-        return extracted_text
+        return truncate_text(extracted_text, max_words=800).strip()
 
     except Exception as e:
         logger.error(f"{e}")
@@ -213,7 +223,6 @@ async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_t
             template=template,
             template_format="jinja2"
         ),
-        verbose=True
     )
 
     logger.info(f"Invoking prompt to OpenAI")
