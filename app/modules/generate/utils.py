@@ -61,7 +61,7 @@ def scrape_website(url):
     for tag in soup.find_all(['article', 'main', 'p']):
         main_content += tag.get_text(strip=True) + " "
 
-    return truncate_text(main_content, max_words=800).strip()
+    return truncate_text(main_content, max_words=1000).strip()
     
 async def generate_ontology(llm, search_results, domain, scope):
     prompt = llm_search_google_prompt(domain, scope, search_results)
@@ -145,7 +145,7 @@ def extract_text_from_pdf(pdf_file_path):
         logger.info(
             f"pdf file read and text extracted successfully in {time.time() - start_time:,.2f} seconds")
 
-        return truncate_text(extracted_text, max_words=800).strip()
+        return truncate_text(extracted_text, max_words=1000).strip()
 
     except Exception as e:
         logger.error(f"{e}")
@@ -216,6 +216,7 @@ def extract_terms(content):
 async def prompt_chatai(prompt, input_variables=["domain", "scope", "important_terms"], template=CLASSES_AND_PROPERTIES_GENERATION_SYSTEM_MESSAGE_BY_IMPORTANT_TERMS, model="llm"):
     global prompt_time
     start_time = time.time()
+
     x = LLMChain(
         llm=llm if model == "llm" else llmmini,
         prompt=PromptTemplate(
